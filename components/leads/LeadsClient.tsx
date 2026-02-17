@@ -14,10 +14,11 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
 import { LeadDetailsSheet } from "@/components/leads/LeadDetailsSheet";
 import { format } from "date-fns";
-import { Search, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
+import { Search, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, UserPlus, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { importLeads } from "@/lib/actions/import";
@@ -91,8 +92,20 @@ export function LeadsClient({
         } else {
             params.set("status", status);
         }
+        params.delete("page");
         router.replace(`/leads?${params.toString()}`);
     }
+
+    const handleSourceFilter = (source: string) => {
+        const params = new URLSearchParams(searchParams);
+        if (source === "all") {
+            params.delete("source");
+        } else {
+            params.set("source", source);
+        }
+        params.delete("page");
+        router.replace(`/leads?${params.toString()}`);
+    };
 
     const handleExport = () => {
         const params = new URLSearchParams(searchParams);
@@ -173,6 +186,18 @@ export function LeadsClient({
                             defaultValue={searchParams.get("search")?.toString()}
                         />
                     </div>
+                    <Select value={searchParams.get("source") || "all"} onValueChange={handleSourceFilter}>
+                        <SelectTrigger className="w-[140px] rounded-xl border-white/10 bg-white/5">
+                            <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                            <SelectValue placeholder="Source" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                            <SelectItem value="all">All Sources</SelectItem>
+                            {settings?.sources?.map((s: any) => (
+                                <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     {isAdmin && (
                         <>
                             <Button variant="outline" size="icon" onClick={handleExport} title="Export CSV" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
