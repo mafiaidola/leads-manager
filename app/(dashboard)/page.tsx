@@ -22,7 +22,7 @@ export default async function DashboardPage() {
                 <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Dashboard Overview</h2>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl hover:shadow-violet-500/10 transition-all border-t-4 border-t-violet-500">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Total Leads</CardTitle>
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{stats.totalLeads}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Growth +12% from last month</p>
+                        <p className="text-xs text-muted-foreground mt-1">All time across pipeline</p>
                     </CardContent>
                 </Card>
                 <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl hover:shadow-blue-500/10 transition-all border-t-4 border-t-blue-500">
@@ -44,7 +44,7 @@ export default async function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{stats.newLeadsLast7Days}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Acquisition pace is high</p>
+                        <p className="text-xs text-muted-foreground mt-1">Added in the last 7 days</p>
                     </CardContent>
                 </Card>
                 <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl hover:shadow-emerald-500/10 transition-all border-t-4 border-t-emerald-500">
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">{stats.customers}</div>
-                        <p className="text-xs text-green-500 mt-1">Conversion rate 8.4%</p>
+                        <p className="text-xs text-emerald-500 mt-1">Converted to customer</p>
                     </CardContent>
                 </Card>
             </div>

@@ -1,6 +1,6 @@
 "use server";
 
-import { signIn } from "@/auth";
+import { signIn, signOut } from "@/auth";
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 
@@ -27,4 +27,8 @@ export async function authenticate(
     }
 
     redirect("/");
+}
+
+export async function handleSignOut() {
+    await signOut();
 }

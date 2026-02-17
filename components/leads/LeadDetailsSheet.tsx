@@ -226,16 +226,28 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                         Contact Information
                                     </h3>
                                     <div className="grid grid-cols-1 gap-3">
-                                        <a href={`mailto:${data.lead.email}`} className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-                                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mr-3 text-blue-500">
-                                                <Mail className="h-4 w-4" />
+                                        {data.lead.email ? (
+                                            <a href={`mailto:${data.lead.email}`} className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mr-3 text-blue-500">
+                                                    <Mail className="h-4 w-4" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Email Address</span>
+                                                    <span className="text-sm font-medium group-hover:text-primary transition-colors">{data.lead.email}</span>
+                                                </div>
+                                                <ExternalLink className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            </a>
+                                        ) : (
+                                            <div className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mr-3 text-blue-500">
+                                                    <Mail className="h-4 w-4" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Email Address</span>
+                                                    <span className="text-sm font-medium text-muted-foreground">No Email</span>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] text-muted-foreground uppercase font-bold">Email Address</span>
-                                                <span className="text-sm font-medium group-hover:text-primary transition-colors">{data.lead.email || "No Email"}</span>
-                                            </div>
-                                            <ExternalLink className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </a>
+                                        )}
 
                                         <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 group">
                                             <div className="flex items-center">
@@ -259,16 +271,28 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                             )}
                                         </div>
 
-                                        <a href={data.lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-                                            <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center mr-3 text-purple-500">
-                                                <Globe className="h-4 w-4" />
+                                        {data.lead.website ? (
+                                            <a href={data.lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
+                                                <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center mr-3 text-purple-500">
+                                                    <Globe className="h-4 w-4" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Website / URL</span>
+                                                    <span className="text-sm font-medium truncate max-w-[250px]">{data.lead.website}</span>
+                                                </div>
+                                                <ExternalLink className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            </a>
+                                        ) : (
+                                            <div className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                                                <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center mr-3 text-purple-500">
+                                                    <Globe className="h-4 w-4" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Website / URL</span>
+                                                    <span className="text-sm font-medium text-muted-foreground">No Website</span>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] text-muted-foreground uppercase font-bold">Website / URL</span>
-                                                <span className="text-sm font-medium truncate max-w-[250px]">{data.lead.website || "No Website"}</span>
-                                            </div>
-                                            <ExternalLink className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </a>
+                                        )}
                                     </div>
                                 </div>
 

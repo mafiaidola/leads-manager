@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { handleSignOut } from "@/lib/actions/auth";
 
 const allRoutes = [
     {
@@ -85,10 +85,7 @@ export function Sidebar({ className, userRole }: { className?: string; userRole?
 
                 {/* Logout Area */}
                 <div className="mt-auto pt-4 border-t border-white/10">
-                    <form action={async () => {
-                        // Keep the client-side/server action pattern
-                        // For now just form
-                    }}>
+                    <form action={handleSignOut}>
                         <button className="flex items-center w-full p-3 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-colors">
                             <LogOut className="h-5 w-5 mr-3" />
                             Logout

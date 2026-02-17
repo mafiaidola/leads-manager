@@ -1,9 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import bcryptjs from "bcryptjs";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    // Security: Only allow seeding in development, or with a secret token in production
+    const isDev = process.env.NODE_ENV === "development";
+    const seedSecret = process.env.SEED_SECRET;
+    const providedSecret = request.nextUrl.searchParams.get("secret");
+
+    if (!isDev && (!seedSecret || providedSecret !== seedSecret)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     try {
         await dbConnect();
 
@@ -24,6 +33,9 @@ export async function GET() {
 
         return NextResponse.json({ message: "Admin already exists" });
     } catch (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error instanceof Error) {
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+        return NextResponse.json({ error: "An unknown error occurred" }, { status: 500 });
     }
 }

@@ -12,12 +12,7 @@ export default async function SettingsPage() {
     if (!session) redirect("/login");
 
     if (session.user.role !== USER_ROLES.ADMIN) {
-        return (
-            <div className="p-8">
-                <h1 className="text-2xl font-bold text-red-600">Unauthorized</h1>
-                <p>You do not have permission to view this page.</p>
-            </div>
-        )
+        redirect("/");
     }
 
     const [settings, users] = await Promise.all([

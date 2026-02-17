@@ -7,6 +7,7 @@ import LeadNote, { NOTE_TYPES } from "@/models/LeadNote";
 import User, { USER_ROLES } from "@/models/User";
 import { revalidatePath } from "next/cache";
 import Papa from "papaparse";
+import mongoose from "mongoose";
 
 export async function importLeads(formData: FormData) {
     const session = await auth();
@@ -51,7 +52,7 @@ export async function importLeads(formData: FormData) {
             const assignedToId = row.assignedToEmail ? userMap.get(row.assignedToEmail) : undefined;
             const tags = row.tags ? row.tags.split(",").map((t: string) => t.trim()) : [];
 
-            const leadId = new (require("mongoose").Types.ObjectId)();
+            const leadId = new mongoose.Types.ObjectId();
 
             leadsToInsert.push({
                 _id: leadId,

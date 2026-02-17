@@ -1,7 +1,9 @@
 import { Sidebar } from "@/components/Sidebar";
+import { MobileSidebar } from "@/components/MobileSidebar";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { LogOut, UserCircle2, Bell } from "lucide-react";
+import { handleSignOut } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 
 export default async function DashboardLayout({
@@ -24,6 +26,7 @@ export default async function DashboardLayout({
                 <header className="sticky top-0 z-50 p-4">
                     <div className="flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-xl shadow-black/5">
                         <div className="flex items-center gap-4">
+                            <MobileSidebar userRole={session.user?.role} />
                             <h2 className="hidden md:block text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                                 CRM Overview
                             </h2>
@@ -31,7 +34,7 @@ export default async function DashboardLayout({
 
                         <div className="flex items-center gap-4">
                             {/* Simple Notifications Placeholder */}
-                            <button className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all relative">
+                            <button aria-label="Notifications" className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all relative">
                                 <Bell className="h-5 w-5" />
                                 <span className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full border-2 border-white dark:border-black" />
                             </button>
@@ -59,11 +62,7 @@ export default async function DashboardLayout({
                                 </div>
 
                                 <form
-                                    action={async () => {
-                                        "use server";
-                                        const { signOut } = await import("@/auth");
-                                        await signOut();
-                                    }}
+                                    action={handleSignOut}
                                 >
                                     <button className="ml-2 p-2.5 text-red-500 hover:text-white hover:bg-red-500 rounded-xl transition-all group lg:flex items-center gap-2">
                                         <LogOut className="h-5 w-5" />

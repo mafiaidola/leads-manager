@@ -35,6 +35,7 @@ const formSchema = z.object({
     source: z.string().optional(),
     product: z.string().optional(),
     assignedTo: z.string().optional(),
+    // Note: z.any() used to avoid RHF resolver generic type conflicts; runtime coercion is handled by the HTML input[type=number] and the server action.
     value: z.any().optional(),
     website: z.string().optional(),
     address: z.string().optional(),
@@ -270,19 +271,19 @@ export function EditLeadDialog({
                                     />
                                     <FormField
                                         control={form.control}
-                                        name="assignedTo"
+                                        name="source"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Assign To {isSales && <span className="text-xs text-muted-foreground">(Read-only)</span>}</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSales}>
+                                                <FormLabel>Source</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
-                                                            <SelectValue placeholder="Unassigned" />
+                                                            <SelectValue placeholder="Select source" />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                                        {users?.filter((u: any) => u.role === 'SALES').map((u: any) => (
-                                                            <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>
+                                                        {settings?.sources?.map((s: any) => (
+                                                            <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
@@ -291,6 +292,28 @@ export function EditLeadDialog({
                                         )}
                                     />
                                 </div>
+                                <FormField
+                                    control={form.control}
+                                    name="assignedTo"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Assign To {isSales && <span className="text-xs text-muted-foreground">(Read-only)</span>}</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSales}>
+                                                <FormControl>
+                                                    <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
+                                                        <SelectValue placeholder="Unassigned" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                                    {users?.filter((u: any) => u.role === 'SALES').map((u: any) => (
+                                                        <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
 
                             {/* Right Column: Address & Details */}

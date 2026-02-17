@@ -72,7 +72,7 @@ export function LeadsClient({
     const isMarketing = currentUserRole === 'MARKETING';
     const isSales = currentUserRole === 'SALES';
     const canAddLead = isAdmin || isMarketing;
-    const canSeAssignment = isAdmin || isMarketing;
+    const canSeeAssignment = isAdmin || isMarketing;
 
     const handleSearch = useDebounce((term: string) => {
         const params = new URLSearchParams(searchParams);
@@ -152,7 +152,6 @@ export function LeadsClient({
                                 )}
                                 onClick={() => handleStatusFilter(s.key)}
                                 style={{
-                                    // @ts-ignore
                                     "--chip-color": s.color || "#8b5cf6",
                                     "--chip-shadow": `${s.color || "#8b5cf6"}33`
                                 } as React.CSSProperties}
@@ -218,7 +217,7 @@ export function LeadsClient({
                             <TableHead className="font-semibold text-primary">Status</TableHead>
                             <TableHead className="hidden md:table-cell font-semibold text-primary">Source</TableHead>
                             <TableHead className="font-semibold text-primary w-[50px]">WA</TableHead>
-                            {canSeAssignment && (
+                            {canSeeAssignment && (
                                 <TableHead className="hidden md:table-cell font-semibold text-primary">Assigned</TableHead>
                             )}
                             <TableHead className="hidden md:table-cell font-semibold text-primary">Added</TableHead>
@@ -244,7 +243,6 @@ export function LeadsClient({
                                                 variant="outline"
                                                 className="w-fit border shadow-sm bg-[var(--badge-bg)] text-[var(--badge-color)] border-[var(--badge-color)]"
                                                 style={{
-                                                    // @ts-ignore
                                                     "--badge-bg": settings?.statuses.find((s: any) => s.key === lead.status)?.color + '15',
                                                     "--badge-color": settings?.statuses.find((s: any) => s.key === lead.status)?.color
                                                 } as React.CSSProperties}
@@ -281,7 +279,7 @@ export function LeadsClient({
                                     </TableCell>
 
                                     {/* Assigned To - Admin & Marketing */}
-                                    {canSeAssignment && (
+                                    {canSeeAssignment && (
                                         <TableCell className="hidden md:table-cell">
                                             {lead.assignedTo ? (
                                                 <div className="flex items-center gap-2">
