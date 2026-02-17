@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, UserPlus, CheckCircle2 } from "lucide-react";
+import { Users, UserPlus, CheckCircle2, TrendingUp } from "lucide-react";
 import { LeadTrendsChart } from "@/components/dashboard/LeadTrendsChart";
 import { LeadsBySourceChart } from "@/components/dashboard/LeadsBySourceChart";
 import { RecentLeads } from "@/components/dashboard/RecentLeads";
@@ -22,7 +22,7 @@ export default async function DashboardPage() {
                 <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Dashboard Overview</h2>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl hover:shadow-violet-500/10 transition-all border-t-4 border-t-violet-500">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Total Leads</CardTitle>
@@ -57,6 +57,20 @@ export default async function DashboardPage() {
                     <CardContent>
                         <div className="text-3xl font-bold">{stats.customers}</div>
                         <p className="text-xs text-emerald-500 mt-1">Converted to customer</p>
+                    </CardContent>
+                </Card>
+                <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl hover:shadow-amber-500/10 transition-all border-t-4 border-t-amber-500">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Conversion</CardTitle>
+                        <div className="p-2 bg-amber-500/10 rounded-xl">
+                            <TrendingUp className="h-4 w-4 text-amber-500" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold">
+                            {stats.totalLeads > 0 ? `${((stats.customers / stats.totalLeads) * 100).toFixed(1)}%` : "0%"}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Lead → Customer rate</p>
                     </CardContent>
                 </Card>
             </div>

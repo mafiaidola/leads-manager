@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
 import { LeadDetailsSheet } from "@/components/leads/LeadDetailsSheet";
 import { format } from "date-fns";
-import { Search, FileUp, Download, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Search, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { importLeads } from "@/lib/actions/import";
@@ -347,14 +347,62 @@ export function LeadsClient({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                                    No leads found.
+                                <TableCell colSpan={8} className="h-40 text-center">
+                                    <div className="flex flex-col items-center gap-3 py-8">
+                                        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                                            <UserPlus className="h-7 w-7 text-primary/50" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-foreground/70">No leads found</p>
+                                            <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters or add a new lead</p>
+                                        </div>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Pagination */}
+            {total > 0 && (
+                <div className="flex items-center justify-between px-4 py-3 rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl">
+                    <p className="text-sm text-muted-foreground">
+                        Showing <span className="font-semibold text-foreground">{Math.min((Number(searchParams.get("page") || 1) - 1) * 50 + 1, total)}</span>–<span className="font-semibold text-foreground">{Math.min(Number(searchParams.get("page") || 1) * 50, total)}</span> of <span className="font-semibold text-foreground">{total}</span> leads
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-xl border-white/10 h-9"
+                            disabled={Number(searchParams.get("page") || 1) <= 1}
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams);
+                                params.set("page", String(Math.max(1, Number(searchParams.get("page") || 1) - 1)));
+                                router.replace(`/leads?${params.toString()}`);
+                            }}
+                        >
+                            <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                        </Button>
+                        <div className="text-sm font-medium text-muted-foreground px-2">
+                            Page {Number(searchParams.get("page") || 1)} of {Math.max(1, Math.ceil(total / 50))}
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-xl border-white/10 h-9"
+                            disabled={Number(searchParams.get("page") || 1) >= Math.ceil(total / 50)}
+                            onClick={() => {
+                                const params = new URLSearchParams(searchParams);
+                                params.set("page", String(Number(searchParams.get("page") || 1) + 1));
+                                router.replace(`/leads?${params.toString()}`);
+                            }}
+                        >
+                            Next <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             <LeadDetailsSheet
                 leadId={selectedLeadId}

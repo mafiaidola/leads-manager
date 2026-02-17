@@ -91,11 +91,21 @@ export async function getDashboardStats() {
         })),
         recentLeads: JSON.parse(JSON.stringify(recentLeads)),
         recentActivity: JSON.parse(JSON.stringify(recentActivity)),
-        monthlyTrends: monthlyTrends
-            .map((item) => ({
+        monthlyTrends: (() => {
+            const raw = monthlyTrends.map((item) => ({
                 name: item._id,
-                total: item.count
-            }))
-        // Fill missing months logic could go here, but for now raw data
+                total: item.count,
+            }));
+            // Fill missing months with 0 for the last 6 months
+            const months: { name: string; total: number }[] = [];
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                const found = raw.find((r) => r.name === key);
+                months.push({ name: key, total: found?.total || 0 });
+            }
+            return months;
+        })(),
     };
 }
