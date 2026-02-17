@@ -2,7 +2,7 @@
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useEffect, useState, useTransition } from "react";
-import { getLeadDetails, addNote, updateLeadStatus, addLeadAction } from "@/lib/actions/leads";
+import { getLeadDetails, addNote, updateLeadStatus, addLeadAction, getLeadTimeline } from "@/lib/actions/leads";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -54,6 +54,7 @@ const ACTION_TYPE_CONFIG: Record<string, { label: string; icon: any; color: stri
 
 export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }: LeadDetailsSheetProps) {
     const [data, setData] = useState<any>(null);
+    const [timeline, setTimeline] = useState<any[]>([]);
     const [note, setNote] = useState("");
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
@@ -69,11 +70,16 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
     useEffect(() => {
         if (leadId) {
             startTransition(async () => {
-                const result = await getLeadDetails(leadId);
+                const [result, tl] = await Promise.all([
+                    getLeadDetails(leadId),
+                    getLeadTimeline(leadId),
+                ]);
                 setData(result);
+                setTimeline(tl);
             });
         } else {
             setData(null);
+            setTimeline([]);
         }
     }, [leadId]);
 
@@ -82,16 +88,24 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
         await addNote(leadId, note);
         setNote("");
         toast({ title: "Note added" });
-        const result = await getLeadDetails(leadId);
+        const [result, tl] = await Promise.all([
+            getLeadDetails(leadId),
+            getLeadTimeline(leadId),
+        ]);
         setData(result);
+        setTimeline(tl);
     };
 
     const handleStatusChange = async (newStatus: string) => {
         if (!leadId) return;
         await updateLeadStatus(leadId, newStatus);
         toast({ title: "Status updated" });
-        const result = await getLeadDetails(leadId);
+        const [result, tl] = await Promise.all([
+            getLeadDetails(leadId),
+            getLeadTimeline(leadId),
+        ]);
         setData(result);
+        setTimeline(tl);
     };
 
     const handleAddAction = async () => {
@@ -106,8 +120,12 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
             setActionDesc("");
             setActionOutcome("");
             setActionType("CALL");
-            const updated = await getLeadDetails(leadId);
+            const [updated, tl] = await Promise.all([
+                getLeadDetails(leadId),
+                getLeadTimeline(leadId),
+            ]);
             setData(updated);
+            setTimeline(tl);
         } else {
             toast({ title: "Error", description: result?.message, variant: "destructive" });
         }
@@ -519,35 +537,80 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                 </div>
                             </TabsContent>
 
-                            {/* ─── ACTIVITY LOG TAB ─── */}
-                            <TabsContent value="activity" className="mt-0 space-y-6 pb-8">
-                                <div className="space-y-4">
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">System Logs & Updates</h3>
-                                    <div className="space-y-4">
-                                        {data.notes.filter((n: any) => n.type === 'SYSTEM').length > 0 ? (
-                                            data.notes.filter((n: any) => n.type === 'SYSTEM').map((n: any) => (
-                                                <div key={n._id} className="flex gap-4 p-3 rounded-xl bg-white/5 border border-white/5">
-                                                    <div className="mt-1">
-                                                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                                                            <History className="h-4 w-4" />
-                                                        </div>
+                            {/* ─── ACTIVITY TIMELINE TAB ─── */}
+                            <TabsContent value="activity" className="mt-0 space-y-4 pb-8">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Full Activity Timeline</h3>
+                                    <Badge variant="outline" className="text-[10px] border-white/10">
+                                        {timeline.length} Events
+                                    </Badge>
+                                </div>
+
+                                {timeline.length > 0 ? (
+                                    <div className="space-y-0">
+                                        {timeline.map((item, idx) => {
+                                            const isNote = item.kind === "note";
+                                            const isSystem = isNote && item.type === "SYSTEM";
+                                            const isStatusChange = isNote && item.type === "STATUS_CHANGE";
+                                            const actionCfg = !isNote ? (ACTION_TYPE_CONFIG[item.type] || ACTION_TYPE_CONFIG.OTHER) : null;
+                                            const ActionIcon = actionCfg?.icon;
+
+                                            return (
+                                                <div key={item._id} className="relative pl-6 pb-4 border-l border-white/10 last:pb-0">
+                                                    <div className={`absolute left-[-9px] top-1 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${isSystem ? "bg-card border-slate-400" :
+                                                            isStatusChange ? "bg-card border-amber-400" :
+                                                                isNote ? "bg-card border-blue-400" :
+                                                                    "bg-card border-white/20"
+                                                        }`}>
+                                                        {isSystem ? <History className="h-2.5 w-2.5 text-slate-400" /> :
+                                                            isStatusChange ? <Zap className="h-2.5 w-2.5 text-amber-400" /> :
+                                                                isNote ? <StickyNote className="h-2.5 w-2.5 text-blue-400" /> :
+                                                                    ActionIcon ? <ActionIcon className={`h-2.5 w-2.5 ${actionCfg?.color}`} /> :
+                                                                        <History className="h-2.5 w-2.5 text-muted-foreground" />}
                                                     </div>
-                                                    <div className="flex-1 space-y-1">
-                                                        <div className="flex justify-between">
-                                                            <span className="text-xs font-bold text-muted-foreground">System Event</span>
-                                                            <span className="text-[10px] text-muted-foreground">{format(new Date(n.createdAt), "MMM d, h:mm a")}</span>
+
+                                                    <div className="p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/8 transition-colors">
+                                                        <div className="flex justify-between items-center mb-1">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Badge variant="outline" className={`text-[9px] h-4 px-1.5 ${isSystem ? "text-slate-400 border-slate-400/30" :
+                                                                        isStatusChange ? "text-amber-400 border-amber-400/30" :
+                                                                            isNote ? "text-blue-400 border-blue-400/30" :
+                                                                                `${actionCfg?.color || "text-muted-foreground"} border-current/30`
+                                                                    }`}>
+                                                                    {isSystem ? "System" :
+                                                                        isStatusChange ? "Status Change" :
+                                                                            isNote ? "Note" :
+                                                                                actionCfg?.label || item.type}
+                                                                </Badge>
+                                                                {!isNote && item.outcome && (
+                                                                    <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-white/10">
+                                                                        {item.outcome}
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            <span className="text-[10px] text-muted-foreground">
+                                                                {format(new Date(item.createdAt), "MMM d, h:mm a")}
+                                                            </span>
                                                         </div>
-                                                        <p className="text-sm italic text-foreground/60">{n.message}</p>
+                                                        <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                                                            {isNote ? item.message : item.description}
+                                                        </p>
+                                                        <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-muted-foreground">
+                                                            <div className="w-3.5 h-3.5 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-bold text-primary">
+                                                                {item.authorName?.charAt(0) || "?"}
+                                                            </div>
+                                                            {item.authorName}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            ))
-                                        ) : (
-                                            <div className="text-center py-10 text-muted-foreground text-sm italic">
-                                                No system activity recorded yet.
-                                            </div>
-                                        )}
+                                            );
+                                        })}
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="text-center py-10 text-muted-foreground text-sm italic">
+                                        No activity recorded yet.
+                                    </div>
+                                )}
                             </TabsContent>
                         </ScrollArea>
                     </Tabs>

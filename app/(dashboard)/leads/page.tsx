@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { auth } from "@/auth";
 
-import { getLeads, getLeadsStats } from "@/lib/actions/leads";
+import { getLeads, getLeadsStats, getLeadsByStatus } from "@/lib/actions/leads";
 import { getSettings } from "@/lib/actions/settings";
 import { getSalesUsers } from "@/lib/actions/users";
 import { LeadsClient } from "@/components/leads/LeadsClient";
@@ -17,11 +17,12 @@ export default async function LeadsPage({
 
     const resolvedParams = await searchParams;
 
-    const [leadsData, stats, settings, users] = await Promise.all([
+    const [leadsData, stats, settings, users, kanbanLeads] = await Promise.all([
         getLeads(resolvedParams),
         getLeadsStats(),
         getSettings(),
         getSalesUsers(),
+        getLeadsByStatus(),
     ]);
 
     // Ensure everything is plain objects for Client Components
@@ -29,6 +30,7 @@ export default async function LeadsPage({
     const serializedStats = JSON.parse(JSON.stringify(stats));
     const serializedSettings = JSON.parse(JSON.stringify(settings));
     const serializedUsers = JSON.parse(JSON.stringify(users));
+    const serializedKanban = JSON.parse(JSON.stringify(kanbanLeads));
 
     return (
         <div className="p-8 space-y-6">
@@ -44,6 +46,7 @@ export default async function LeadsPage({
                 users={serializedUsers}
                 currentUserRole={session.user.role}
                 currentUserId={session.user.id}
+                kanbanLeads={serializedKanban}
             />
         </div>
     );

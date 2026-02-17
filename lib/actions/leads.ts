@@ -10,6 +10,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import mongoose from "mongoose";
+import { logAudit } from "@/lib/actions/audit";
+import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
 
 
 const LeadSchema = z.object({
@@ -60,6 +62,129 @@ export async function checkDuplicatePhone(phone: string) {
     } catch {
         return { exists: false };
     }
+}
+
+// ─── Duplicate lead check (email + phone) ───────────────────────────────────
+export async function checkDuplicateLead(email?: string, phone?: string, excludeId?: string) {
+    const session = await auth();
+    if (!session) return { duplicates: [] };
+
+    try {
+        await dbConnect();
+        const orConditions: any[] = [];
+        if (email && email.trim()) orConditions.push({ email: email.trim() });
+        if (phone && phone.trim().length >= 4) orConditions.push({ phone: phone.trim() });
+        if (orConditions.length === 0) return { duplicates: [] };
+
+        const query: any = { $or: orConditions, deletedAt: null };
+        if (excludeId) query._id = { $ne: excludeId };
+
+        const matches = await Lead.find(query)
+            .select("name email phone company status")
+            .limit(5)
+            .lean();
+
+        return {
+            duplicates: matches.map((m) => ({
+                _id: m._id.toString(),
+                name: m.name,
+                email: m.email,
+                phone: m.phone,
+                company: m.company,
+                status: m.status,
+            })),
+        };
+    } catch {
+        return { duplicates: [] };
+    }
+}
+
+// ─── Kanban: Get leads grouped by status ────────────────────────────────────
+export async function getLeadsByStatus() {
+    const session = await auth();
+    if (!session) return {};
+
+    await dbConnect();
+
+    const query: any = { deletedAt: null };
+    if (session.user.role === USER_ROLES.SALES) {
+        query.assignedTo = session.user.id;
+    }
+
+    const leads = await Lead.find(query)
+        .sort({ createdAt: -1 })
+        .populate("assignedTo", "name")
+        .lean();
+
+    const grouped: Record<string, any[]> = {};
+    for (const lead of leads) {
+        const status = lead.status || "interesting";
+        if (!grouped[status]) grouped[status] = [];
+        grouped[status].push({
+            _id: lead._id.toString(),
+            name: lead.name,
+            company: lead.company,
+            email: lead.email,
+            phone: lead.phone,
+            value: lead.value,
+            source: lead.source,
+            starred: (lead.starred || []).map((s: any) => s.toString()),
+            assignedTo: lead.assignedTo
+                ? { _id: (lead.assignedTo as any)._id?.toString(), name: (lead.assignedTo as any).name }
+                : null,
+            createdAt: (lead.createdAt as Date).toISOString(),
+        });
+    }
+    return grouped;
+}
+
+// ─── Activity Timeline (merged notes + actions) ─────────────────────────────
+export async function getLeadTimeline(leadId: string) {
+    const session = await auth();
+    if (!session) return [];
+
+    await dbConnect();
+
+    const [notes, actions] = await Promise.all([
+        LeadNote.find({ leadId })
+            .populate("authorId", "name")
+            .sort({ createdAt: -1 })
+            .lean(),
+        LeadAction.find({ leadId })
+            .populate("authorId", "name")
+            .sort({ createdAt: -1 })
+            .lean(),
+    ]);
+
+    const timeline: any[] = [];
+
+    for (const note of notes) {
+        timeline.push({
+            _id: note._id.toString(),
+            kind: "note",
+            type: note.type,
+            message: note.message,
+            authorName: (note.authorId as any)?.name || note.authorRole || "System",
+            createdAt: (note.createdAt as Date).toISOString(),
+        });
+    }
+
+    for (const action of actions) {
+        timeline.push({
+            _id: action._id.toString(),
+            kind: "action",
+            type: action.type,
+            description: action.description,
+            outcome: action.outcome,
+            authorName: (action.authorId as any)?.name || "Unknown",
+            createdAt: (action.createdAt as Date).toISOString(),
+        });
+    }
+
+    // Sort by date descending
+    timeline.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return timeline;
 }
 
 export async function updateLead(prevState: any, formData: FormData) {
@@ -124,6 +249,8 @@ export async function updateLead(prevState: any, formData: FormData) {
         lead.updatedBy = new mongoose.Types.ObjectId(session.user.id);
 
         await lead.save();
+
+        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, `Updated lead: ${lead.name}`);
 
         revalidatePath("/leads");
         revalidatePath(`/leads/${id}`);
@@ -205,6 +332,8 @@ export async function createLead(prevState: any, formData: FormData) {
             });
         }
 
+        logAudit(AUDIT_ACTIONS.CREATE, ENTITY_TYPES.LEAD, newLead._id.toString(), `Created lead: ${rest.name}`);
+
     } catch (error) {
         console.error("Failed to create lead:", error);
         return { message: "Database Error: Failed to create lead." };
@@ -246,9 +375,11 @@ export async function updateLeadStatus(id: string, newStatus: string) {
             meta: { fromStatus: oldStatus, toStatus: newStatus },
         });
 
+        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, `Status changed from ${oldStatus} to ${newStatus}`);
+
         revalidatePath(`/leads/${id}`);
         revalidatePath("/leads");
-        return { message: "Status updated" };
+        return { message: "Status updated", success: true };
     } catch (error) {
         return { message: "Error updating status" };
     }
@@ -478,6 +609,7 @@ export async function addLeadAction(
     return { message: "Action added successfully", success: true };
 }
 
+
 export async function deleteLead(id: string) {
     const session = await auth();
     if (!session || session.user.role !== USER_ROLES.ADMIN) {
@@ -489,6 +621,8 @@ export async function deleteLead(id: string) {
         // Soft delete — move to recycle bin
         const lead = await Lead.findByIdAndUpdate(id, { deletedAt: new Date() });
         if (!lead) return { message: "Lead not found" };
+
+        logAudit(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.LEAD, id, `Soft deleted lead: ${lead.name}`);
 
         revalidatePath("/leads");
         return { message: "Lead moved to recycle bin", success: true };
@@ -510,6 +644,8 @@ export async function bulkUpdateStatus(ids: string[], status: string) {
             { _id: { $in: ids } },
             { status, updatedBy: new mongoose.Types.ObjectId(session.user.id) }
         );
+        logAudit(AUDIT_ACTIONS.BULK_UPDATE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk status change to ${status} (${ids.length} leads)`);
+
         revalidatePath("/leads");
         return { message: `${ids.length} leads updated`, success: true };
     } catch (error) {
@@ -530,6 +666,8 @@ export async function bulkAssign(ids: string[], assignToId: string) {
             { _id: { $in: ids } },
             { assignedTo: new mongoose.Types.ObjectId(assignToId), updatedBy: new mongoose.Types.ObjectId(session.user.id) }
         );
+        logAudit(AUDIT_ACTIONS.BULK_UPDATE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk assigned ${ids.length} leads to user ${assignToId}`);
+
         revalidatePath("/leads");
         return { message: `${ids.length} leads assigned`, success: true };
     } catch (error) {
@@ -550,6 +688,8 @@ export async function bulkSoftDelete(ids: string[]) {
             { _id: { $in: ids } },
             { deletedAt: new Date() }
         );
+        logAudit(AUDIT_ACTIONS.BULK_DELETE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk soft deleted ${ids.length} leads`);
+
         revalidatePath("/leads");
         return { message: `${ids.length} leads moved to recycle bin`, success: true };
     } catch (error) {
@@ -612,6 +752,8 @@ export async function transferLead(leadId: string, toUserId: string) {
             type: NOTE_TYPES.SYSTEM,
         });
 
+        logAudit(AUDIT_ACTIONS.TRANSFER, ENTITY_TYPES.LEAD, leadId, `Transferred lead from ${previousAssignedTo} to ${toUserId}`);
+
         revalidatePath("/leads");
         return { message: "Lead transferred successfully", success: true };
     } catch (error) {
@@ -631,6 +773,7 @@ export async function restoreLead(id: string) {
     try {
         await dbConnect();
         await Lead.findByIdAndUpdate(id, { deletedAt: null });
+        logAudit(AUDIT_ACTIONS.RESTORE, ENTITY_TYPES.LEAD, id, "Lead restored from recycle bin");
         revalidatePath("/leads");
         return { message: "Lead restored", success: true };
     } catch (error) {
@@ -650,6 +793,7 @@ export async function permanentDeleteLead(id: string) {
         await Lead.findByIdAndDelete(id);
         await LeadNote.deleteMany({ leadId: id });
         await LeadAction.deleteMany({ leadId: id });
+        logAudit(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.LEAD, id, "Lead permanently deleted");
         revalidatePath("/leads");
         return { message: "Lead permanently deleted", success: true };
     } catch (error) {
