@@ -43,6 +43,7 @@ export default async function LeadsPage({
                 settings={serializedSettings}
                 users={serializedUsers}
                 currentUserRole={session.user.role}
+                currentUserId={session.user.id}
             />
         </div>
     );

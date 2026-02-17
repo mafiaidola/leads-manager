@@ -12,11 +12,11 @@ export async function getDashboardStats() {
 
     await dbConnect();
 
-    const matchStage: any = {};
+    const matchStage: any = { deletedAt: null };
     if (session.user.role === USER_ROLES.SALES) {
         matchStage.assignedTo = session.user.id;
     }
-    // Marketing and Admin see all leads
+    // Marketing and Admin see all leads (soft-deleted excluded)
 
     const [
         totalLeads,

@@ -27,6 +27,9 @@ export interface ILead {
     public: boolean;
     contactedToday: boolean;
     lastContactAt?: Date;
+    starred: mongoose.Types.ObjectId[];
+    deletedAt?: Date | null;
+    customFields: Record<string, any>;
     createdBy: mongoose.Types.ObjectId;
     updatedBy?: mongoose.Types.ObjectId;
     createdAt: Date;
@@ -60,6 +63,9 @@ const LeadSchema = new Schema<ILead>(
         public: { type: Boolean, default: false },
         contactedToday: { type: Boolean, default: false },
         lastContactAt: Date,
+        starred: [{ type: Schema.Types.ObjectId, ref: "User" }],
+        deletedAt: { type: Date, default: null },
+        customFields: { type: Schema.Types.Mixed, default: {} },
         createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
         updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
     },
@@ -71,6 +77,9 @@ LeadSchema.index(
     { name: "text", company: "text", email: "text", phone: "text" },
     { weights: { name: 10, company: 5, email: 5, phone: 5 } }
 );
+
+// Index for recycle bin queries
+LeadSchema.index({ deletedAt: 1 });
 
 const Lead: Model<ILead> = models.Lead || mongoose.model<ILead>("Lead", LeadSchema);
 

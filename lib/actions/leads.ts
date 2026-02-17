@@ -263,6 +263,13 @@ export async function getLeads(searchParams: any) {
     // Build query
     const query: any = {};
 
+    // Exclude soft-deleted leads by default
+    if (searchParams.trash === "true") {
+        query.deletedAt = { $ne: null };
+    } else {
+        query.deletedAt = null;
+    }
+
     // RBAC: Sales sees only assigned. Marketing sees all. Admin sees all.
     if (session.user.role === USER_ROLES.SALES) {
         query.assignedTo = session.user.id;
@@ -279,6 +286,11 @@ export async function getLeads(searchParams: any) {
 
     if (searchParams.tag) {
         query.tags = searchParams.tag;
+    }
+
+    // Starred filter
+    if (searchParams.starred === "true") {
+        query.starred = new mongoose.Types.ObjectId(session.user.id);
     }
 
     const page = Number(searchParams.page) || 1;
@@ -299,10 +311,13 @@ export async function getLeads(searchParams: any) {
         leads: leads.map(l => ({
             ...l,
             _id: l._id.toString(),
+            starred: (l.starred || []).map((s: any) => s.toString()),
             assignedTo: l.assignedTo ? {
                 ...l.assignedTo,
                 _id: (l.assignedTo as any)._id?.toString()
             } : null,
+            customFields: l.customFields || {},
+            deletedAt: l.deletedAt ? (l.deletedAt as Date).toISOString() : null,
             createdAt: (l.createdAt as Date).toISOString(),
             updatedAt: (l.updatedAt as Date).toISOString(),
         })),
@@ -316,7 +331,7 @@ export async function getLeadsStats() {
 
     await dbConnect();
 
-    const query: any = {};
+    const query: any = { deletedAt: null };
     // Sales sees only own stats. Marketing + Admin see all.
     if (session.user.role === USER_ROLES.SALES) {
         query.assignedTo = session.user.id;
@@ -471,17 +486,175 @@ export async function deleteLead(id: string) {
 
     try {
         await dbConnect();
-        const lead = await Lead.findByIdAndDelete(id);
+        // Soft delete — move to recycle bin
+        const lead = await Lead.findByIdAndUpdate(id, { deletedAt: new Date() });
         if (!lead) return { message: "Lead not found" };
 
-        // Also delete associated notes and actions
-        await LeadNote.deleteMany({ leadId: id });
-        await LeadAction.deleteMany({ leadId: id });
-
         revalidatePath("/leads");
-        return { message: "Lead deleted successfully", success: true };
+        return { message: "Lead moved to recycle bin", success: true };
     } catch (error) {
         console.error("Delete Lead Error:", error);
         return { message: "Failed to delete lead" };
     }
 }
+
+// ─── Bulk Actions ────────────────────────────────────────────────────────────
+
+export async function bulkUpdateStatus(ids: string[], status: string) {
+    const session = await auth();
+    if (!session) return { message: "Unauthorized" };
+
+    try {
+        await dbConnect();
+        await Lead.updateMany(
+            { _id: { $in: ids } },
+            { status, updatedBy: new mongoose.Types.ObjectId(session.user.id) }
+        );
+        revalidatePath("/leads");
+        return { message: `${ids.length} leads updated`, success: true };
+    } catch (error) {
+        console.error("Bulk update error:", error);
+        return { message: "Failed to update leads" };
+    }
+}
+
+export async function bulkAssign(ids: string[], assignToId: string) {
+    const session = await auth();
+    if (!session || (session.user.role !== USER_ROLES.ADMIN && session.user.role !== USER_ROLES.MARKETING)) {
+        return { message: "Unauthorized" };
+    }
+
+    try {
+        await dbConnect();
+        await Lead.updateMany(
+            { _id: { $in: ids } },
+            { assignedTo: new mongoose.Types.ObjectId(assignToId), updatedBy: new mongoose.Types.ObjectId(session.user.id) }
+        );
+        revalidatePath("/leads");
+        return { message: `${ids.length} leads assigned`, success: true };
+    } catch (error) {
+        console.error("Bulk assign error:", error);
+        return { message: "Failed to assign leads" };
+    }
+}
+
+export async function bulkSoftDelete(ids: string[]) {
+    const session = await auth();
+    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+        return { message: "Unauthorized" };
+    }
+
+    try {
+        await dbConnect();
+        await Lead.updateMany(
+            { _id: { $in: ids } },
+            { deletedAt: new Date() }
+        );
+        revalidatePath("/leads");
+        return { message: `${ids.length} leads moved to recycle bin`, success: true };
+    } catch (error) {
+        console.error("Bulk delete error:", error);
+        return { message: "Failed to delete leads" };
+    }
+}
+
+// ─── Star / Favorite ─────────────────────────────────────────────────────────
+
+export async function toggleStarLead(leadId: string) {
+    const session = await auth();
+    if (!session) return { message: "Unauthorized" };
+
+    try {
+        await dbConnect();
+        const userId = new mongoose.Types.ObjectId(session.user.id);
+        const lead = await Lead.findById(leadId);
+        if (!lead) return { message: "Lead not found" };
+
+        const isStarred = lead.starred.some((s: any) => s.toString() === session.user.id);
+        if (isStarred) {
+            lead.starred = lead.starred.filter((s: any) => s.toString() !== session.user.id);
+        } else {
+            lead.starred.push(userId);
+        }
+        await lead.save();
+        revalidatePath("/leads");
+        return { message: isStarred ? "Unstarred" : "Starred", success: true, starred: !isStarred };
+    } catch (error) {
+        console.error("Toggle star error:", error);
+        return { message: "Failed to toggle star" };
+    }
+}
+
+// ─── Lead Transfer ───────────────────────────────────────────────────────────
+
+export async function transferLead(leadId: string, toUserId: string) {
+    const session = await auth();
+    if (!session || (session.user.role !== USER_ROLES.ADMIN && session.user.role !== USER_ROLES.MARKETING)) {
+        return { message: "Unauthorized" };
+    }
+
+    try {
+        await dbConnect();
+        const lead = await Lead.findById(leadId);
+        if (!lead) return { message: "Lead not found" };
+
+        const previousAssignedTo = lead.assignedTo?.toString() || "Unassigned";
+        lead.assignedTo = new mongoose.Types.ObjectId(toUserId);
+        lead.updatedBy = new mongoose.Types.ObjectId(session.user.id);
+        await lead.save();
+
+        // Log transfer as a system note
+        await LeadNote.create({
+            leadId,
+            authorId: new mongoose.Types.ObjectId(session.user.id),
+            authorRole: "SYSTEM",
+            message: `Lead transferred from ${previousAssignedTo} to ${toUserId}`,
+            type: NOTE_TYPES.SYSTEM,
+        });
+
+        revalidatePath("/leads");
+        return { message: "Lead transferred successfully", success: true };
+    } catch (error) {
+        console.error("Transfer error:", error);
+        return { message: "Failed to transfer lead" };
+    }
+}
+
+// ─── Recycle Bin ─────────────────────────────────────────────────────────────
+
+export async function restoreLead(id: string) {
+    const session = await auth();
+    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+        return { message: "Unauthorized" };
+    }
+
+    try {
+        await dbConnect();
+        await Lead.findByIdAndUpdate(id, { deletedAt: null });
+        revalidatePath("/leads");
+        return { message: "Lead restored", success: true };
+    } catch (error) {
+        console.error("Restore error:", error);
+        return { message: "Failed to restore lead" };
+    }
+}
+
+export async function permanentDeleteLead(id: string) {
+    const session = await auth();
+    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+        return { message: "Unauthorized" };
+    }
+
+    try {
+        await dbConnect();
+        await Lead.findByIdAndDelete(id);
+        await LeadNote.deleteMany({ leadId: id });
+        await LeadAction.deleteMany({ leadId: id });
+        revalidatePath("/leads");
+        return { message: "Lead permanently deleted", success: true };
+    } catch (error) {
+        console.error("Permanent delete error:", error);
+        return { message: "Failed to permanently delete lead" };
+    }
+}
+
