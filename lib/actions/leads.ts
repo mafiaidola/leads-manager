@@ -143,48 +143,53 @@ export async function getLeadTimeline(leadId: string) {
     const session = await auth();
     if (!session) return [];
 
-    await dbConnect();
+    try {
+        await dbConnect();
 
-    const [notes, actions] = await Promise.all([
-        LeadNote.find({ leadId })
-            .populate("authorId", "name")
-            .sort({ createdAt: -1 })
-            .lean(),
-        LeadAction.find({ leadId })
-            .populate("authorId", "name")
-            .sort({ createdAt: -1 })
-            .lean(),
-    ]);
+        const [notes, actions] = await Promise.all([
+            LeadNote.find({ leadId })
+                .populate("authorId", "name")
+                .sort({ createdAt: -1 })
+                .lean(),
+            LeadAction.find({ leadId })
+                .populate("authorId", "name")
+                .sort({ createdAt: -1 })
+                .lean(),
+        ]);
 
-    const timeline: any[] = [];
+        const timeline: any[] = [];
 
-    for (const note of notes) {
-        timeline.push({
-            _id: note._id.toString(),
-            kind: "note",
-            type: note.type,
-            message: note.message,
-            authorName: (note.authorId as any)?.name || note.authorRole || "System",
-            createdAt: (note.createdAt as Date).toISOString(),
-        });
+        for (const note of notes) {
+            timeline.push({
+                _id: note._id.toString(),
+                kind: "note",
+                type: note.type,
+                message: note.message,
+                authorName: (note.authorId as any)?.name || note.authorRole || "System",
+                createdAt: note.createdAt ? (note.createdAt as Date).toISOString() : new Date().toISOString(),
+            });
+        }
+
+        for (const action of actions) {
+            timeline.push({
+                _id: action._id.toString(),
+                kind: "action",
+                type: action.type,
+                description: action.description,
+                outcome: action.outcome,
+                authorName: (action.authorId as any)?.name || "Unknown",
+                createdAt: action.createdAt ? (action.createdAt as Date).toISOString() : new Date().toISOString(),
+            });
+        }
+
+        // Sort by date descending
+        timeline.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        return timeline;
+    } catch (error) {
+        console.error("getLeadTimeline error:", error);
+        return [];
     }
-
-    for (const action of actions) {
-        timeline.push({
-            _id: action._id.toString(),
-            kind: "action",
-            type: action.type,
-            description: action.description,
-            outcome: action.outcome,
-            authorName: (action.authorId as any)?.name || "Unknown",
-            createdAt: (action.createdAt as Date).toISOString(),
-        });
-    }
-
-    // Sort by date descending
-    timeline.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    return timeline;
 }
 
 export async function updateLead(prevState: any, formData: FormData) {
@@ -480,53 +485,59 @@ export async function getLeadDetails(id: string) {
     const session = await auth();
     if (!session) return null;
 
-    await dbConnect();
-    const lead = await Lead.findById(id).populate("assignedTo", "name").lean();
-    if (!lead) return null;
+    try {
+        await dbConnect();
+        const lead = await Lead.findById(id).populate("assignedTo", "name").lean();
+        if (!lead) return null;
 
-    // RBAC: Admin sees all, Marketing sees all (read-only), Sales sees only assigned
-    if (session.user.role === USER_ROLES.SALES && lead.assignedTo?.toString() !== session.user.id) {
+        // RBAC: Admin sees all, Marketing sees all (read-only), Sales sees only assigned
+        const assignedId = lead.assignedTo?._id?.toString() || lead.assignedTo?.toString();
+        if (session.user.role === USER_ROLES.SALES && assignedId !== session.user.id) {
+            return null;
+        }
+
+        const notes = await LeadNote.find({ leadId: id })
+            .sort({ createdAt: -1 })
+            .populate("authorId", "name")
+            .lean();
+
+        const actions = await LeadAction.find({ leadId: id })
+            .sort({ createdAt: -1 })
+            .populate("authorId", "name")
+            .lean();
+
+        return {
+            lead: {
+                ...lead,
+                _id: lead._id.toString(),
+                assignedTo: lead.assignedTo ? { ...lead.assignedTo, _id: (lead.assignedTo._id || lead.assignedTo).toString() } : null,
+                createdBy: lead.createdBy.toString(),
+                updatedBy: lead.updatedBy?.toString(),
+                createdAt: lead.createdAt.toISOString(),
+                updatedAt: lead.updatedAt.toISOString(),
+                lastContactAt: lead.lastContactAt?.toISOString(),
+            },
+            notes: notes.map(n => ({
+                ...n,
+                _id: n._id.toString(),
+                authorId: n.authorId ? { ...n.authorId, _id: (n.authorId._id || n.authorId).toString() } : null,
+                createdAt: n.createdAt.toISOString(),
+            })),
+            actions: actions.map(a => ({
+                ...a,
+                _id: a._id.toString(),
+                leadId: a.leadId.toString(),
+                authorId: a.authorId ? { ...a.authorId, _id: (a.authorId._id || a.authorId).toString() } : null,
+                createdAt: a.createdAt.toISOString(),
+                updatedAt: a.updatedAt.toISOString(),
+                scheduledAt: a.scheduledAt?.toISOString(),
+                completedAt: a.completedAt?.toISOString(),
+            })),
+        };
+    } catch (error) {
+        console.error("getLeadDetails error:", error);
         return null;
     }
-
-    const notes = await LeadNote.find({ leadId: id })
-        .sort({ createdAt: -1 })
-        .populate("authorId", "name")
-        .lean();
-
-    const actions = await LeadAction.find({ leadId: id })
-        .sort({ createdAt: -1 })
-        .populate("authorId", "name")
-        .lean();
-
-    return {
-        lead: {
-            ...lead,
-            _id: lead._id.toString(),
-            assignedTo: lead.assignedTo ? { ...lead.assignedTo, _id: lead.assignedTo._id.toString() } : null,
-            createdBy: lead.createdBy.toString(),
-            updatedBy: lead.updatedBy?.toString(),
-            createdAt: lead.createdAt.toISOString(),
-            updatedAt: lead.updatedAt.toISOString(),
-            lastContactAt: lead.lastContactAt?.toISOString(),
-        },
-        notes: notes.map(n => ({
-            ...n,
-            _id: n._id.toString(),
-            authorId: n.authorId ? { ...n.authorId, _id: n.authorId._id.toString() } : null,
-            createdAt: n.createdAt.toISOString(),
-        })),
-        actions: actions.map(a => ({
-            ...a,
-            _id: a._id.toString(),
-            leadId: a.leadId.toString(),
-            authorId: a.authorId ? { ...a.authorId, _id: a.authorId._id.toString() } : null,
-            createdAt: a.createdAt.toISOString(),
-            updatedAt: a.updatedAt.toISOString(),
-            scheduledAt: a.scheduledAt?.toISOString(),
-            completedAt: a.completedAt?.toISOString(),
-        })),
-    };
 }
 
 export async function addNote(leadId: string, message: string) {
