@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Upload, ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle, FileSpreadsheet, Loader2 } from "lucide-react";
-import { previewCSVImport, importLeadsWithMapping, LEAD_FIELD_OPTIONS } from "@/lib/actions/import";
+import { previewCSVImport, importLeadsWithMapping } from "@/lib/actions/import";
+import { LEAD_FIELD_OPTIONS } from "@/lib/constants/leadFields";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 

@@ -1,0 +1,22 @@
+// Lead fields available for CSV import column mapping
+export const LEAD_FIELD_OPTIONS = [
+    { value: "name", label: "Name", required: true },
+    { value: "email", label: "Email" },
+    { value: "phone", label: "Phone" },
+    { value: "company", label: "Company" },
+    { value: "position", label: "Position" },
+    { value: "website", label: "Website" },
+    { value: "source", label: "Source" },
+    { value: "status", label: "Status" },
+    { value: "product", label: "Product/Interest" },
+    { value: "value", label: "Value" },
+    { value: "tags", label: "Tags (comma separated)" },
+    { value: "address", label: "Address" },
+    { value: "city", label: "City" },
+    { value: "state", label: "State" },
+    { value: "zipCode", label: "Zip Code" },
+    { value: "country", label: "Country" },
+    { value: "assignedToEmail", label: "Assigned To (Email)" },
+    { value: "description", label: "Description" },
+    { value: "defaultLanguage", label: "Language" },
+] as const;

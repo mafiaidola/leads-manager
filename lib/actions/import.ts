@@ -10,6 +10,7 @@ import Papa from "papaparse";
 import mongoose from "mongoose";
 import { logAudit } from "@/lib/actions/audit";
 import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
+import { LEAD_FIELD_OPTIONS } from "@/lib/constants/leadFields";
 
 /**
  * Preview a CSV file: return headers and first 5 rows.
@@ -30,29 +31,6 @@ export async function previewCSVImport(formData: FormData) {
 
     return { headers, preview, totalRows: (parsed.data as any[]).length };
 }
-
-// Lead fields available for mapping
-export const LEAD_FIELD_OPTIONS = [
-    { value: "name", label: "Name", required: true },
-    { value: "email", label: "Email" },
-    { value: "phone", label: "Phone" },
-    { value: "company", label: "Company" },
-    { value: "position", label: "Position" },
-    { value: "website", label: "Website" },
-    { value: "source", label: "Source" },
-    { value: "status", label: "Status" },
-    { value: "product", label: "Product/Interest" },
-    { value: "value", label: "Value" },
-    { value: "tags", label: "Tags (comma separated)" },
-    { value: "address", label: "Address" },
-    { value: "city", label: "City" },
-    { value: "state", label: "State" },
-    { value: "zipCode", label: "Zip Code" },
-    { value: "country", label: "Country" },
-    { value: "assignedToEmail", label: "Assigned To (Email)" },
-    { value: "description", label: "Description" },
-    { value: "defaultLanguage", label: "Language" },
-] as const;
 
 /**
  * Import leads with user-defined column mapping + duplicate detection.
