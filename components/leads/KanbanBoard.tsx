@@ -98,8 +98,8 @@ export function KanbanBoard({ leads, statuses, currentUserId, onLeadClick }: Kan
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span
-                                        className="w-3 h-3 rounded-full"
-                                        style={{ backgroundColor: status.color }}
+                                        className="w-3 h-3 rounded-full status-dot"
+                                        style={{ '--status-color': status.color } as React.CSSProperties}
                                     />
                                     <h3 className="font-semibold text-sm">{status.label}</h3>
                                 </div>

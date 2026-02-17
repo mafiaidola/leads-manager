@@ -223,8 +223,8 @@ export default function ReportsClient() {
                                 </div>
                             </div>
                             <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden">
-                                <div className={`h-full rounded-full transition-all duration-700 ${leadGoalPercent >= 100 ? 'bg-emerald-500' : leadGoalPercent >= 70 ? 'bg-amber-500' : 'bg-red-400'}`}
-                                    style={{ width: `${Math.min(100, leadGoalPercent)}%` }} />
+                                <div className={`h-full rounded-full transition-all duration-700 progress-bar ${leadGoalPercent >= 100 ? 'bg-emerald-500' : leadGoalPercent >= 70 ? 'bg-amber-500' : 'bg-red-400'}`}
+                                    style={{ '--progress': `${Math.min(100, leadGoalPercent)}%` } as React.CSSProperties} />
                             </div>
                         </div>
                     </CardContent>
@@ -248,8 +248,8 @@ export default function ReportsClient() {
                                 </div>
                             </div>
                             <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden">
-                                <div className={`h-full rounded-full transition-all duration-700 ${convGoalPercent >= 100 ? 'bg-emerald-500' : convGoalPercent >= 70 ? 'bg-amber-500' : 'bg-red-400'}`}
-                                    style={{ width: `${Math.min(100, convGoalPercent)}%` }} />
+                                <div className={`h-full rounded-full transition-all duration-700 progress-bar ${convGoalPercent >= 100 ? 'bg-emerald-500' : convGoalPercent >= 70 ? 'bg-amber-500' : 'bg-red-400'}`}
+                                    style={{ '--progress': `${Math.min(100, convGoalPercent)}%` } as React.CSSProperties} />
                             </div>
                         </div>
                     </CardContent>
@@ -352,7 +352,7 @@ export default function ReportsClient() {
                             <PieChart>
                                 <Pie data={statusData} cx="50%" cy="45%" innerRadius={70} outerRadius={110} fill="#8884d8" paddingAngle={4} dataKey="value" stroke="none">
                                     {statusData.map((entry: any, index: number) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: `drop-shadow(0 0 6px ${COLORS[index % COLORS.length]}40)` }} />
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="chart-cell" style={{ '--cell-color': COLORS[index % COLORS.length] } as React.CSSProperties} />
                                     ))}
                                 </Pie>
                                 <Tooltip contentStyle={{ backgroundColor: 'rgba(23, 23, 23, 0.9)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }} />

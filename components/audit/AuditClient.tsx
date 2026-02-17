@@ -43,6 +43,7 @@ export function AuditClient() {
         const params: any = { page, limit };
         if (actionFilter !== "all") params.action = actionFilter;
         if (entityFilter !== "all") params.entityType = entityFilter;
+        if (searchQuery.trim()) params.search = searchQuery.trim();
 
         const result = await getAuditLogs(params);
         setLogs(result.logs);

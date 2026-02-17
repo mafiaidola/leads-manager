@@ -150,14 +150,19 @@ export async function getUsers() {
     if (!session || session.user.role !== USER_ROLES.ADMIN) {
         return [];
     }
-    await dbConnect();
-    const users = await User.find({}).sort({ createdAt: -1 }).lean();
-    return users.map(user => ({
-        ...user,
-        _id: user._id.toString(),
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString(),
-    }));
+    try {
+        await dbConnect();
+        const users = await User.find({}).sort({ createdAt: -1 }).lean();
+        return users.map(user => ({
+            ...user,
+            _id: user._id.toString(),
+            createdAt: user.createdAt.toISOString(),
+            updatedAt: user.updatedAt.toISOString(),
+        }));
+    } catch (error) {
+        console.error("getUsers error:", error);
+        return [];
+    }
 }
 
 export async function getSalesUsers() {
@@ -168,12 +173,17 @@ export async function getSalesUsers() {
         return [];
     }
 
-    await dbConnect();
-    const users = await User.find({ role: USER_ROLES.SALES, active: true }).sort({ name: 1 }).lean();
-    return users.map(user => ({
-        ...user,
-        _id: user._id.toString(),
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString(),
-    }));
+    try {
+        await dbConnect();
+        const users = await User.find({ role: USER_ROLES.SALES, active: true }).sort({ name: 1 }).lean();
+        return users.map(user => ({
+            ...user,
+            _id: user._id.toString(),
+            createdAt: user.createdAt.toISOString(),
+            updatedAt: user.updatedAt.toISOString(),
+        }));
+    } catch (error) {
+        console.error("getSalesUsers error:", error);
+        return [];
+    }
 }

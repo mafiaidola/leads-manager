@@ -142,19 +142,19 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                             <SheetTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                                 Lead Details
                             </SheetTitle>
-                            {data?.lead?.status && (
-                                <Badge
-                                    className="rounded-full px-3"
-                                    style={{
-                                        backgroundColor: settings?.statuses.find((s: any) => s.key === data.lead.status)?.color + '20',
-                                        color: settings?.statuses.find((s: any) => s.key === data.lead.status)?.color,
-                                        borderColor: settings?.statuses.find((s: any) => s.key === data.lead.status)?.color,
-                                        borderWidth: '1px'
-                                    }}
-                                >
-                                    {settings?.statuses.find((s: any) => s.key === data.lead.status)?.label || data.lead.status}
-                                </Badge>
-                            )}
+                            {data?.lead?.status && (() => {
+                                const statusInfo = settings?.statuses.find((s: any) => s.key === data.lead.status);
+                                return (
+                                    <Badge
+                                        className="rounded-full px-3 status-badge"
+                                        style={{
+                                            '--badge-color': statusInfo?.color,
+                                        } as React.CSSProperties}
+                                    >
+                                        {statusInfo?.label || data.lead.status}
+                                    </Badge>
+                                );
+                            })()}
                         </div>
                         <SheetDescription>
                             {isMarketing ? "View lead information (read-only)." : "Manage and track interaction with this lead."}
@@ -558,9 +558,9 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                             return (
                                                 <div key={item._id} className="relative pl-6 pb-4 border-l border-white/10 last:pb-0">
                                                     <div className={`absolute left-[-9px] top-1 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${isSystem ? "bg-card border-slate-400" :
-                                                            isStatusChange ? "bg-card border-amber-400" :
-                                                                isNote ? "bg-card border-blue-400" :
-                                                                    "bg-card border-white/20"
+                                                        isStatusChange ? "bg-card border-amber-400" :
+                                                            isNote ? "bg-card border-blue-400" :
+                                                                "bg-card border-white/20"
                                                         }`}>
                                                         {isSystem ? <History className="h-2.5 w-2.5 text-slate-400" /> :
                                                             isStatusChange ? <Zap className="h-2.5 w-2.5 text-amber-400" /> :
@@ -573,9 +573,9 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                                         <div className="flex justify-between items-center mb-1">
                                                             <div className="flex items-center gap-1.5">
                                                                 <Badge variant="outline" className={`text-[9px] h-4 px-1.5 ${isSystem ? "text-slate-400 border-slate-400/30" :
-                                                                        isStatusChange ? "text-amber-400 border-amber-400/30" :
-                                                                            isNote ? "text-blue-400 border-blue-400/30" :
-                                                                                `${actionCfg?.color || "text-muted-foreground"} border-current/30`
+                                                                    isStatusChange ? "text-amber-400 border-amber-400/30" :
+                                                                        isNote ? "text-blue-400 border-blue-400/30" :
+                                                                            `${actionCfg?.color || "text-muted-foreground"} border-current/30`
                                                                     }`}>
                                                                     {isSystem ? "System" :
                                                                         isStatusChange ? "Status Change" :

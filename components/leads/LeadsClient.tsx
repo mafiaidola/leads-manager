@@ -240,7 +240,7 @@ export function LeadsClient({
                         <DropdownMenuContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
                             {settings?.statuses.map((s: any) => (
                                 <DropdownMenuItem key={s.key} onClick={() => handleBulkStatus(s.key)} className="cursor-pointer">
-                                    <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: s.color }} />
+                                    <span className="w-2 h-2 rounded-full mr-2 status-dot" style={{ '--status-color': s.color } as React.CSSProperties} aria-hidden="true" />
                                     {s.label}
                                 </DropdownMenuItem>
                             ))}
@@ -351,6 +351,7 @@ export function LeadsClient({
                             <TableRow className="hover:bg-transparent border-white/5">
                                 <TableHead className="w-[40px]">
                                     <input type="checkbox" checked={selectedIds.size === leads.length && leads.length > 0} onChange={toggleSelectAll}
+                                        aria-label="Select all leads"
                                         className="h-4 w-4 rounded accent-primary cursor-pointer" />
                                 </TableHead>
                                 <TableHead className="w-[30px]"></TableHead>
@@ -379,10 +380,11 @@ export function LeadsClient({
                                         >
                                             <TableCell onClick={(e) => e.stopPropagation()}>
                                                 <input type="checkbox" checked={selectedIds.has(lead._id)} onChange={() => toggleSelect(lead._id)}
+                                                    aria-label={`Select lead ${lead.name}`}
                                                     className="h-4 w-4 rounded accent-primary cursor-pointer" />
                                             </TableCell>
                                             <TableCell onClick={(e) => e.stopPropagation()}>
-                                                <button onClick={() => handleStar(lead._id)} className="hover:scale-125 transition-transform">
+                                                <button onClick={() => handleStar(lead._id)} title="Toggle star" aria-label={`Toggle star for ${lead.name}`} className="hover:scale-125 transition-transform">
                                                     <Star className={cn("h-4 w-4", isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30 hover:text-amber-400/50")} />
                                                 </button>
                                             </TableCell>

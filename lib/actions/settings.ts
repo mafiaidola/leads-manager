@@ -7,13 +7,18 @@ import { USER_ROLES } from "@/models/User";
 import { revalidatePath } from "next/cache";
 
 export async function getSettings() {
-    await dbConnect();
-    const settings = await Settings.findOne().lean();
-    if (!settings) return null;
-    return {
-        ...settings,
-        _id: settings._id.toString(),
-    };
+    try {
+        await dbConnect();
+        const settings = await Settings.findOne().lean();
+        if (!settings) return null;
+        return {
+            ...settings,
+            _id: settings._id.toString(),
+        };
+    } catch (error) {
+        console.error("getSettings error:", error);
+        return null;
+    }
 }
 
 export async function updateSettings(data: Partial<ISettings>) {
@@ -36,7 +41,7 @@ export async function updateSettings(data: Partial<ISettings>) {
         }
         await settings.save();
         revalidatePath("/");
-        return { message: "Settings updated" };
+        return { message: "Settings updated", success: true };
     } catch (error) {
         console.error("Failed to update settings:", error);
         return { message: "Failed to update settings" };

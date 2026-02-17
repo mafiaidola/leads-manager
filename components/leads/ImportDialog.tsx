@@ -151,6 +151,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                             type="file"
                             accept=".csv"
                             className="hidden"
+                            aria-label="Choose CSV file to import"
                             onChange={handleFileUpload}
                         />
                         {loading && <Loader2 className="h-5 w-5 animate-spin mt-4 text-primary" />}

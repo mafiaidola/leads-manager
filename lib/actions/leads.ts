@@ -104,38 +104,43 @@ export async function getLeadsByStatus() {
     const session = await auth();
     if (!session) return {};
 
-    await dbConnect();
+    try {
+        await dbConnect();
 
-    const query: any = { deletedAt: null };
-    if (session.user.role === USER_ROLES.SALES) {
-        query.assignedTo = session.user.id;
+        const query: any = { deletedAt: null };
+        if (session.user.role === USER_ROLES.SALES) {
+            query.assignedTo = session.user.id;
+        }
+
+        const leads = await Lead.find(query)
+            .sort({ createdAt: -1 })
+            .populate("assignedTo", "name")
+            .lean();
+
+        const grouped: Record<string, any[]> = {};
+        for (const lead of leads) {
+            const status = lead.status || "interesting";
+            if (!grouped[status]) grouped[status] = [];
+            grouped[status].push({
+                _id: lead._id.toString(),
+                name: lead.name,
+                company: lead.company,
+                email: lead.email,
+                phone: lead.phone,
+                value: lead.value,
+                source: lead.source,
+                starred: (lead.starred || []).map((s: any) => s.toString()),
+                assignedTo: lead.assignedTo
+                    ? { _id: (lead.assignedTo as any)._id?.toString(), name: (lead.assignedTo as any).name }
+                    : null,
+                createdAt: lead.createdAt ? (lead.createdAt as Date).toISOString() : new Date().toISOString(),
+            });
+        }
+        return grouped;
+    } catch (error) {
+        console.error("getLeadsByStatus error:", error);
+        return {};
     }
-
-    const leads = await Lead.find(query)
-        .sort({ createdAt: -1 })
-        .populate("assignedTo", "name")
-        .lean();
-
-    const grouped: Record<string, any[]> = {};
-    for (const lead of leads) {
-        const status = lead.status || "interesting";
-        if (!grouped[status]) grouped[status] = [];
-        grouped[status].push({
-            _id: lead._id.toString(),
-            name: lead.name,
-            company: lead.company,
-            email: lead.email,
-            phone: lead.phone,
-            value: lead.value,
-            source: lead.source,
-            starred: (lead.starred || []).map((s: any) => s.toString()),
-            assignedTo: lead.assignedTo
-                ? { _id: (lead.assignedTo as any)._id?.toString(), name: (lead.assignedTo as any).name }
-                : null,
-            createdAt: (lead.createdAt as Date).toISOString(),
-        });
-    }
-    return grouped;
 }
 
 // ─── Activity Timeline (merged notes + actions) ─────────────────────────────
@@ -394,91 +399,101 @@ export async function getLeads(searchParams: any) {
     const session = await auth();
     if (!session) return { leads: [], total: 0 };
 
-    await dbConnect();
+    try {
+        await dbConnect();
 
-    // Build query
-    const query: any = {};
+        // Build query
+        const query: any = {};
 
-    // Exclude soft-deleted leads by default
-    if (searchParams.trash === "true") {
-        query.deletedAt = { $ne: null };
-    } else {
-        query.deletedAt = null;
+        // Exclude soft-deleted leads by default
+        if (searchParams.trash === "true") {
+            query.deletedAt = { $ne: null };
+        } else {
+            query.deletedAt = null;
+        }
+
+        // RBAC: Sales sees only assigned. Marketing sees all. Admin sees all.
+        if (session.user.role === USER_ROLES.SALES) {
+            query.assignedTo = session.user.id;
+        } else if (searchParams.assignedTo) {
+            query.assignedTo = searchParams.assignedTo;
+        }
+
+        if (searchParams.status) query.status = searchParams.status;
+        if (searchParams.source) query.source = searchParams.source;
+
+        if (searchParams.search) {
+            query.$text = { $search: searchParams.search };
+        }
+
+        if (searchParams.tag) {
+            query.tags = searchParams.tag;
+        }
+
+        // Starred filter
+        if (searchParams.starred === "true") {
+            query.starred = new mongoose.Types.ObjectId(session.user.id);
+        }
+
+        const page = Number(searchParams.page) || 1;
+        const limit = 50;
+        const skip = (page - 1) * limit;
+
+        const leads = await Lead.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate("assignedTo", "name")
+            .lean();
+
+        const total = await Lead.countDocuments(query);
+
+        // Serialization
+        return {
+            leads: leads.map(l => ({
+                ...l,
+                _id: l._id.toString(),
+                starred: (l.starred || []).map((s: any) => s.toString()),
+                assignedTo: l.assignedTo ? {
+                    ...l.assignedTo,
+                    _id: (l.assignedTo as any)._id?.toString()
+                } : null,
+                customFields: l.customFields || {},
+                deletedAt: l.deletedAt ? (l.deletedAt as Date).toISOString() : null,
+                createdAt: (l.createdAt as Date).toISOString(),
+                updatedAt: (l.updatedAt as Date).toISOString(),
+            })),
+            total
+        };
+    } catch (error) {
+        console.error("getLeads error:", error);
+        return { leads: [], total: 0 };
     }
-
-    // RBAC: Sales sees only assigned. Marketing sees all. Admin sees all.
-    if (session.user.role === USER_ROLES.SALES) {
-        query.assignedTo = session.user.id;
-    } else if (searchParams.assignedTo) {
-        query.assignedTo = searchParams.assignedTo;
-    }
-
-    if (searchParams.status) query.status = searchParams.status;
-    if (searchParams.source) query.source = searchParams.source;
-
-    if (searchParams.search) {
-        query.$text = { $search: searchParams.search };
-    }
-
-    if (searchParams.tag) {
-        query.tags = searchParams.tag;
-    }
-
-    // Starred filter
-    if (searchParams.starred === "true") {
-        query.starred = new mongoose.Types.ObjectId(session.user.id);
-    }
-
-    const page = Number(searchParams.page) || 1;
-    const limit = 50;
-    const skip = (page - 1) * limit;
-
-    const leads = await Lead.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate("assignedTo", "name")
-        .lean();
-
-    const total = await Lead.countDocuments(query);
-
-    // Serialization
-    return {
-        leads: leads.map(l => ({
-            ...l,
-            _id: l._id.toString(),
-            starred: (l.starred || []).map((s: any) => s.toString()),
-            assignedTo: l.assignedTo ? {
-                ...l.assignedTo,
-                _id: (l.assignedTo as any)._id?.toString()
-            } : null,
-            customFields: l.customFields || {},
-            deletedAt: l.deletedAt ? (l.deletedAt as Date).toISOString() : null,
-            createdAt: (l.createdAt as Date).toISOString(),
-            updatedAt: (l.updatedAt as Date).toISOString(),
-        })),
-        total
-    };
 }
 
 export async function getLeadsStats() {
     const session = await auth();
     if (!session) return [];
 
-    await dbConnect();
+    try {
+        await dbConnect();
 
-    const query: any = { deletedAt: null };
-    // Sales sees only own stats. Marketing + Admin see all.
-    if (session.user.role === USER_ROLES.SALES) {
-        query.assignedTo = session.user.id;
+        const query: any = { deletedAt: null };
+        // Sales sees only own stats. Marketing + Admin see all.
+        if (session.user.role === USER_ROLES.SALES) {
+            query.assignedTo = session.user.id;
+        }
+
+        const stats = await Lead.aggregate([
+            { $match: query },
+            { $group: { _id: "$status", count: { $sum: 1 } } }
+        ]);
+
+        return stats.map(s => ({ status: s._id, count: s.count }));
+    } catch (error) {
+        console.error("getLeadsStats error:", error);
+        return [];
     }
-
-    const stats = await Lead.aggregate([
-        { $match: query },
-        { $group: { _id: "$status", count: { $sum: 1 } } }
-    ]);
-
-    return stats.map(s => ({ status: s._id, count: s.count }));
 }
 
 export async function getLeadDetails(id: string) {
@@ -549,25 +564,30 @@ export async function addNote(leadId: string, message: string) {
         return { message: "Unauthorized: Marketing users cannot add notes" };
     }
 
-    // Check access
-    await dbConnect();
-    const lead = await Lead.findById(leadId);
-    if (!lead) return { message: "Lead not found" };
+    try {
+        // Check access
+        await dbConnect();
+        const lead = await Lead.findById(leadId);
+        if (!lead) return { message: "Lead not found" };
 
-    if (session.user.role !== USER_ROLES.ADMIN && lead.assignedTo?.toString() !== session.user.id) {
-        return { message: "Unauthorized" };
+        if (session.user.role !== USER_ROLES.ADMIN && lead.assignedTo?.toString() !== session.user.id) {
+            return { message: "Unauthorized" };
+        }
+
+        await LeadNote.create({
+            leadId: new mongoose.Types.ObjectId(leadId),
+            authorId: new mongoose.Types.ObjectId(session.user.id),
+            authorRole: session.user.role,
+            type: NOTE_TYPES.COMMENT,
+            message,
+        });
+
+        revalidatePath(`/leads/${leadId}`);
+        return { message: "Note added", success: true };
+    } catch (error) {
+        console.error("addNote error:", error);
+        return { message: "Failed to add note" };
     }
-
-    await LeadNote.create({
-        leadId: new mongoose.Types.ObjectId(leadId),
-        authorId: new mongoose.Types.ObjectId(session.user.id),
-        authorRole: session.user.role,
-        type: NOTE_TYPES.COMMENT,
-        message,
-    });
-
-    revalidatePath(`/leads/${leadId}`);
-    return { message: "Note added" };
 }
 
 // ─── Lead Actions (Timeline) ────────────────────────────────────────────────
@@ -584,40 +604,45 @@ export async function addLeadAction(
         return { message: "Unauthorized: Marketing users cannot add actions" };
     }
 
-    await dbConnect();
-    const lead = await Lead.findById(leadId);
-    if (!lead) return { message: "Lead not found" };
+    try {
+        await dbConnect();
+        const lead = await Lead.findById(leadId);
+        if (!lead) return { message: "Lead not found" };
 
-    // Only Admin or assigned Sales
-    if (session.user.role !== USER_ROLES.ADMIN && lead.assignedTo?.toString() !== session.user.id) {
-        return { message: "Unauthorized" };
+        // Only Admin or assigned Sales
+        if (session.user.role !== USER_ROLES.ADMIN && lead.assignedTo?.toString() !== session.user.id) {
+            return { message: "Unauthorized" };
+        }
+
+        await LeadAction.create({
+            leadId: new mongoose.Types.ObjectId(leadId),
+            authorId: new mongoose.Types.ObjectId(session.user.id),
+            type: data.type,
+            description: data.description,
+            outcome: data.outcome || undefined,
+        });
+
+        // Also log as a system note for audit trail
+        await LeadNote.create({
+            leadId: new mongoose.Types.ObjectId(leadId),
+            authorId: new mongoose.Types.ObjectId(session.user.id),
+            authorRole: session.user.role,
+            type: NOTE_TYPES.SYSTEM,
+            message: `Action: ${data.type} - ${data.description}`,
+        });
+
+        // Update last contact time
+        lead.lastContactAt = new Date();
+        lead.contactedToday = true;
+        lead.updatedBy = new mongoose.Types.ObjectId(session.user.id);
+        await lead.save();
+
+        revalidatePath(`/leads/${leadId}`);
+        return { message: "Action added successfully", success: true };
+    } catch (error) {
+        console.error("addLeadAction error:", error);
+        return { message: "Failed to add action" };
     }
-
-    await LeadAction.create({
-        leadId: new mongoose.Types.ObjectId(leadId),
-        authorId: new mongoose.Types.ObjectId(session.user.id),
-        type: data.type,
-        description: data.description,
-        outcome: data.outcome || undefined,
-    });
-
-    // Also log as a system note for audit trail
-    await LeadNote.create({
-        leadId: new mongoose.Types.ObjectId(leadId),
-        authorId: new mongoose.Types.ObjectId(session.user.id),
-        authorRole: session.user.role,
-        type: NOTE_TYPES.SYSTEM,
-        message: `Action: ${data.type} - ${data.description}`,
-    });
-
-    // Update last contact time
-    lead.lastContactAt = new Date();
-    lead.contactedToday = true;
-    lead.updatedBy = new mongoose.Types.ObjectId(session.user.id);
-    await lead.save();
-
-    revalidatePath(`/leads/${leadId}`);
-    return { message: "Action added successfully", success: true };
 }
 
 
@@ -649,6 +674,11 @@ export async function bulkUpdateStatus(ids: string[], status: string) {
     const session = await auth();
     if (!session) return { message: "Unauthorized" };
 
+    // Marketing cannot change lead statuses
+    if (session.user.role === USER_ROLES.MARKETING) {
+        return { message: "Unauthorized: Marketing users cannot change lead status" };
+    }
+
     try {
         await dbConnect();
         await Lead.updateMany(
@@ -671,13 +701,25 @@ export async function bulkAssign(ids: string[], assignToId: string) {
         return { message: "Unauthorized" };
     }
 
+    if (!assignToId || !mongoose.Types.ObjectId.isValid(assignToId)) {
+        return { message: "Invalid user ID" };
+    }
+
     try {
         await dbConnect();
+
+        // Verify target user exists and is active
+        const User = (await import("@/models/User")).default;
+        const targetUser = await User.findById(assignToId).select("active name").lean();
+        if (!targetUser || !targetUser.active) {
+            return { message: "Target user not found or is deactivated" };
+        }
+
         await Lead.updateMany(
             { _id: { $in: ids } },
             { assignedTo: new mongoose.Types.ObjectId(assignToId), updatedBy: new mongoose.Types.ObjectId(session.user.id) }
         );
-        logAudit(AUDIT_ACTIONS.BULK_UPDATE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk assigned ${ids.length} leads to user ${assignToId}`);
+        logAudit(AUDIT_ACTIONS.BULK_UPDATE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk assigned ${ids.length} leads to ${targetUser.name}`);
 
         revalidatePath("/leads");
         return { message: `${ids.length} leads assigned`, success: true };

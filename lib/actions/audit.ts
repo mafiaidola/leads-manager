@@ -41,42 +41,55 @@ export async function getAuditLogs(params: {
     limit?: number;
     entityType?: string;
     action?: string;
+    search?: string;
 }) {
     const session = await auth();
     if (!session || session.user.role !== USER_ROLES.ADMIN) {
         return { logs: [], total: 0 };
     }
 
-    await dbConnect();
+    try {
+        await dbConnect();
 
-    const page = params.page || 1;
-    const limit = params.limit || 25;
-    const skip = (page - 1) * limit;
+        const page = params.page || 1;
+        const limit = params.limit || 25;
+        const skip = (page - 1) * limit;
 
-    const filter: any = {};
-    if (params.entityType) filter.entityType = params.entityType;
-    if (params.action) filter.action = params.action;
+        const filter: any = {};
+        if (params.entityType) filter.entityType = params.entityType;
+        if (params.action) filter.action = params.action;
+        if (params.search) {
+            const searchRegex = { $regex: params.search, $options: "i" };
+            filter.$or = [
+                { userName: searchRegex },
+                { details: searchRegex },
+            ];
+        }
 
-    const [logs, total] = await Promise.all([
-        AuditLog.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean(),
-        AuditLog.countDocuments(filter),
-    ]);
+        const [logs, total] = await Promise.all([
+            AuditLog.find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            AuditLog.countDocuments(filter),
+        ]);
 
-    return {
-        logs: logs.map((log) => ({
-            _id: log._id.toString(),
-            action: log.action,
-            entityType: log.entityType,
-            entityId: log.entityId || null,
-            userId: log.userId.toString(),
-            userName: log.userName,
-            details: log.details,
-            createdAt: log.createdAt.toISOString(),
-        })),
-        total,
-    };
+        return {
+            logs: logs.map((log) => ({
+                _id: log._id.toString(),
+                action: log.action,
+                entityType: log.entityType,
+                entityId: log.entityId || null,
+                userId: log.userId.toString(),
+                userName: log.userName,
+                details: log.details,
+                createdAt: log.createdAt.toISOString(),
+            })),
+            total,
+        };
+    } catch (error) {
+        console.error("getAuditLogs error:", error);
+        return { logs: [], total: 0 };
+    }
 }

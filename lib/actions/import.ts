@@ -24,12 +24,17 @@ export async function previewCSVImport(formData: FormData) {
     const file = formData.get("file") as File;
     if (!file) return { error: "No file uploaded" };
 
-    const text = await file.text();
-    const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-    const headers = parsed.meta.fields || [];
-    const preview = (parsed.data as any[]).slice(0, 5);
+    try {
+        const text = await file.text();
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        const headers = parsed.meta.fields || [];
+        const preview = (parsed.data as any[]).slice(0, 5);
 
-    return { headers, preview, totalRows: (parsed.data as any[]).length };
+        return { headers, preview, totalRows: (parsed.data as any[]).length };
+    } catch (error) {
+        console.error("CSV preview error:", error);
+        return { error: "Failed to parse CSV file" };
+    }
 }
 
 /**

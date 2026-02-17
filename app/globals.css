@@ -50,42 +50,42 @@
 :root {
   --radius: 1rem;
   /* Very light violet tint for background to feel fresh */
-  --background: oklch(0.985 0.005 280); 
+  --background: oklch(0.985 0.005 280);
   --foreground: oklch(0.145 0 0);
-  
+
   /* Translucent Glass-like Card */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
-  
+
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  
+
   /* Vibrant Violet Primary */
-  --primary: oklch(0.55 0.25 280); 
+  --primary: oklch(0.55 0.25 280);
   --primary-foreground: oklch(0.985 0 0);
-  
+
   /* Soft Lavender Secondary */
   --secondary: oklch(0.965 0.02 280);
   --secondary-foreground: oklch(0.55 0.25 280);
-  
+
   --muted: oklch(0.97 0.01 280);
   --muted-foreground: oklch(0.556 0 0);
-  
+
   /* Electric Indigo Accent */
   --accent: oklch(0.96 0.02 280);
   --accent-foreground: oklch(0.55 0.25 280);
-  
+
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.92 0.02 280);
   --input: oklch(0.92 0.02 280);
   --ring: oklch(0.55 0.25 280);
-  
+
   --chart-1: oklch(0.55 0.25 280);
   --chart-2: oklch(0.6 0.2 300);
   --chart-3: oklch(0.7 0.15 320);
   --chart-4: oklch(0.8 0.1 340);
   --chart-5: oklch(0.9 0.05 360);
-  
+
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.55 0.25 280);
@@ -100,37 +100,37 @@
   /* Deep Space Violet Background */
   --background: oklch(0.12 0.04 280);
   --foreground: oklch(0.985 0 0);
-  
+
   --card: oklch(0.15 0.03 280);
   --card-foreground: oklch(0.985 0 0);
-  
+
   --popover: oklch(0.15 0.03 280);
   --popover-foreground: oklch(0.985 0 0);
-  
+
   /* Neon Violet Primary */
   --primary: oklch(0.65 0.25 280);
   --primary-foreground: oklch(0.12 0.04 280);
-  
+
   --secondary: oklch(0.2 0.05 280);
   --secondary-foreground: oklch(0.985 0 0);
-  
+
   --muted: oklch(0.2 0.03 280);
   --muted-foreground: oklch(0.708 0 0);
-  
+
   --accent: oklch(0.2 0.05 280);
   --accent-foreground: oklch(0.985 0 0);
-  
+
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(0.25 0.05 280);
   --input: oklch(0.25 0.05 280);
   --ring: oklch(0.65 0.25 280);
-  
+
   --chart-1: oklch(0.65 0.25 280);
   --chart-2: oklch(0.7 0.2 300);
   --chart-3: oklch(0.75 0.15 320);
   --chart-4: oklch(0.8 0.1 340);
   --chart-5: oklch(0.85 0.05 360);
-  
+
   /* Sidebar matches card/background blend */
   --sidebar: oklch(0.13 0.035 280);
   --sidebar-foreground: oklch(0.985 0 0);
@@ -146,10 +146,66 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     /* Clean gradient background */
     background-image: linear-gradient(to bottom right, var(--background), var(--secondary));
     min-height: 100vh;
   }
+}
+
+/* ─── Dynamic CSS Custom Property Utilities ──────────────────────────────────
+   These classes consume CSS custom properties injected via React's style prop.
+   This pattern keeps dynamic runtime values (user-configured colors, computed
+   percentages) while keeping actual styles in CSS.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Status color dot — receives --status-color from React */
+.status-dot {
+  background-color: var(--status-color);
+}
+
+/* Branding accent preview — receives --accent-color from React */
+.branding-preview {
+  background-color: var(--accent-color);
+}
+
+/* Progress bar width — receives --progress from React */
+.progress-bar {
+  width: var(--progress);
+}
+
+/* Login page noise texture overlay */
+.noise-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Status badge — receives --badge-color from React */
+.status-badge {
+  background-color: var(--badge-color);
+  opacity: 1;
+  color: var(--badge-color);
+  border-color: var(--badge-color);
+  border-width: 1px;
+  position: relative;
+}
+
+.status-badge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--badge-color);
+  opacity: 0.12;
+  border-radius: inherit;
+}
+
+.status-badge {
+  background-color: transparent;
+}
+
+/* Chart cell glow — receives --cell-color from React */
+.chart-cell {
+  filter: drop-shadow(0 0 6px var(--cell-color));
+  opacity: 0.9;
 }

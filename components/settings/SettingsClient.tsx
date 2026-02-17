@@ -519,7 +519,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                                     </Select>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <input type="checkbox" id="userActive" checked={editingUser.active !== false} onChange={(e) => setEditingUser({ ...editingUser, active: e.target.checked })} />
+                                    <input type="checkbox" id="userActive" checked={editingUser.active !== false} onChange={(e) => setEditingUser({ ...editingUser, active: e.target.checked })} aria-label="User active status" />
                                     <Label htmlFor="userActive">Active</Label>
                                 </div>
                             </div>
@@ -561,7 +561,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                             <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
                                 <p className="text-xs text-muted-foreground mb-2">Preview</p>
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold" style={{ backgroundColor: branding.accentColor }}>
+                                    <div className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold branding-preview" style={{ '--accent-color': branding.accentColor } as React.CSSProperties} aria-hidden="true">
                                         {branding.appName.charAt(0)}
                                     </div>
                                     <span className="font-bold">{branding.appName}</span>

@@ -124,8 +124,6 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
         } else if (result && (result as any).duplicate) {
             toast({ title: "Duplicate Detected", description: result.message, variant: "destructive" });
             return;
-        } else if (result && result.message) {
-            toast({ title: "Note", description: result.message });
         }
 
         setOpen(false);

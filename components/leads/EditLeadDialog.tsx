@@ -119,8 +119,6 @@ export function EditLeadDialog({
         if (result && result.message === "Invalid fields") {
             toast({ title: "Error", description: "Please check your input", variant: "destructive" });
             return;
-        } else if (result && result.message) {
-            toast({ title: "Note", description: result.message });
         }
 
         setOpen(false);
