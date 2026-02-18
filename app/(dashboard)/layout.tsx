@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { LogOut, UserCircle2, Bell } from "lucide-react";
 import { handleSignOut } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
+import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
 
 export default async function DashboardLayout({
     children,
@@ -27,9 +28,9 @@ export default async function DashboardLayout({
                     <div className="flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-xl shadow-black/5">
                         <div className="flex items-center gap-4">
                             <MobileSidebar userRole={session.user?.role} />
-                            <h2 className="hidden md:block text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                                CRM Overview
-                            </h2>
+                            <div className="hidden md:block">
+                                <HeaderBreadcrumb />
+                            </div>
                         </div>
 
                         <div className="flex items-center gap-4">

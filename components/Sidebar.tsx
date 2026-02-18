@@ -66,7 +66,7 @@ export function Sidebar({ className, userRole }: { className?: string; userRole?
 
                 <div className="space-y-2 flex-1">
                     {routes.map((route) => {
-                        const isActive = pathname === route.href;
+                        const isActive = route.href === "/" ? pathname === "/" : pathname.startsWith(route.href);
                         return (
                             <Link
                                 key={route.href}
