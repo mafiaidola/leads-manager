@@ -7,6 +7,7 @@ import { Star, User, GripVertical, Building, Mail, Phone } from "lucide-react";
 import { updateLeadStatus } from "@/lib/actions/leads";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface KanbanBoardProps {
@@ -133,7 +134,7 @@ export function KanbanBoard({ leads, statuses, currentUserId, onLeadClick }: Kan
                                         <div className="flex items-start justify-between gap-2 mb-2">
                                             <div className="flex items-center gap-1.5 min-w-0">
                                                 <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                <span className="font-medium text-sm truncate">{lead.name}</span>
+                                                <Link href={`/leads/${lead._id}`} onClick={(e) => e.stopPropagation()} className="font-medium text-sm truncate hover:text-primary transition-colors">{lead.name}</Link>
                                             </div>
                                             {isStarred && (
                                                 <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />
