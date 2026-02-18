@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -389,8 +390,10 @@ export function LeadsClient({
                                                 </button>
                                             </TableCell>
                                             <TableCell className="font-medium">
-                                                <div className="text-base text-foreground">{lead.name}</div>
-                                                <div className="text-xs text-muted-foreground">{lead.company}</div>
+                                                <Link href={`/leads/${lead._id}`} className="group/name">
+                                                    <div className="text-base text-foreground group-hover/name:text-primary transition-colors">{lead.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{lead.company}</div>
+                                                </Link>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col gap-1">

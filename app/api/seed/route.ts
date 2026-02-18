@@ -17,18 +17,19 @@ export async function GET(request: NextRequest) {
         await dbConnect();
 
         const adminEmail = "admin@example.com";
-        const existingAdmin = await User.findOne({ email: adminEmail });
+        const existingAdmin = await User.findOne({ $or: [{ email: adminEmail }, { username: "admin" }] });
 
         if (!existingAdmin) {
             const hashedPassword = await bcryptjs.hash("admin123", 10);
             await User.create({
                 name: "Admin User",
+                username: "admin",
                 email: adminEmail,
                 passwordHash: hashedPassword,
                 role: "ADMIN",
                 active: true
             });
-            return NextResponse.json({ message: "Admin seeded successfully" });
+            return NextResponse.json({ message: "Admin seeded successfully. Login with username: admin, password: admin123" });
         }
 
         return NextResponse.json({ message: "Admin already exists" });

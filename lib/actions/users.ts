@@ -9,7 +9,7 @@ import { z } from "zod";
 
 const CreateUserSchema = z.object({
     name: z.string().min(2),
-    email: z.string().email(),
+    username: z.string().min(3).regex(/^[a-zA-Z0-9_.-]+$/, "Username can only contain letters, numbers, dots, hyphens, and underscores"),
     password: z.string().min(6),
     role: z.string().min(1),
 });
@@ -24,28 +24,29 @@ export async function createUser(prevState: any, formData: FormData) {
 
     const validatedFields = CreateUserSchema.safeParse({
         name: formData.get("name"),
-        email: formData.get("email"),
+        username: formData.get("username"),
         password: formData.get("password"),
         role: role,
     });
 
     if (!validatedFields.success) {
-        return { message: "Invalid fields" };
+        const firstError = validatedFields.error.issues[0]?.message || "Invalid fields";
+        return { message: firstError };
     }
 
-    const { name, email, password, role: validatedRole } = validatedFields.data;
+    const { name, username, password, role: validatedRole } = validatedFields.data;
 
     try {
         await dbConnect();
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({ username: username.toLowerCase() });
         if (existingUser) {
-            return { message: "User already exists" };
+            return { message: "Username already taken" };
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
         await User.create({
             name,
-            email,
+            username: username.toLowerCase(),
             passwordHash,
             role: validatedRole,
             active: true,
@@ -62,7 +63,7 @@ export async function createUser(prevState: any, formData: FormData) {
 // Keep backward-compatible alias
 export const createSalesUser = createUser;
 
-export async function updateUser(userId: string, data: { name?: string; email?: string; role?: string; active?: boolean }) {
+export async function updateUser(userId: string, data: { name?: string; username?: string; email?: string; role?: string; active?: boolean }) {
     const session = await auth();
     if (!session || session.user.role !== USER_ROLES.ADMIN) {
         return { message: "Unauthorized" };
@@ -74,11 +75,12 @@ export async function updateUser(userId: string, data: { name?: string; email?: 
         if (!user) return { message: "User not found" };
 
         if (data.name) user.name = data.name;
-        if (data.email) {
-            const existing = await User.findOne({ email: data.email, _id: { $ne: userId } });
-            if (existing) return { message: "Email already in use" };
-            user.email = data.email;
+        if (data.username) {
+            const existing = await User.findOne({ username: data.username.toLowerCase(), _id: { $ne: userId } });
+            if (existing) return { message: "Username already taken" };
+            user.username = data.username.toLowerCase();
         }
+        if (data.email !== undefined) user.email = data.email;
         if (data.role) user.role = data.role as any;
         if (typeof data.active === "boolean") user.active = data.active;
 
@@ -156,6 +158,7 @@ export async function getUsers() {
         return users.map(user => ({
             ...user,
             _id: user._id.toString(),
+            username: user.username || "",
             createdAt: user.createdAt.toISOString(),
             updatedAt: user.updatedAt.toISOString(),
         }));
@@ -179,6 +182,7 @@ export async function getSalesUsers() {
         return users.map(user => ({
             ...user,
             _id: user._id.toString(),
+            username: user.username || "",
             createdAt: user.createdAt.toISOString(),
             updatedAt: user.updatedAt.toISOString(),
         }));
@@ -187,3 +191,4 @@ export async function getSalesUsers() {
         return [];
     }
 }
+

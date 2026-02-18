@@ -10,7 +10,7 @@ export async function authenticate(
 ) {
     try {
         await signIn("credentials", {
-            email: formData.get("email") as string,
+            username: formData.get("username") as string,
             password: formData.get("password") as string,
             redirect: false,
         });

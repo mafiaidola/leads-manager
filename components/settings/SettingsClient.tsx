@@ -97,19 +97,19 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
     }
 
     // User creation state
-    const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "SALES" });
+    const [newUser, setNewUser] = useState({ name: "", username: "", password: "", role: "SALES" });
 
     const handleCreateUser = async () => {
         const formData = new FormData();
         formData.append("name", newUser.name);
-        formData.append("email", newUser.email);
+        formData.append("username", newUser.username);
         formData.append("password", newUser.password);
         formData.append("role", newUser.role);
 
         const result = await createUser(null, formData);
         if (result?.success) {
             toast({ title: "User created", description: `${newUser.role} user created successfully.` });
-            setNewUser({ name: "", email: "", password: "", role: "SALES" });
+            setNewUser({ name: "", username: "", password: "", role: "SALES" });
         } else {
             toast({ title: result?.message || "Error", variant: "destructive" });
         }
@@ -119,7 +119,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
         if (!editingUser) return;
         const result = await updateUser(editingUser._id, {
             name: editingUser.name,
-            email: editingUser.email,
+            username: editingUser.username,
             role: editingUser.role,
             active: editingUser.active,
         });
@@ -434,8 +434,8 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                                     <Input value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} className="rounded-xl border-white/10 bg-black/20" placeholder="Jane Doe" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-xs ml-1">Work Email</Label>
-                                    <Input value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} type="email" className="rounded-xl border-white/10 bg-black/20" placeholder="jane@company.com" />
+                                    <Label className="text-xs ml-1">Username</Label>
+                                    <Input value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, '') })} className="rounded-xl border-white/10 bg-black/20" placeholder="jane.doe" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-xs ml-1">Initial Password</Label>
@@ -454,7 +454,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <Button onClick={handleCreateUser} disabled={!newUser.name || !newUser.email || !newUser.password}
+                                <Button onClick={handleCreateUser} disabled={!newUser.name || !newUser.username || !newUser.password}
                                     className="w-full rounded-xl bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-500/20 transition-all font-bold">
                                     Register Team Member
                                 </Button>
@@ -482,7 +482,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                                                     {user.name}
                                                     {user.active === false && <Badge variant="outline" className="text-[8px] px-1 py-0 text-red-400 border-red-400/30">Inactive</Badge>}
                                                 </div>
-                                                <div className="text-xs text-muted-foreground">{user.email}</div>
+                                                <div className="text-xs text-muted-foreground">@{user.username || user.email}</div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1.5">
@@ -522,8 +522,8 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                                     <Input value={editingUser.name} onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Email</Label>
-                                    <Input value={editingUser.email} onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
+                                    <Label>Username</Label>
+                                    <Input value={editingUser.username || ""} onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, '') })} className="rounded-xl border-white/10 bg-black/20" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Role</Label>

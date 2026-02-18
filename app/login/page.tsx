@@ -2,7 +2,7 @@
 
 import { useTransition, useState, useEffect } from "react";
 import { authenticate } from "@/lib/actions/auth";
-import { LayoutDashboard, Mail, Lock, ArrowRight, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { LayoutDashboard, User, Lock, ArrowRight, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
@@ -80,17 +80,19 @@ export default function LoginPage() {
 
                         <form action={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-300 ml-1">Email Address</label>
+                                <label className="text-sm font-medium text-gray-300 ml-1">Username</label>
                                 <div className="relative group/input">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Mail className="h-5 w-5 text-gray-500 group-focus-within/input:text-primary transition-colors duration-300" />
+                                        <User className="h-5 w-5 text-gray-500 group-focus-within/input:text-primary transition-colors duration-300" />
                                     </div>
                                     <input
-                                        type="email"
-                                        name="email"
+                                        type="text"
+                                        name="username"
                                         required
+                                        minLength={3}
                                         className="block w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 transition-all duration-300 hover:bg-white/[0.07]"
-                                        placeholder="admin@example.com"
+                                        placeholder="admin"
+                                        autoComplete="username"
                                     />
                                 </div>
                             </div>

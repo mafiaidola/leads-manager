@@ -11,7 +11,8 @@ export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 export interface IUser {
     _id: mongoose.Types.ObjectId;
     name: string;
-    email: string;
+    username: string;
+    email?: string;
     passwordHash: string;
     role: UserRole;
     active: boolean;
@@ -22,7 +23,8 @@ export interface IUser {
 const UserSchema = new Schema<IUser>(
     {
         name: { type: String, required: true },
-        email: { type: String, required: true, unique: true },
+        username: { type: String, required: true, unique: true, lowercase: true, trim: true },
+        email: { type: String },
         passwordHash: { type: String, required: true },
         role: {
             type: String,

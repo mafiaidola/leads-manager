@@ -20,10 +20,10 @@ declare module "next-auth" {
 }
 
 
-async function getUser(email: string) {
+async function getUser(username: string) {
     try {
         await dbConnect();
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ username: username.toLowerCase() });
         return user;
     } catch (error) {
         console.error("Failed to fetch user:", error);
@@ -38,13 +38,16 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
         Credentials({
             async authorize(credentials) {
                 const parsedCredentials = z
-                    .object({ email: z.string().email(), password: z.string().min(6) })
+                    .object({ username: z.string().min(3), password: z.string().min(6) })
                     .safeParse(credentials);
 
                 if (parsedCredentials.success) {
-                    const { email, password } = parsedCredentials.data;
-                    const user = await getUser(email);
+                    const { username, password } = parsedCredentials.data;
+                    const user = await getUser(username);
                     if (!user) return null;
+
+                    // Check if user is active
+                    if (user.active === false) return null;
 
                     const passwordsMatch = await bcrypt.compare(
                         password,
@@ -56,7 +59,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                         return {
                             id: user._id.toString(),
                             name: user.name,
-                            email: user.email,
+                            email: user.email || user.username,
                             role: user.role,
                         };
                     }
