@@ -2,10 +2,11 @@ import { Sidebar } from "@/components/Sidebar";
 import { MobileSidebar } from "@/components/MobileSidebar";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { LogOut, UserCircle2, Bell } from "lucide-react";
+import { LogOut, UserCircle2, Bell, Search } from "lucide-react";
 import { handleSignOut } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
+import { CommandPalette } from "@/components/CommandPalette";
 
 export default async function DashboardLayout({
     children,
@@ -33,8 +34,15 @@ export default async function DashboardLayout({
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
-                            {/* Simple Notifications Placeholder */}
+                        <div className="flex items-center gap-3">
+                            {/* Search trigger — visual only, Ctrl+K handled by CommandPalette */}
+                            <div className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground bg-white/5 border border-white/10 rounded-xl cursor-default">
+                                <Search className="h-3.5 w-3.5" />
+                                <span className="hidden lg:inline text-xs">Search...</span>
+                                <kbd className="hidden lg:inline text-[10px] font-mono text-muted-foreground/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">Ctrl+K</kbd>
+                            </div>
+
+                            {/* Notifications */}
                             <button aria-label="Notifications" className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all relative">
                                 <Bell className="h-5 w-5" />
                                 <span className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full border-2 border-white dark:border-black" />
@@ -78,6 +86,7 @@ export default async function DashboardLayout({
                 <div className="px-4">
                     {children}
                 </div>
+                <CommandPalette />
             </main>
         </div>
     );

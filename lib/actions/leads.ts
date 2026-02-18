@@ -501,6 +501,47 @@ export async function getLeadsStats() {
     }
 }
 
+export async function searchLeads(query: string) {
+    const session = await auth();
+    if (!session || !query || query.length < 2) return [];
+
+    try {
+        await dbConnect();
+        const filter: any = {
+            deletedAt: null,
+            $or: [
+                { name: { $regex: query, $options: "i" } },
+                { company: { $regex: query, $options: "i" } },
+                { email: { $regex: query, $options: "i" } },
+                { phone: { $regex: query, $options: "i" } },
+            ],
+        };
+
+        // RBAC
+        if (session.user.role === USER_ROLES.SALES) {
+            filter.assignedTo = session.user.id;
+        }
+
+        const leads = await Lead.find(filter)
+            .select("name company status phone email")
+            .sort({ updatedAt: -1 })
+            .limit(8)
+            .lean();
+
+        return leads.map((l: any) => ({
+            _id: l._id.toString(),
+            name: l.name,
+            company: l.company || "",
+            status: l.status,
+            phone: l.phone || "",
+            email: l.email || "",
+        }));
+    } catch (error) {
+        console.error("searchLeads error:", error);
+        return [];
+    }
+}
+
 export async function getLeadDetails(id: string) {
     const session = await auth();
     if (!session) return null;
