@@ -18,7 +18,7 @@ const LeadSchema = z.object({
     name: z.string().min(1),
     company: z.string().optional(),
     email: z.string().email().optional().or(z.literal("")),
-    phone: z.string().optional(),
+    phone: z.string().regex(/^\d*$/, "Phone number must contain only digits").optional(),
     status: z.string(),
     source: z.string().optional(),
     product: z.string().optional(),
@@ -43,11 +43,13 @@ export async function checkDuplicatePhone(phone: string) {
     const session = await auth();
     if (!session) return { exists: false };
 
-    if (!phone || phone.trim().length < 4) return { exists: false };
+    // Sanitize: digits only
+    const sanitized = phone.replace(/[^0-9]/g, "");
+    if (!sanitized || sanitized.length < 4) return { exists: false };
 
     try {
         await dbConnect();
-        const existingLead = await Lead.findOne({ phone: phone.trim() })
+        const existingLead = await Lead.findOne({ phone: sanitized, deletedAt: null })
             .select("name phone")
             .lean();
 
@@ -73,7 +75,8 @@ export async function checkDuplicateLead(email?: string, phone?: string, exclude
         await dbConnect();
         const orConditions: any[] = [];
         if (email && email.trim()) orConditions.push({ email: email.trim() });
-        if (phone && phone.trim().length >= 4) orConditions.push({ phone: phone.trim() });
+        const sanitizedPhone = phone ? phone.replace(/[^0-9]/g, "") : "";
+        if (sanitizedPhone.length >= 4) orConditions.push({ phone: sanitizedPhone });
         if (orConditions.length === 0) return { duplicates: [] };
 
         const query: any = { $or: orConditions, deletedAt: null };
@@ -291,8 +294,10 @@ export async function createLead(prevState: any, formData: FormData) {
 
     // Duplication Check
     if (rest.phone) {
+        const sanitizedPhone = rest.phone.replace(/[^0-9]/g, "");
+        rest.phone = sanitizedPhone; // Store sanitized
         await dbConnect();
-        const existingLead = await Lead.findOne({ phone: rest.phone });
+        const existingLead = await Lead.findOne({ phone: sanitizedPhone, deletedAt: null });
         if (existingLead) {
             return { message: `Lead with this phone number already exists (${existingLead.name}).`, duplicate: true };
         }

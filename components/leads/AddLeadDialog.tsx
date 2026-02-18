@@ -27,13 +27,13 @@ import { createLead, checkDuplicatePhone } from "@/lib/actions/leads";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Ban } from "lucide-react";
 
 const formSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters."),
     company: z.string().optional(),
     email: z.string().optional(),
-    phone: z.string().optional(),
+    phone: z.string().regex(/^\d*$/, "Phone number must contain only digits (no spaces, dashes or special characters)").optional(),
     status: z.string().min(1, "Please select a status."),
     source: z.string().optional(),
     product: z.string().optional(),
@@ -87,31 +87,44 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
         },
     });
 
-    const handlePhoneChange = useCallback((phone: string) => {
+    const sanitizePhone = (val: string) => val.replace(/[^0-9]/g, "");
+
+    const handlePhoneChange = useCallback((rawPhone: string) => {
+        const phone = sanitizePhone(rawPhone);
         if (phoneCheckTimeout) clearTimeout(phoneCheckTimeout);
 
-        if (!phone || phone.trim().length < 4) {
+        if (!phone || phone.length < 4) {
             setDuplicateWarning(null);
             return;
         }
 
+        setCheckingPhone(true);
         setPhoneCheckTimeout(setTimeout(async () => {
-            setCheckingPhone(true);
             try {
-                const result = await checkDuplicatePhone(phone.trim());
+                const result = await checkDuplicatePhone(phone);
                 setDuplicateWarning(result);
             } catch {
                 setDuplicateWarning(null);
             }
             setCheckingPhone(false);
-        }, 500));
+        }, 400));
     }, [phoneCheckTimeout]);
 
+    const isPhoneBlocked = duplicateWarning?.exists === true || checkingPhone;
+
     async function onSubmit(values: z.infer<typeof formSchema>) {
+        // Final duplicate guard — hard-block
+        if (isPhoneBlocked) {
+            toast({ title: "Blocked", description: "Cannot create lead: duplicate phone number detected", variant: "destructive" });
+            return;
+        }
+
         const formData = new FormData();
         Object.entries(values).forEach(([key, value]) => {
             if (key === 'public' || key === 'contactedToday') {
                 if (value === true) formData.append(key, "on");
+            } else if (key === 'phone') {
+                formData.append(key, sanitizePhone(String(value)));
             } else {
                 formData.append(key, String(value));
             }
@@ -291,23 +304,32 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                                 <FormLabel>Phone</FormLabel>
                                                 <FormControl>
                                                     <Input
-                                                        placeholder="+971..."
-                                                        className="rounded-xl border-white/10 bg-white/5"
+                                                        placeholder="971XXXXXXXXX"
+                                                        className={`rounded-xl border-white/10 bg-white/5 ${duplicateWarning?.exists ? 'border-red-500/50 focus:ring-red-500/40' : ''}`}
                                                         {...field}
                                                         onChange={(e) => {
-                                                            field.onChange(e);
-                                                            handlePhoneChange(e.target.value);
+                                                            const sanitized = sanitizePhone(e.target.value);
+                                                            field.onChange(sanitized);
+                                                            handlePhoneChange(sanitized);
                                                         }}
+                                                        inputMode="numeric"
+                                                        pattern="[0-9]*"
                                                     />
                                                 </FormControl>
+                                                <FormDescription className="text-[10px] text-muted-foreground/60">
+                                                    Digits only — no spaces, dashes, or + signs
+                                                </FormDescription>
                                                 {checkingPhone && (
-                                                    <p className="text-xs text-muted-foreground animate-pulse">Checking for duplicates...</p>
+                                                    <p className="text-xs text-blue-400 animate-pulse flex items-center gap-1.5">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-ping" />
+                                                        Checking for duplicates...
+                                                    </p>
                                                 )}
                                                 {duplicateWarning?.exists && (
-                                                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400">
-                                                        <AlertTriangle className="h-4 w-4 shrink-0" />
-                                                        <p className="text-xs font-medium">
-                                                            A lead with this phone already exists: <strong>{duplicateWarning.leadName}</strong>
+                                                    <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/40 text-red-500">
+                                                        <Ban className="h-4 w-4 shrink-0" />
+                                                        <p className="text-xs font-bold">
+                                                            ⛔ This phone already belongs to <strong>&quot;{duplicateWarning.leadName}&quot;</strong>. Duplicate leads cannot be created.
                                                         </p>
                                                     </div>
                                                 )}
@@ -529,7 +551,13 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
 
                         <div className="flex gap-3 justify-end pt-4">
                             <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl border-white/10">Cancel</Button>
-                            <Button type="submit" className="bg-primary text-white hover:bg-primary/90 rounded-xl px-8 shadow-lg shadow-primary/20">Save Lead</Button>
+                            <Button
+                                type="submit"
+                                disabled={isPhoneBlocked}
+                                className={`bg-primary text-white hover:bg-primary/90 rounded-xl px-8 shadow-lg shadow-primary/20 ${isPhoneBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {checkingPhone ? "Checking..." : "Save Lead"}
+                            </Button>
                         </div>
                     </form>
                 </Form>

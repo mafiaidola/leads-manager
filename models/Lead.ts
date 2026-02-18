@@ -41,7 +41,7 @@ const LeadSchema = new Schema<ILead>(
         name: { type: String, required: true, index: true },
         company: { type: String, index: true },
         email: { type: String, index: true },
-        phone: { type: String, index: true },
+        phone: String,
         website: String,
         position: String,
         value: Number,
@@ -80,6 +80,23 @@ LeadSchema.index(
 
 // Index for recycle bin queries
 LeadSchema.index({ deletedAt: 1 });
+
+// Unique sparse index on phone — enforces uniqueness for non-empty, non-deleted leads
+LeadSchema.index(
+    { phone: 1 },
+    {
+        unique: true,
+        sparse: true,
+        partialFilterExpression: { phone: { $exists: true, $ne: "" }, deletedAt: null },
+    }
+);
+
+// Pre-save hook: sanitize phone to digits-only
+LeadSchema.pre("save", function () {
+    if (this.phone) {
+        this.phone = this.phone.replace(/[^0-9]/g, "");
+    }
+});
 
 const Lead: Model<ILead> = models.Lead || mongoose.model<ILead>("Lead", LeadSchema);
 
