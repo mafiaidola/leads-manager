@@ -98,3 +98,49 @@ export function StaggerContainer({
         </div>
     );
 }
+
+// ─── Mini Sparkline chart ─────────────────────────────────────────────────────
+export function Sparkline({
+    data,
+    color = "var(--primary)",
+    width = 80,
+    height = 28,
+}: {
+    data: number[];
+    color?: string;
+    width?: number;
+    height?: number;
+}) {
+    if (!data || data.length < 2) return null;
+
+    const max = Math.max(...data);
+    const min = Math.min(...data);
+    const range = max - min || 1;
+    const padding = 2;
+
+    const points = data.map((val, i) => {
+        const x = padding + (i / (data.length - 1)) * (width - padding * 2);
+        const y = height - padding - ((val - min) / range) * (height - padding * 2);
+        return `${x},${y}`;
+    }).join(" ");
+
+    return (
+        <svg width={width} height={height} className="overflow-visible">
+            <polyline
+                points={points}
+                fill="none"
+                stroke={color}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="opacity-60"
+            />
+            {/* Dot at the end */}
+            {data.length > 0 && (() => {
+                const lastX = padding + ((data.length - 1) / (data.length - 1)) * (width - padding * 2);
+                const lastY = height - padding - ((data[data.length - 1] - min) / range) * (height - padding * 2);
+                return <circle cx={lastX} cy={lastY} r="3" fill={color} className="opacity-80" />;
+            })()}
+        </svg>
+    );
+}

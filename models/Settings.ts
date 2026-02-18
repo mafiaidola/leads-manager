@@ -48,6 +48,7 @@ export interface ISettings {
     customRoles: ICustomRole[];
     branding: IBranding;
     goals: IGoals;
+    theme: "violet" | "ocean" | "emerald";
 }
 
 const SettingsSchema = new Schema<ISettings>(
@@ -94,6 +95,7 @@ const SettingsSchema = new Schema<ISettings>(
             monthlyLeadTarget: { type: Number, default: 50 },
             monthlyConversionTarget: { type: Number, default: 10 },
         },
+        theme: { type: String, enum: ["violet", "ocean", "emerald"], default: "violet" },
     },
     { timestamps: true }
 );

@@ -46,7 +46,7 @@ export default function LoginPage() {
                         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                     )}
                 >
-                    <div className="h-18 w-18 rounded-2xl bg-gradient-to-br from-primary to-violet-600 p-[2px] shadow-2xl shadow-primary/30 group-hover:scale-110 group-hover:shadow-primary/40 transition-all duration-500">
+                    <div className="h-18 w-18 rounded-2xl bg-gradient-to-br from-primary to-primary/70 p-[2px] shadow-2xl shadow-primary/30 group-hover:scale-110 group-hover:shadow-primary/40 transition-all duration-500">
                         <div className="h-full w-full rounded-[14px] bg-[#09090b] flex items-center justify-center">
                             <LayoutDashboard className="h-9 w-9 text-white" />
                         </div>
@@ -66,7 +66,7 @@ export default function LoginPage() {
                         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                     )}
                 >
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/50 to-violet-500/50 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200 animate-gradient" />
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/50 to-primary/30 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200 animate-gradient" />
                     <div className="relative bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 shadow-2xl">
                         <div className="mb-8">
                             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -167,7 +167,7 @@ function LoginButton({ pending }: { pending: boolean }) {
                 "group relative w-full flex justify-center items-center gap-2 py-4 px-4 rounded-2xl shadow-xl text-base font-bold text-white transition-all duration-300 overflow-hidden",
                 pending
                     ? "bg-primary/50 cursor-not-allowed"
-                    : "bg-gradient-to-r from-primary to-violet-600 hover:shadow-primary/30 hover:shadow-2xl active:scale-[0.98]"
+                    : "bg-gradient-to-r from-primary to-primary/80 hover:shadow-primary/30 hover:shadow-2xl active:scale-[0.98] shadow-lg shadow-primary/20"
             )}
             disabled={pending}
         >

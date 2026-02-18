@@ -6,16 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { updateSettings, updateBranding, updateGoals } from "@/lib/actions/settings";
+import { updateSettings, updateBranding, updateGoals, updateTheme } from "@/lib/actions/settings";
 import { createUser, updateUser, deleteUser, changePassword } from "@/lib/actions/users";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { X, Pencil, Trash2, Download, Shield, Palette, Key, Target, Save, UserPlus, Check } from "lucide-react";
+import { X, Pencil, Trash2, Download, Shield, Palette, Key, Target, Save, UserPlus, Check, Sparkles } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
+import { useTheme } from "@/components/ThemeProvider";
 
 const ALL_PERMISSIONS = [
     { key: "view_leads", label: "View Leads" },
@@ -46,6 +47,10 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
         monthlyLeadTarget: settings?.goals?.monthlyLeadTarget || 50,
         monthlyConversionTarget: settings?.goals?.monthlyConversionTarget || 10,
     });
+
+    // Theme state
+    const [currentTheme, setCurrentTheme] = useState<"violet" | "ocean" | "emerald">(settings?.theme || "violet");
+    const { setTheme } = useTheme();
 
     // Custom Roles state
     const [customRoles, setCustomRoles] = useState<any[]>(settings?.customRoles || []);
@@ -169,6 +174,17 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
 
     const handleBackup = () => {
         window.location.href = "/api/backup";
+    };
+
+    const handleChangeTheme = async (theme: "violet" | "ocean" | "emerald") => {
+        setCurrentTheme(theme);
+        setTheme(theme);
+        const result = await updateTheme(theme);
+        if (result?.success) {
+            toast({ title: `Theme changed to ${theme === "violet" ? "Violet Noir" : theme === "ocean" ? "Ocean Blue" : "Emerald Forest"}` });
+        } else {
+            toast({ title: result?.message || "Error", variant: "destructive" });
+        }
     };
 
     // Roles
@@ -573,6 +589,119 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                         </CardContent>
                     </Card>
 
+                    {/* Theme Picker */}
+                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start md:col-span-2">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-amber-500" />
+                                App Theme
+                            </CardTitle>
+                            <CardDescription className="text-muted-foreground/80">Choose a theme for all users. This applies globally across the entire application.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                                {/* Violet Noir */}
+                                <button
+                                    onClick={() => handleChangeTheme("violet")}
+                                    className={cn(
+                                        "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02]",
+                                        currentTheme === "violet" ? "border-violet-500 shadow-lg shadow-violet-500/25" : "border-white/10 hover:border-white/30"
+                                    )}
+                                >
+                                    <div className="rounded-xl overflow-hidden">
+                                        <div className="h-24 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 relative">
+                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent)]" />
+                                            <div className="absolute bottom-2 left-3 flex gap-1">
+                                                <div className="h-2 w-8 bg-white/40 rounded-full" />
+                                                <div className="h-2 w-5 bg-white/25 rounded-full" />
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-card/80">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-bold">Violet Noir</p>
+                                                    <p className="text-[10px] text-muted-foreground">Premium & Modern</p>
+                                                </div>
+                                                {currentTheme === "violet" && (
+                                                    <div className="h-6 w-6 rounded-full bg-violet-500 flex items-center justify-center">
+                                                        <Check className="h-3.5 w-3.5 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* Ocean Blue */}
+                                <button
+                                    onClick={() => handleChangeTheme("ocean")}
+                                    className={cn(
+                                        "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02]",
+                                        currentTheme === "ocean" ? "border-blue-500 shadow-lg shadow-blue-500/25" : "border-white/10 hover:border-white/30"
+                                    )}
+                                >
+                                    <div className="rounded-xl overflow-hidden">
+                                        <div className="h-24 bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 relative">
+                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent)]" />
+                                            <div className="absolute bottom-2 left-3 flex gap-1">
+                                                <div className="h-2 w-8 bg-white/40 rounded-full" />
+                                                <div className="h-2 w-5 bg-white/25 rounded-full" />
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-card/80">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-bold">Ocean Blue</p>
+                                                    <p className="text-[10px] text-muted-foreground">Corporate & Clean</p>
+                                                </div>
+                                                {currentTheme === "ocean" && (
+                                                    <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center">
+                                                        <Check className="h-3.5 w-3.5 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                {/* Emerald Forest */}
+                                <button
+                                    onClick={() => handleChangeTheme("emerald")}
+                                    className={cn(
+                                        "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02]",
+                                        currentTheme === "emerald" ? "border-emerald-500 shadow-lg shadow-emerald-500/25" : "border-white/10 hover:border-white/30"
+                                    )}
+                                >
+                                    <div className="rounded-xl overflow-hidden">
+                                        <div className="h-24 bg-gradient-to-br from-emerald-600 via-green-600 to-teal-600 relative">
+                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent)]" />
+                                            <div className="absolute bottom-2 left-3 flex gap-1">
+                                                <div className="h-2 w-8 bg-white/40 rounded-full" />
+                                                <div className="h-2 w-5 bg-white/25 rounded-full" />
+                                            </div>
+                                        </div>
+                                        <div className="p-3 bg-card/80">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-bold">Emerald Forest</p>
+                                                    <p className="text-[10px] text-muted-foreground">Fresh & Natural</p>
+                                                </div>
+                                                {currentTheme === "emerald" && (
+                                                    <div className="h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                                                        <Check className="h-3.5 w-3.5 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Data Management - separated as full width */}
+                <div className="mt-6">
                     <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start">
                         <CardHeader>
                             <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -704,6 +833,6 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                     </CardContent>
                 </Card>
             </TabsContent>
-        </Tabs>
+        </Tabs >
     );
 }

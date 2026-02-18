@@ -93,3 +93,30 @@ export async function updateGoals(goals: { monthlyLeadTarget: number; monthlyCon
         return { message: "Failed to update goals" };
     }
 }
+
+export async function updateTheme(theme: "violet" | "ocean" | "emerald") {
+    const session = await auth();
+    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+        return { message: "Unauthorized" };
+    }
+
+    try {
+        await dbConnect();
+        let settings = await Settings.findOne();
+        if (!settings) {
+            settings = new Settings({ theme });
+        } else {
+            settings.theme = theme;
+        }
+        await settings.save();
+        revalidatePath("/");
+        revalidatePath("/settings");
+        revalidatePath("/leads");
+        revalidatePath("/reports");
+        revalidatePath("/login");
+        return { message: "Theme updated", success: true, theme };
+    } catch (error) {
+        console.error("Failed to update theme:", error);
+        return { message: "Failed to update theme" };
+    }
+}
