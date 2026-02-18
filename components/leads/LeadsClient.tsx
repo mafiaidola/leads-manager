@@ -392,7 +392,15 @@ export function LeadsClient({
                                             <TableCell className="font-medium">
                                                 <Link href={`/leads/${lead._id}`} className="group/name">
                                                     <div className="text-base text-foreground group-hover/name:text-primary transition-colors">{lead.name}</div>
-                                                    <div className="text-xs text-muted-foreground">{lead.company}</div>
+                                                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                                        <span>{lead.company}</span>
+                                                        {(lead.noteCount > 0 || lead.actionCount > 0) && (
+                                                            <span className="flex items-center gap-1.5 text-[10px]">
+                                                                {lead.noteCount > 0 && <span className="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded-full" title={`${lead.noteCount} notes`}>📝 {lead.noteCount}</span>}
+                                                                {lead.actionCount > 0 && <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded-full" title={`${lead.actionCount} actions`}>📞 {lead.actionCount}</span>}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </Link>
                                             </TableCell>
                                             <TableCell>

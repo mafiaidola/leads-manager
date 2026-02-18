@@ -45,7 +45,7 @@ export default async function DashboardPage() {
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/15 via-card/60 to-primary/5 border border-white/10 backdrop-blur-xl p-8 md:p-10">
                     {/* Animated mesh */}
                     <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary/15 rounded-full blur-3xl animate-pulse" />
-                    <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/10 rounded-full blur-3xl" style={{ animationDelay: "1s" }} />
+                    <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-primary/10 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
 
                     <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                         <div>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Upload, ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, AlertTriangle, FileSpreadsheet, Loader2 } from "lucide-react";
 import { previewCSVImport, importLeadsWithMapping } from "@/lib/actions/import";
 import { LEAD_FIELD_OPTIONS } from "@/lib/constants/leadFields";
 import { useToast } from "@/hooks/use-toast";
@@ -239,10 +239,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
                 {/* Step 4: Result */}
                 {step === "result" && result && (
-                    <div className="text-center py-8 space-y-4">
+                    <div className="text-center py-6 space-y-4">
                         {result.success ? (
                             <>
-                                <CheckCircle2 className="h-16 w-16 text-emerald-500 mx-auto" />
+                                <CheckCircle2 className="h-14 w-14 text-emerald-500 mx-auto" />
                                 <h3 className="text-xl font-bold">Import Complete!</h3>
                                 <div className="flex justify-center gap-6 text-sm">
                                     <div>
@@ -258,6 +258,55 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                                         <div className="text-muted-foreground">Duplicates</div>
                                     </div>
                                 </div>
+                                {/* Error details table */}
+                                {result.errors && result.errors.length > 0 && (
+                                    <div className="mt-4 text-left">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="text-sm font-bold text-muted-foreground">Failed Rows</h4>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="rounded-lg border-white/10 text-xs gap-1"
+                                                onClick={() => {
+                                                    const blob = new Blob([result.errorsCsv], { type: "text/csv" });
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement("a");
+                                                    a.href = url;
+                                                    a.download = "import_errors.csv";
+                                                    a.click();
+                                                    URL.revokeObjectURL(url);
+                                                }}
+                                            >
+                                                <ArrowDown className="h-3 w-3" /> Download Errors CSV
+                                            </Button>
+                                        </div>
+                                        <div className="rounded-xl border border-white/10 overflow-hidden max-h-[160px] overflow-y-auto">
+                                            <table className="w-full text-xs">
+                                                <thead className="bg-white/5">
+                                                    <tr>
+                                                        <th className="px-3 py-2 text-left font-medium text-muted-foreground">Row</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-muted-foreground">Name</th>
+                                                        <th className="px-3 py-2 text-left font-medium text-muted-foreground">Reason</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {result.errors.slice(0, 10).map((err: any, i: number) => (
+                                                        <tr key={i} className="border-t border-white/5">
+                                                            <td className="px-3 py-1.5 text-muted-foreground">{err.row}</td>
+                                                            <td className="px-3 py-1.5">{err.name}</td>
+                                                            <td className="px-3 py-1.5 text-red-400">{err.reason}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                            {result.errors.length > 10 && (
+                                                <div className="px-3 py-1.5 text-xs text-muted-foreground text-center bg-white/5">
+                                                    +{result.errors.length - 10} more — download CSV for full list
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </>
                         ) : (
                             <>

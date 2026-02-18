@@ -453,21 +453,41 @@ export async function getLeads(searchParams: any) {
 
         const total = await Lead.countDocuments(query);
 
+        // Activity counts per lead
+        const leadIds = leads.map(l => l._id);
+        const [noteCounts, actionCounts] = await Promise.all([
+            LeadNote.aggregate([
+                { $match: { leadId: { $in: leadIds } } },
+                { $group: { _id: "$leadId", count: { $sum: 1 } } },
+            ]),
+            LeadAction.aggregate([
+                { $match: { leadId: { $in: leadIds } } },
+                { $group: { _id: "$leadId", count: { $sum: 1 } } },
+            ]),
+        ]);
+        const noteMap = new Map(noteCounts.map((n: any) => [n._id.toString(), n.count]));
+        const actionMap = new Map(actionCounts.map((a: any) => [a._id.toString(), a.count]));
+
         // Serialization
         return {
-            leads: leads.map(l => ({
-                ...l,
-                _id: l._id.toString(),
-                starred: (l.starred || []).map((s: any) => s.toString()),
-                assignedTo: l.assignedTo ? {
-                    ...l.assignedTo,
-                    _id: (l.assignedTo as any)._id?.toString()
-                } : null,
-                customFields: l.customFields || {},
-                deletedAt: l.deletedAt ? (l.deletedAt as Date).toISOString() : null,
-                createdAt: (l.createdAt as Date).toISOString(),
-                updatedAt: (l.updatedAt as Date).toISOString(),
-            })),
+            leads: leads.map(l => {
+                const id = l._id.toString();
+                return {
+                    ...l,
+                    _id: id,
+                    starred: (l.starred || []).map((s: any) => s.toString()),
+                    assignedTo: l.assignedTo ? {
+                        ...l.assignedTo,
+                        _id: (l.assignedTo as any)._id?.toString()
+                    } : null,
+                    customFields: l.customFields || {},
+                    deletedAt: l.deletedAt ? (l.deletedAt as Date).toISOString() : null,
+                    createdAt: (l.createdAt as Date).toISOString(),
+                    updatedAt: (l.updatedAt as Date).toISOString(),
+                    noteCount: noteMap.get(id) || 0,
+                    actionCount: actionMap.get(id) || 0,
+                };
+            }),
             total
         };
     } catch (error) {

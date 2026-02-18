@@ -6,6 +6,8 @@ import User, { USER_ROLES } from "@/models/User";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { logAudit } from "@/lib/actions/audit";
+import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
 
 const CreateUserSchema = z.object({
     name: z.string().min(2),
@@ -53,6 +55,7 @@ export async function createUser(prevState: any, formData: FormData) {
         });
 
         revalidatePath("/settings");
+        logAudit(AUDIT_ACTIONS.CREATE, ENTITY_TYPES.USER, null, `Created user: ${name} (${validatedRole})`);
         return { message: "User created successfully", success: true };
     } catch (error) {
         console.error("Failed to create user:", error);
@@ -85,6 +88,7 @@ export async function updateUser(userId: string, data: { name?: string; username
         if (typeof data.active === "boolean") user.active = data.active;
 
         await user.save();
+        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.USER, userId, `Updated user: ${user.name}`);
         revalidatePath("/settings");
         return { message: "User updated successfully", success: true };
     } catch (error) {
@@ -112,6 +116,7 @@ export async function deleteUser(userId: string) {
         // Deactivate rather than hard delete
         user.active = false;
         await user.save();
+        logAudit(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.USER, userId, `Deactivated user: ${user.name}`);
 
         revalidatePath("/settings");
         return { message: "User deactivated successfully", success: true };
@@ -164,6 +169,7 @@ export async function adminResetPassword(userId: string, newPassword: string) {
 
         user.passwordHash = await bcrypt.hash(newPassword, 10);
         await user.save();
+        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.USER, userId, `Admin reset password for: ${user.name}`);
 
         return { message: `Password reset for ${user.name}`, success: true };
     } catch (error) {

@@ -63,9 +63,11 @@ export async function importLeadsWithMapping(
         let importedCount = 0;
         let skippedCount = 0;
         let duplicateCount = 0;
+        const rowErrors: { row: number; name: string; reason: string; rawData: string }[] = [];
 
         const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
         const rows = parsed.data as any[];
+        const headers = parsed.meta.fields || [];
         const leadsToInsert: any[] = [];
         const notesToInsert: any[] = [];
 
@@ -80,7 +82,8 @@ export async function importLeadsWithMapping(
             existingLeads.filter((l) => l.phone).map((l) => l.phone!)
         );
 
-        for (const row of rows) {
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
             // Map CSV columns to lead fields using user mapping
             const mapped: any = {};
             for (const [csvCol, leadField] of Object.entries(columnMapping)) {
@@ -92,16 +95,19 @@ export async function importLeadsWithMapping(
             // Name is required
             if (!mapped.name) {
                 skippedCount++;
+                rowErrors.push({ row: i + 2, name: mapped.name || "(empty)", reason: "Missing name", rawData: headers.map((h: string) => row[h] || "").join(",") });
                 continue;
             }
 
             // Duplicate detection
             const emailLower = mapped.email?.toLowerCase();
-            const isDuplicate =
-                (emailLower && existingEmails.has(emailLower)) ||
-                (mapped.phone && existingPhones.has(mapped.phone));
-            if (isDuplicate) {
+            const phoneSanitized = mapped.phone?.replace?.(/[^0-9]/g, "");
+            let dupReason = "";
+            if (emailLower && existingEmails.has(emailLower)) dupReason = `Duplicate email: ${emailLower}`;
+            else if (phoneSanitized && existingPhones.has(phoneSanitized)) dupReason = `Duplicate phone: ${phoneSanitized}`;
+            if (dupReason) {
                 duplicateCount++;
+                rowErrors.push({ row: i + 2, name: mapped.name, reason: dupReason, rawData: headers.map((h: string) => row[h] || "").join(",") });
                 continue;
             }
 
@@ -173,12 +179,21 @@ export async function importLeadsWithMapping(
         );
 
         revalidatePath("/leads");
+
+        // Build CSV of failed rows for download
+        let errorsCsv = "";
+        if (rowErrors.length > 0) {
+            errorsCsv = `Row,Name,Reason\n` + rowErrors.map(e => `${e.row},"${e.name}","${e.reason}"`).join("\n");
+        }
+
         return {
             success: true,
             message: `Imported ${importedCount} leads. Skipped ${skippedCount} (missing name). ${duplicateCount} duplicates found.`,
             importedCount,
             skippedCount,
             duplicateCount,
+            errors: rowErrors.slice(0, 50), // limit to 50 for display
+            errorsCsv,
         };
     } catch (error) {
         console.error("Import failed:", error);

@@ -7,7 +7,7 @@ import {
     ArrowLeft, Building2, Mail, Phone, Globe, MapPin, Tag, Star, StarOff,
     Calendar, Clock, MessageSquare, PhoneCall, Video, Send, Users, MoreHorizontal,
     Plus, CheckCircle2, XCircle, AlertCircle, Briefcase, DollarSign, Hash,
-    ChevronDown, Sparkles, ExternalLink,
+    ChevronDown, Sparkles, ExternalLink, Pencil, Trash2, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { updateLeadStatus, addNote, addLeadAction, toggleStarLead } from "@/lib/actions/leads";
+import { updateLeadStatus, addNote, addLeadAction, toggleStarLead, deleteLead } from "@/lib/actions/leads";
+import { updateLead } from "@/lib/actions/leads";
 import { FadeIn } from "@/components/dashboard/DashboardAnimations";
 
 // Action type options
@@ -110,6 +114,23 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
     // Status
     const [currentStatus, setCurrentStatus] = useState(lead.status);
 
+    // Edit dialog
+    const [showEdit, setShowEdit] = useState(false);
+    const [editForm, setEditForm] = useState({
+        name: lead.name || "",
+        company: lead.company || "",
+        email: lead.email || "",
+        phone: lead.phone || "",
+        source: lead.source || "",
+        product: lead.product || "",
+        value: lead.value?.toString() || "",
+        description: lead.description || "",
+        tags: (lead.tags || []).join(", "),
+    });
+
+    // Delete confirmation
+    const [showDelete, setShowDelete] = useState(false);
+
     const handleStatusChange = async (newStatus: string) => {
         setCurrentStatus(newStatus);
         startTransition(async () => {
@@ -165,6 +186,69 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
         });
     };
 
+    const handleEditSave = async () => {
+        const formData = new FormData();
+        formData.set("id", lead._id);
+        formData.set("name", editForm.name);
+        formData.set("company", editForm.company);
+        formData.set("email", editForm.email);
+        formData.set("phone", editForm.phone);
+        formData.set("source", editForm.source);
+        formData.set("product", editForm.product);
+        formData.set("value", editForm.value);
+        formData.set("description", editForm.description);
+        formData.set("tags", editForm.tags);
+        formData.set("status", currentStatus);
+        startTransition(async () => {
+            const result = await updateLead(null, formData);
+            if (result?.success) {
+                toast({ title: "Lead updated" });
+                setShowEdit(false);
+                router.refresh();
+            } else {
+                toast({ title: result?.message || "Error", variant: "destructive" });
+            }
+        });
+    };
+
+    const handleDelete = async () => {
+        startTransition(async () => {
+            const result = await deleteLead(lead._id);
+            if (result?.success) {
+                toast({ title: "Lead moved to trash" });
+                router.push("/leads");
+            } else {
+                toast({ title: result?.message || "Error", variant: "destructive" });
+            }
+        });
+    };
+
+    const handleExport = () => {
+        const data = {
+            Name: lead.name,
+            Company: lead.company || "",
+            Phone: lead.phone || "",
+            Email: lead.email || "",
+            Status: currentStatus,
+            Source: lead.source || "",
+            Product: lead.product || "",
+            Value: lead.value ? `${lead.currency} ${lead.value}` : "",
+            Tags: (lead.tags || []).join(", "),
+            Description: lead.description || "",
+            "Assigned To": assignedName,
+            Created: formatDate(lead.createdAt),
+        };
+        const csv = Object.entries(data).map(([k, v]) => `${k},"${String(v).replace(/"/g, '""')}"`).join("\n");
+        const blob = new Blob(["Field,Value\n" + csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${lead.name.replace(/\s+/g, "_")}_lead.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast({ title: "Lead exported as CSV" });
+    };
+
     const isStarred = (lead.starred || []).includes(userId);
     const assignedName = lead.assignedTo?.name || "Unassigned";
 
@@ -206,6 +290,33 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                         <Button variant="ghost" size="icon" className="rounded-full" onClick={handleToggleStar} disabled={isPending}>
                             {isStarred ? <Star className="h-5 w-5 fill-amber-400 text-amber-400" /> : <StarOff className="h-5 w-5 text-muted-foreground" />}
                         </Button>
+                        <Button variant="outline" size="sm" className="rounded-full border-white/10 gap-1.5" onClick={() => setShowEdit(true)}>
+                            <Pencil className="h-3.5 w-3.5" /> Edit
+                        </Button>
+                        <Button variant="outline" size="sm" className="rounded-full border-white/10 gap-1.5" onClick={handleExport}>
+                            <Download className="h-3.5 w-3.5" /> Export
+                        </Button>
+                        <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="rounded-full border-red-500/20 text-red-400 hover:bg-red-500/10 gap-1.5">
+                                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rounded-2xl border-white/10 bg-card/95 backdrop-blur-2xl">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Lead</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete <strong>{lead.name}</strong>? This will move the lead to trash. You can restore it later from the recycle bin.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                                    <AlertDialogAction className="rounded-xl bg-red-600 hover:bg-red-700" onClick={handleDelete} disabled={isPending}>
+                                        {isPending ? "Deleting..." : "Delete Lead"}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                         <Select value={currentStatus} onValueChange={handleStatusChange}>
                             <SelectTrigger className={cn("w-[140px] rounded-full border font-semibold text-xs h-8", STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30")}>
                                 <SelectValue />
@@ -548,6 +659,73 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                     </Card>
                 </FadeIn>
             </div>
+
+            {/* ── Edit Lead Dialog ─────────────────────────────── */}
+            <Dialog open={showEdit} onOpenChange={setShowEdit}>
+                <DialogContent className="rounded-2xl border-white/10 bg-card/95 backdrop-blur-2xl max-w-lg max-h-[85vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Edit Lead</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-2">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Name *</Label>
+                                <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Company</Label>
+                                <Input value={editForm.company} onChange={e => setEditForm({ ...editForm, company: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Phone</Label>
+                                <Input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Email</Label>
+                                <Input value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Source</Label>
+                                <Select value={editForm.source || "__none"} onValueChange={v => setEditForm({ ...editForm, source: v === "__none" ? "" : v })}>
+                                    <SelectTrigger className="rounded-xl border-white/10 bg-black/20"><SelectValue placeholder="Select" /></SelectTrigger>
+                                    <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                        <SelectItem value="__none">None</SelectItem>
+                                        {sources.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Product</Label>
+                                <Input value={editForm.product} onChange={e => setEditForm({ ...editForm, product: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Value</Label>
+                                <Input type="number" value={editForm.value} onChange={e => setEditForm({ ...editForm, value: e.target.value })} className="rounded-xl border-white/10 bg-black/20" placeholder="0" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Tags (comma separated)</Label>
+                                <Input value={editForm.tags} onChange={e => setEditForm({ ...editForm, tags: e.target.value })} className="rounded-xl border-white/10 bg-black/20" placeholder="tag1, tag2" />
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs">Description</Label>
+                            <Textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="rounded-xl border-white/10 bg-black/20 min-h-[80px] resize-none" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" className="rounded-xl" onClick={() => setShowEdit(false)}>Cancel</Button>
+                        <Button className="rounded-xl bg-primary" onClick={handleEditSave} disabled={!editForm.name.trim() || isPending}>
+                            {isPending ? "Saving..." : "Save Changes"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

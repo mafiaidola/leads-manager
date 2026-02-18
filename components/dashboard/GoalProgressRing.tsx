@@ -34,8 +34,7 @@ export function GoalProgressRing({ current, target, label, color = "var(--primar
                         strokeLinecap="round"
                         strokeDasharray={circumference}
                         strokeDashoffset={offset}
-                        className="transition-all duration-1000 ease-out"
-                        style={{ filter: `drop-shadow(0 0 6px ${color})` }}
+                        className="transition-all duration-1000 ease-out drop-shadow-[0_0_6px_var(--ring-glow)]"
                     />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
