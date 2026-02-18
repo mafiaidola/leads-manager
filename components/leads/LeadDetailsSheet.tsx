@@ -2,6 +2,7 @@
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { getLeadDetails, addNote, updateLeadStatus, addLeadAction, getLeadTimeline } from "@/lib/actions/leads";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -159,6 +160,12 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                         <SheetDescription>
                             {isMarketing ? "View lead information (read-only)." : "Manage and track interaction with this lead."}
                         </SheetDescription>
+                        {leadId && (
+                            <Link href={`/leads/${leadId}`} className="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-primary hover:underline">
+                                <ExternalLink className="h-3 w-3" />
+                                Open Full Page
+                            </Link>
+                        )}
                     </SheetHeader>
                 </div>
 

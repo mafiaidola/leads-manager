@@ -12,6 +12,17 @@ import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, Downloa
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
+function getThemeColors(): string[] {
+    if (typeof window === "undefined") return ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
+    const primary = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
+    // Generate a harmonious palette starting from the theme primary
+    return [
+        `oklch(${primary})`,
+        '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+        '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
+    ];
+}
+
 const COLORS = [
     '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
     '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'

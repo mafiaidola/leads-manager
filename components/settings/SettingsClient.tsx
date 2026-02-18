@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { updateSettings, updateBranding, updateGoals, updateTheme } from "@/lib/actions/settings";
-import { createUser, updateUser, deleteUser, changePassword } from "@/lib/actions/users";
+import { createUser, updateUser, deleteUser, changePassword, adminResetPassword } from "@/lib/actions/users";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { X, Pencil, Trash2, Download, Shield, Palette, Key, Target, Save, UserPlus, Check, Sparkles } from "lucide-react";
@@ -98,6 +98,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
 
     // User creation state
     const [newUser, setNewUser] = useState({ name: "", username: "", password: "", role: "SALES" });
+    const [resetPassword, setResetPassword] = useState("");
 
     const handleCreateUser = async () => {
         const formData = new FormData();
@@ -537,6 +538,35 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                                 <div className="flex items-center gap-2">
                                     <input type="checkbox" id="userActive" checked={editingUser.active !== false} onChange={(e) => setEditingUser({ ...editingUser, active: e.target.checked })} aria-label="User active status" />
                                     <Label htmlFor="userActive">Active</Label>
+                                </div>
+                                <div className="border-t border-white/10 pt-4 mt-2 space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Reset Password</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="password"
+                                            value={resetPassword}
+                                            onChange={(e) => setResetPassword(e.target.value)}
+                                            placeholder="New password (min 6 chars)"
+                                            className="rounded-xl border-white/10 bg-black/20 flex-1"
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="rounded-xl border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                                            disabled={resetPassword.length < 6}
+                                            onClick={async () => {
+                                                const res = await adminResetPassword(editingUser._id, resetPassword);
+                                                if (res?.success) {
+                                                    toast({ title: res.message });
+                                                    setResetPassword("");
+                                                } else {
+                                                    toast({ title: res?.message || "Error", variant: "destructive" });
+                                                }
+                                            }}
+                                        >
+                                            Reset
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         )}

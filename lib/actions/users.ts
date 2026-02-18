@@ -147,6 +147,32 @@ export async function changePassword(oldPassword: string, newPassword: string) {
     }
 }
 
+export async function adminResetPassword(userId: string, newPassword: string) {
+    const session = await auth();
+    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+        return { message: "Unauthorized" };
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+        return { message: "Password must be at least 6 characters" };
+    }
+
+    try {
+        await dbConnect();
+        const user = await User.findById(userId);
+        if (!user) return { message: "User not found" };
+
+        user.passwordHash = await bcrypt.hash(newPassword, 10);
+        await user.save();
+
+        return { message: `Password reset for ${user.name}`, success: true };
+    } catch (error) {
+        console.error("Failed to reset password:", error);
+        return { message: "Failed to reset password" };
+    }
+}
+
+
 export async function getUsers() {
     const session = await auth();
     if (!session || session.user.role !== USER_ROLES.ADMIN) {
