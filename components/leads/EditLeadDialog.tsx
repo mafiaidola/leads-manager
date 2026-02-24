@@ -51,6 +51,7 @@ const formSchema = z.object({
     tags: z.string().optional(),
     public: z.boolean(),
     contactedToday: z.boolean(),
+    followUpDate: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -139,6 +140,7 @@ export function EditLeadDialog({
                 tags: Array.isArray(lead.tags) ? lead.tags.join(", ") : lead.tags || "",
                 public: !!lead.public,
                 contactedToday: !!lead.contactedToday,
+                followUpDate: lead.followUpDate ? new Date(lead.followUpDate).toISOString().split("T")[0] : "",
             });
         }
     }, [lead, form]);
@@ -524,6 +526,19 @@ export function EditLeadDialog({
                                         <FormLabel>Tags (comma separated)</FormLabel>
                                         <FormControl>
                                             <Input placeholder="vip, urgent" className="rounded-xl border-white/10 bg-white/5" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="followUpDate"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Follow-up Date</FormLabel>
+                                        <FormControl>
+                                            <Input type="date" className="rounded-xl border-white/10 bg-white/5" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

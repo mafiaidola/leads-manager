@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
     ArrowLeft, Building2, Mail, Phone, Globe, MapPin, Tag, Star, StarOff,
     Calendar, Clock, MessageSquare, PhoneCall, Video, Send, Users, MoreHorizontal,
     Plus, CheckCircle2, XCircle, AlertCircle, Briefcase, DollarSign, Hash,
-    ChevronDown, Sparkles, ExternalLink, Pencil, Trash2, Download,
+    ChevronDown, Sparkles, ExternalLink, Pencil, Trash2, Download, Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -88,11 +88,13 @@ interface LeadDetailClientProps {
     actions: any[];
     statuses: string[];
     sources: string[];
+    settings?: any;
+    users?: any[];
     userRole: string;
     userId: string;
 }
 
-export default function LeadDetailClient({ lead, notes, actions, statuses, sources, userRole, userId }: LeadDetailClientProps) {
+export default function LeadDetailClient({ lead, notes, actions, statuses, sources, settings, users, userRole, userId }: LeadDetailClientProps) {
     const router = useRouter();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
@@ -113,6 +115,20 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
 
     // Status
     const [currentStatus, setCurrentStatus] = useState(lead.status);
+
+    // Build a color map from settings (falls back to hardcoded STATUS_COLORS)
+    const statusColorMap: Record<string, string> = {};
+    (settings?.statuses || []).forEach((s: any) => {
+        if (s.color) {
+            // Convert hex color to a Tailwind-compatible inline style approach
+            statusColorMap[s.key] = s.color;
+        }
+    });
+    const getStatusChipClass = (status: string) => STATUS_COLORS[status] || "bg-primary/15 text-primary border-primary/30";
+    const getStatusChipStyle = (status: string): React.CSSProperties => {
+        const hex = statusColorMap[status];
+        return hex ? { backgroundColor: `${hex}25`, color: hex, borderColor: `${hex}50` } : {};
+    };
 
     // Edit dialog
     const [showEdit, setShowEdit] = useState(false);
@@ -318,7 +334,10 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                             </AlertDialogContent>
                         </AlertDialog>
                         <Select value={currentStatus} onValueChange={handleStatusChange}>
-                            <SelectTrigger className={cn("w-[140px] rounded-full border font-semibold text-xs h-8", STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30")}>
+                            <SelectTrigger
+                                className={cn("w-[140px] rounded-full border font-semibold text-xs h-8", !statusColorMap[currentStatus] && (STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30"))}
+                                style={getStatusChipStyle(currentStatus)}
+                            >
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
@@ -406,6 +425,24 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                                     </div>
                                 </div>
                             )}
+                            {lead.followUpDate && (() => {
+                                const fDate = new Date(lead.followUpDate);
+                                const isOverdue = fDate <= new Date();
+                                return (
+                                    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5">
+                                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", isOverdue ? "bg-red-500/15" : "bg-amber-500/15")}>
+                                            <Bell className={cn("h-4 w-4", isOverdue ? "text-red-400" : "text-amber-400")} />
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-muted-foreground">Follow-up Date</div>
+                                            <div className={cn("text-sm font-medium flex items-center gap-1.5", isOverdue ? "text-red-400" : "text-amber-400")}>
+                                                {fDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                                                {isOverdue && <span className="text-[10px] bg-red-500/20 px-1.5 py-0.5 rounded-full font-semibold">OVERDUE</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </CardContent>
                     </Card>
 

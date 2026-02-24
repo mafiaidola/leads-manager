@@ -27,6 +27,7 @@ export interface ILead {
     public: boolean;
     contactedToday: boolean;
     lastContactAt?: Date;
+    followUpDate?: Date;
     starred: mongoose.Types.ObjectId[];
     deletedAt?: Date | null;
     customFields: Record<string, any>;
@@ -63,6 +64,7 @@ const LeadSchema = new Schema<ILead>(
         public: { type: Boolean, default: false },
         contactedToday: { type: Boolean, default: false },
         lastContactAt: Date,
+        followUpDate: { type: Date, default: null },
         starred: [{ type: Schema.Types.ObjectId, ref: "User" }],
         deletedAt: { type: Date, default: null },
         customFields: { type: Schema.Types.Mixed, default: {} },

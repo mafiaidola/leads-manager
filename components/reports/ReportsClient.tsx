@@ -8,7 +8,8 @@ import {
 import { useEffect, useState } from "react";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { getSettings } from "@/lib/actions/settings";
-import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,17 +29,21 @@ const COLORS = [
     '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
 ];
 
+type DateRange = "7d" | "30d" | "90d" | "all";
+
 export default function ReportsClient() {
     const [data, setData] = useState<any>(null);
     const [settings, setSettings] = useState<any>(null);
+    const [dateRange, setDateRange] = useState<DateRange>("all");
     const { toast } = useToast();
 
     useEffect(() => {
-        Promise.all([getDashboardStats(), getSettings()]).then(([d, s]) => {
+        setData(null);
+        Promise.all([getDashboardStats(dateRange), getSettings()]).then(([d, s]) => {
             setData(d);
             setSettings(s);
         });
-    }, []);
+    }, [dateRange]);
 
     if (!data) return (
         <div className="p-8 space-y-8 bg-background/50">
@@ -149,11 +154,35 @@ export default function ReportsClient() {
         toast({ title: "Report exported as JSON" });
     };
 
+    const DATE_RANGES: { label: string; value: DateRange }[] = [
+        { label: "7 Days", value: "7d" },
+        { label: "30 Days", value: "30d" },
+        { label: "90 Days", value: "90d" },
+        { label: "All Time", value: "all" },
+    ];
+
     return (
         <div className="p-8 space-y-8 bg-background/50">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Analytics Reports</h2>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3">
+                    {/* Date Range Selector */}
+                    <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-0.5">
+                        {DATE_RANGES.map((r) => (
+                            <button
+                                key={r.value}
+                                onClick={() => setDateRange(r.value)}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                                    dateRange === r.value
+                                        ? "bg-primary text-white shadow"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                {r.label}
+                            </button>
+                        ))}
+                    </div>
                     <Button variant="outline" size="sm" onClick={handleExportCSV} className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
                         <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Export CSV
                     </Button>
@@ -295,6 +324,61 @@ export default function ReportsClient() {
                     </ResponsiveContainer>
                 </CardContent>
             </Card>
+
+            {/* Team Leaderboard */}
+            {data.agentLeaderboard && data.agentLeaderboard.length > 0 && (
+                <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                            <span className="w-1.5 h-5 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
+                            Team Leaderboard
+                            {dateRange !== "all" && (
+                                <span className="text-xs font-normal text-muted-foreground ml-1">
+                                    · Last {dateRange === "7d" ? "7" : dateRange === "30d" ? "30" : "90"} Days
+                                </span>
+                            )}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-3">
+                            {data.agentLeaderboard.map((agent: any, i: number) => {
+                                const pct = agent.total > 0 ? Math.round((agent.won / agent.total) * 100) : 0;
+                                const medals = ['🥇', '🥈', '🥉'];
+                                const medal = medals[i] || `#${i + 1}`;
+                                const roleColors: Record<string, string> = {
+                                    ADMIN: 'text-violet-400',
+                                    SALES: 'text-blue-400',
+                                    MARKETING: 'text-emerald-400',
+                                };
+                                return (
+                                    <div key={i} className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                                        <span className="text-xl w-8 text-center">{medal}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-sm truncate">{agent.agentName}</span>
+                                                    <span className={`text-[10px] font-bold uppercase ${roleColors[agent.agentRole] || 'text-muted-foreground'}`}>{agent.agentRole}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 shrink-0 text-xs">
+                                                    <span className="text-muted-foreground">{agent.total} leads</span>
+                                                    <span className="text-emerald-400 font-semibold">{agent.won} won</span>
+                                                    <span className={`font-bold ${pct >= 50 ? 'text-emerald-400' : pct >= 25 ? 'text-amber-400' : 'text-muted-foreground'}`}>{pct}%</span>
+                                                </div>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-700 ${pct >= 50 ? 'bg-emerald-400' : pct >= 25 ? 'bg-amber-400' : 'bg-blue-400'}`}
+                                                    style={{ width: `${Math.max(4, pct)}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Charts Row 1 */}
             <div className="grid gap-6 md:grid-cols-2">

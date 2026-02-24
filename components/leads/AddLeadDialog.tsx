@@ -51,6 +51,7 @@ const formSchema = z.object({
     tags: z.string().optional(),
     public: z.boolean(),
     contactedToday: z.boolean(),
+    followUpDate: z.string().optional(),
 });
 
 export function AddLeadDialog({ settings, users }: { settings: any, users: any[] }) {
@@ -84,6 +85,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
             tags: "",
             public: false,
             contactedToday: false,
+            followUpDate: "",
         },
     });
 
@@ -501,6 +503,19 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                         <FormLabel>Tags (comma separated)</FormLabel>
                                         <FormControl>
                                             <Input placeholder="vip, urgent" className="rounded-xl border-white/10 bg-white/5" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="followUpDate"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Follow-up Date</FormLabel>
+                                        <FormControl>
+                                            <Input type="date" className="rounded-xl border-white/10 bg-white/5" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

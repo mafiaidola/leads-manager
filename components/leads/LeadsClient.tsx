@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,19 +14,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
 import { LeadDetailsSheet } from "@/components/leads/LeadDetailsSheet";
 import { format } from "date-fns";
-import { Search, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, UserPlus, Filter, Star, CheckSquare, ArrowRightLeft, Undo2, LayoutGrid, Table2 } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { Search, FileUp, Download, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight, UserPlus, Filter, Star, ArrowRightLeft, LayoutGrid, Table2, ChevronUp, ChevronDown, Users2, Bell, RotateCcw } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { deleteLead, toggleStarLead, bulkUpdateStatus, bulkAssign, bulkSoftDelete, transferLead } from "@/lib/actions/leads";
+import { deleteLead, toggleStarLead, bulkUpdateStatus, bulkAssign, bulkSoftDelete, transferLead, restoreLead, permanentDeleteLead } from "@/lib/actions/leads";
 import { EditLeadDialog } from "@/components/leads/EditLeadDialog";
 import { QuickStatsBar } from "@/components/leads/QuickStatsBar";
 import { KanbanBoard } from "@/components/leads/KanbanBoard";
 import { ImportDialog } from "@/components/leads/ImportDialog";
-import { restoreLead, permanentDeleteLead } from "@/lib/actions/leads";
 
 function useDebounce(callback: Function, delay: number) {
     const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
@@ -83,13 +81,75 @@ export function LeadsClient({
         if (params.get("status") === status) { params.delete("status"); } else { params.set("status", status); }
         params.delete("page");
         router.replace(`/leads?${params.toString()}`);
-    }
+    };
 
     const handleSourceFilter = (source: string) => {
         const params = new URLSearchParams(searchParams);
         if (source === "all") { params.delete("source"); } else { params.set("source", source); }
         params.delete("page");
         router.replace(`/leads?${params.toString()}`);
+    };
+
+    const handleAssigneeFilter = (userId: string) => {
+        const params = new URLSearchParams(searchParams);
+        if (userId === "all") { params.delete("assignedTo"); } else { params.set("assignedTo", userId); }
+        params.delete("page");
+        router.replace(`/leads?${params.toString()}`);
+    };
+
+    const handleSort = (field: string) => {
+        const params = new URLSearchParams(searchParams);
+        const currentSortField = params.get("sort");
+        const currentDirValue = params.get("dir");
+        if (currentSortField === field) {
+            params.set("dir", currentDirValue === "asc" ? "desc" : "asc");
+        } else {
+            params.set("sort", field);
+            params.set("dir", "asc");
+        }
+        params.delete("page");
+        router.replace(`/leads?${params.toString()}`);
+    };
+
+    const handleValueRange = useDebounce((min: string, max: string) => {
+        const params = new URLSearchParams(searchParams);
+        if (min) params.set("minValue", min); else params.delete("minValue");
+        if (max) params.set("maxValue", max); else params.delete("maxValue");
+        params.delete("page");
+        router.replace(`/leads?${params.toString()}`);
+    }, 500);
+
+    const handleTagFilter = (tag: string) => {
+        const params = new URLSearchParams(searchParams);
+        if (params.get("tag") === tag) { params.delete("tag"); } else { params.set("tag", tag); }
+        params.delete("page");
+        router.replace(`/leads?${params.toString()}`);
+    };
+
+    const handleOverdueFilter = () => {
+        const params = new URLSearchParams(searchParams);
+        if (params.get("overdue") === "true") { params.delete("overdue"); } else { params.set("overdue", "true"); }
+        params.delete("page");
+        router.replace(`/leads?${params.toString()}`);
+    };
+
+    // Derive unique tags from current page of leads
+    const allTags = Array.from(new Set(
+        leads.flatMap((l: any) => Array.isArray(l.tags) ? l.tags : [])
+    )).filter(Boolean) as string[];
+
+    const activeTag = searchParams.get("tag");
+    const isOverdueView = searchParams.get("overdue") === "true";
+    const now = new Date();
+
+    const currentSort = searchParams.get("sort") || "createdAt";
+    const currentDir = searchParams.get("dir") || "desc";
+
+    const SortIcon = ({ field }: { field: string }) => {
+        if (currentSort !== field) return <ChevronUp className="h-3 w-3 opacity-20 ml-1 inline" />;
+        return currentDir === "asc"
+            ? <ChevronUp className="h-3 w-3 ml-1 inline text-primary" />
+            : <ChevronDown className="h-3 w-3 ml-1 inline text-primary" />;
     };
 
     const handleExport = () => {
@@ -107,9 +167,8 @@ export function LeadsClient({
         }
         setIsDeleteConfirmOpen(false);
         setLeadToDelete(null);
-    }
+    };
 
-    // Star toggle
     const handleStar = async (id: string) => {
         const result = await toggleStarLead(id);
         if (result?.success) {
@@ -117,7 +176,6 @@ export function LeadsClient({
         }
     };
 
-    // Bulk actions
     const toggleSelect = (id: string) => {
         const newSet = new Set(selectedIds);
         if (newSet.has(id)) newSet.delete(id); else newSet.add(id);
@@ -177,6 +235,24 @@ export function LeadsClient({
         setTransferUserId("");
     };
 
+    const handleRestore = async (id: string) => {
+        const result = await restoreLead(id);
+        if (result?.success) {
+            toast({ title: "Lead restored", description: "The lead has been moved back to All Leads." });
+        } else {
+            toast({ title: "Error", description: result?.message, variant: "destructive" });
+        }
+    };
+
+    const handlePermanentDelete = async (id: string) => {
+        const result = await permanentDeleteLead(id);
+        if (result?.success) {
+            toast({ title: "Permanently deleted", description: "This lead cannot be recovered.", variant: "destructive" });
+        } else {
+            toast({ title: "Error", description: result?.message, variant: "destructive" });
+        }
+    };
+
     const handleViewToggle = (view: string) => {
         const params = new URLSearchParams();
         if (view === "starred") params.set("starred", "true");
@@ -208,6 +284,13 @@ export function LeadsClient({
                         className={cn("rounded-xl border-white/10", isStarredView && "bg-amber-500 hover:bg-amber-600")}>
                         <Star className="h-3.5 w-3.5 mr-1.5" /> Starred
                     </Button>
+                    {!isTrashView && !isStarredView && (
+                        <Button variant={isOverdueView ? "default" : "outline"} size="sm"
+                            onClick={handleOverdueFilter}
+                            className={cn("rounded-xl border-white/10", isOverdueView && "bg-amber-500 hover:bg-amber-600")}>
+                            <Bell className="h-3.5 w-3.5 mr-1.5" /> Overdue
+                        </Button>
+                    )}
                     {isAdmin && (
                         <Button variant={isTrashView ? "default" : "outline"} size="sm"
                             onClick={() => handleViewToggle("trash")}
@@ -233,7 +316,6 @@ export function LeadsClient({
                 <div className="flex items-center gap-3 p-3 rounded-2xl bg-primary/10 border border-primary/20 backdrop-blur-xl animate-in slide-in-from-top-2">
                     <Badge className="bg-primary text-white rounded-full px-3 font-bold">{selectedIds.size} selected</Badge>
 
-                    {/* Bulk Status Change */}
                     <DropdownMenu open={bulkStatusOpen} onOpenChange={setBulkStatusOpen}>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="rounded-xl border-white/10 h-8">Change Status</Button>
@@ -248,7 +330,6 @@ export function LeadsClient({
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    {/* Bulk Assign */}
                     {canSeeAssignment && (
                         <DropdownMenu open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>
                             <DropdownMenuTrigger asChild>
@@ -264,7 +345,6 @@ export function LeadsClient({
                         </DropdownMenu>
                     )}
 
-                    {/* Bulk Delete */}
                     {isAdmin && (
                         <Button variant="destructive" size="sm" className="rounded-xl h-8" onClick={handleBulkDelete}>
                             <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
@@ -275,8 +355,8 @@ export function LeadsClient({
                 </div>
             )}
 
+            {/* Primary filters: status chips + search/source/actions */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl shadow-sm">
-                {/* Status Chips */}
                 <div className="flex flex-wrap gap-2">
                     {settings?.statuses.map((s: any) => {
                         const isActive = searchParams.get("status") === s.key;
@@ -298,11 +378,10 @@ export function LeadsClient({
                             >
                                 {s.label}
                             </Badge>
-                        )
+                        );
                     })}
                 </div>
 
-                {/* Actions */}
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <div className="relative w-full sm:w-[200px]">
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -334,6 +413,66 @@ export function LeadsClient({
                 </div>
             </div>
 
+            {/* Secondary filter row: Assignee + Value range */}
+            {!isTrashView && (isAdmin || isMarketing) && (
+                <div className="flex flex-wrap items-center gap-2">
+                    <Select value={searchParams.get("assignedTo") || "all"} onValueChange={handleAssigneeFilter}>
+                        <SelectTrigger className="w-[160px] rounded-xl border-white/10 bg-white/5 h-8 text-xs">
+                            <Users2 className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                            <SelectValue placeholder="All Agents" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                            <SelectItem value="all">All Agents</SelectItem>
+                            {users.map((u: any) => (
+                                <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground">Value:</span>
+                        <Input
+                            type="number"
+                            placeholder="Min"
+                            defaultValue={searchParams.get("minValue") || ""}
+                            onChange={(e) => handleValueRange(e.target.value, searchParams.get("maxValue") || "")}
+                            className="w-20 h-8 text-xs rounded-xl border-white/10 bg-white/5"
+                        />
+                        <span className="text-xs text-muted-foreground">–</span>
+                        <Input
+                            type="number"
+                            placeholder="Max"
+                            defaultValue={searchParams.get("maxValue") || ""}
+                            onChange={(e) => handleValueRange(searchParams.get("minValue") || "", e.target.value)}
+                            className="w-20 h-8 text-xs rounded-xl border-white/10 bg-white/5"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Tag filter badges row */}
+            {!isTrashView && allTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 items-center">
+                    <span className="text-xs text-muted-foreground">Tags:</span>
+                    {allTags.map((tag) => (
+                        <button
+                            key={tag}
+                            onClick={() => handleTagFilter(tag)}
+                            className={cn(
+                                "px-2 py-0.5 rounded-full text-[11px] border transition-all",
+                                activeTag === tag
+                                    ? "bg-primary text-white border-primary"
+                                    : "bg-white/5 border-white/10 text-muted-foreground hover:border-primary/50 hover:text-primary"
+                            )}
+                        >
+                            {tag}
+                        </button>
+                    ))}
+                    {activeTag && (
+                        <button onClick={() => handleTagFilter(activeTag)} className="text-[10px] text-muted-foreground hover:text-destructive ml-1">✕ clear</button>
+                    )}
+                </div>
+            )}
+
             {/* Kanban View */}
             {viewMode === "kanban" && kanbanLeads && (
                 <KanbanBoard
@@ -356,15 +495,41 @@ export function LeadsClient({
                                         className="h-4 w-4 rounded accent-primary cursor-pointer" />
                                 </TableHead>
                                 <TableHead className="w-[30px]"></TableHead>
-                                <TableHead className="font-semibold text-primary">Name</TableHead>
-                                <TableHead className="font-semibold text-primary">Status</TableHead>
+                                <TableHead
+                                    className={cn("font-semibold cursor-pointer hover:text-primary transition-colors", currentSort === "name" ? "text-primary" : "text-primary")}
+                                    onClick={() => handleSort("name")}
+                                >
+                                    Name<SortIcon field="name" />
+                                </TableHead>
+                                <TableHead
+                                    className={cn("font-semibold cursor-pointer hover:text-primary transition-colors", currentSort === "status" ? "text-primary" : "text-primary/70")}
+                                    onClick={() => handleSort("status")}
+                                >
+                                    Status<SortIcon field="status" />
+                                </TableHead>
                                 <TableHead className="hidden md:table-cell font-semibold text-primary">Source</TableHead>
                                 <TableHead className="font-semibold text-primary w-[50px]">WA</TableHead>
                                 {canSeeAssignment && (
                                     <TableHead className="hidden md:table-cell font-semibold text-primary">Assigned</TableHead>
                                 )}
-                                <TableHead className="hidden md:table-cell font-semibold text-primary">Added</TableHead>
-                                <TableHead className="text-right font-semibold text-primary">Value</TableHead>
+                                <TableHead
+                                    className={cn("hidden md:table-cell font-semibold cursor-pointer hover:text-primary transition-colors", currentSort === "createdAt" ? "text-primary" : "text-primary/70")}
+                                    onClick={() => handleSort("createdAt")}
+                                >
+                                    Added<SortIcon field="createdAt" />
+                                </TableHead>
+                                <TableHead
+                                    className={cn("hidden lg:table-cell font-semibold cursor-pointer hover:text-primary transition-colors", currentSort === "followUpDate" ? "text-primary" : "text-primary/70")}
+                                    onClick={() => handleSort("followUpDate")}
+                                >
+                                    Follow-up<SortIcon field="followUpDate" />
+                                </TableHead>
+                                <TableHead
+                                    className={cn("text-right font-semibold cursor-pointer hover:text-primary transition-colors", currentSort === "value" ? "text-primary" : "text-primary/70")}
+                                    onClick={() => handleSort("value")}
+                                >
+                                    Value<SortIcon field="value" />
+                                </TableHead>
                                 <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -391,7 +556,12 @@ export function LeadsClient({
                                             </TableCell>
                                             <TableCell className="font-medium">
                                                 <Link href={`/leads/${lead._id}`} className="group/name">
-                                                    <div className="text-base text-foreground group-hover/name:text-primary transition-colors">{lead.name}</div>
+                                                    <div className="text-base text-foreground group-hover/name:text-primary transition-colors flex items-center gap-1.5">
+                                                        {lead.name}
+                                                        {lead.followUpDate && new Date(lead.followUpDate) <= now && (
+                                                            <span title={`Follow-up: ${new Date(lead.followUpDate).toLocaleDateString()}`} className="text-amber-400 text-sm">🔔</span>
+                                                        )}
+                                                    </div>
                                                     <div className="text-xs text-muted-foreground flex items-center gap-2">
                                                         <span>{lead.company}</span>
                                                         {(lead.noteCount > 0 || lead.actionCount > 0) && (
@@ -452,6 +622,20 @@ export function LeadsClient({
                                             <TableCell className="hidden md:table-cell text-muted-foreground">
                                                 {format(new Date(lead.createdAt), "MMM d, yyyy")}
                                             </TableCell>
+                                            <TableCell className="hidden lg:table-cell">
+                                                {lead.followUpDate ? (
+                                                    <span className={cn(
+                                                        "text-xs font-medium px-1.5 py-0.5 rounded-md",
+                                                        new Date(lead.followUpDate) <= now
+                                                            ? "bg-red-500/10 text-red-400"
+                                                            : "bg-amber-500/10 text-amber-400"
+                                                    )}>
+                                                        {format(new Date(lead.followUpDate), "MMM d, yyyy")}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-muted-foreground/30 text-xs">—</span>
+                                                )}
+                                            </TableCell>
                                             <TableCell className="text-right font-mono text-foreground/80">
                                                 {lead.value ? `${lead.currency} ${lead.value}` : "-"}
                                             </TableCell>
@@ -466,23 +650,45 @@ export function LeadsClient({
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
                                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                            <DropdownMenuItem onClick={() => setSelectedLeadId(lead._id)} className="cursor-pointer">View details</DropdownMenuItem>
-                                                            <DropdownMenuSeparator className="bg-white/5" />
-                                                            {(isAdmin || isSales) && (
-                                                                <DropdownMenuItem onClick={() => { setLeadToEdit(lead); setIsEditOpen(true); }} className="cursor-pointer flex items-center gap-2">
-                                                                    <Pencil className="h-4 w-4" /> Edit Lead
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            {canSeeAssignment && (
-                                                                <DropdownMenuItem onClick={() => { setTransferLeadId(lead._id); setIsTransferOpen(true); }} className="cursor-pointer flex items-center gap-2">
-                                                                    <ArrowRightLeft className="h-4 w-4" /> Transfer Lead
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            {isAdmin && (
-                                                                <DropdownMenuItem onClick={() => { setLeadToDelete(lead._id); setIsDeleteConfirmOpen(true); }}
-                                                                    className="cursor-pointer text-destructive focus:text-destructive flex items-center gap-2">
-                                                                    <Trash2 className="h-4 w-4" /> Delete Lead
-                                                                </DropdownMenuItem>
+                                                            {isTrashView ? (
+                                                                // ── Trash view: Restore or Permanently Delete ──
+                                                                isAdmin && (
+                                                                    <>
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => handleRestore(lead._id)}
+                                                                            className="cursor-pointer flex items-center gap-2 text-emerald-400 focus:text-emerald-400">
+                                                                            <RotateCcw className="h-4 w-4" /> Restore Lead
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuSeparator className="bg-white/5" />
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => handlePermanentDelete(lead._id)}
+                                                                            className="cursor-pointer flex items-center gap-2 text-destructive focus:text-destructive">
+                                                                            <Trash2 className="h-4 w-4" /> Delete Permanently
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )
+                                                            ) : (
+                                                                // ── Normal view: standard actions ──
+                                                                <>
+                                                                    <DropdownMenuItem onClick={() => setSelectedLeadId(lead._id)} className="cursor-pointer">View details</DropdownMenuItem>
+                                                                    <DropdownMenuSeparator className="bg-white/5" />
+                                                                    {(isAdmin || isSales) && (
+                                                                        <DropdownMenuItem onClick={() => { setLeadToEdit(lead); setIsEditOpen(true); }} className="cursor-pointer flex items-center gap-2">
+                                                                            <Pencil className="h-4 w-4" /> Edit Lead
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    {canSeeAssignment && (
+                                                                        <DropdownMenuItem onClick={() => { setTransferLeadId(lead._id); setIsTransferOpen(true); }} className="cursor-pointer flex items-center gap-2">
+                                                                            <ArrowRightLeft className="h-4 w-4" /> Transfer Lead
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    {isAdmin && (
+                                                                        <DropdownMenuItem onClick={() => { setLeadToDelete(lead._id); setIsDeleteConfirmOpen(true); }}
+                                                                            className="cursor-pointer text-destructive focus:text-destructive flex items-center gap-2">
+                                                                            <Trash2 className="h-4 w-4" /> Delete Lead
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                </>
                                                             )}
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>

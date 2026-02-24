@@ -6,7 +6,7 @@ import Lead from "@/models/Lead";
 import LeadNote from "@/models/LeadNote";
 import { USER_ROLES } from "@/models/User";
 
-export async function getDashboardStats() {
+export async function getDashboardStats(dateRange?: "7d" | "30d" | "90d" | "all") {
     const session = await auth();
     if (!session) return null;
 
@@ -16,6 +16,11 @@ export async function getDashboardStats() {
         const matchStage: any = { deletedAt: null };
         if (session.user.role === USER_ROLES.SALES) {
             matchStage.assignedTo = session.user.id;
+        }
+        // Apply date range filter
+        if (dateRange && dateRange !== "all") {
+            const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
+            matchStage.createdAt = { $gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) };
         }
         // Marketing and Admin see all leads (soft-deleted excluded)
 
@@ -35,7 +40,8 @@ export async function getDashboardStats() {
             leadsBySource,
             recentLeads,
             monthlyTrends,
-            recentActivity
+            recentActivity,
+            agentLeaderboard
         ] = await Promise.all([
             Lead.countDocuments(matchStage),
             Lead.aggregate([
@@ -81,7 +87,44 @@ export async function getDashboardStats() {
                 .sort({ createdAt: -1 })
                 .limit(10)
                 .populate("leadId", "name")
-                .populate("authorId", "name")
+                .populate("authorId", "name"),
+            // Agent Leaderboard
+            Lead.aggregate([
+                { $match: matchStage },
+                {
+                    $group: {
+                        _id: "$assignedTo",
+                        total: { $sum: 1 },
+                        won: {
+                            $sum: {
+                                $cond: [{
+                                    $regexMatch: { input: { $toLower: { $ifNull: ["$status", ""] } }, regex: "won|customer" }
+                                }, 1, 0]
+                            }
+                        }
+                    }
+                },
+                { $sort: { total: -1 } },
+                { $limit: 10 },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "agent"
+                    }
+                },
+                { $unwind: { path: "$agent", preserveNullAndEmptyArrays: true } },
+                {
+                    $project: {
+                        _id: 1,
+                        total: 1,
+                        won: 1,
+                        agentName: { $ifNull: ["$agent.name", "Unassigned"] },
+                        agentRole: { $ifNull: ["$agent.role", "UNASSIGNED"] }
+                    }
+                }
+            ])
         ]);
 
         return {
@@ -115,6 +158,12 @@ export async function getDashboardStats() {
                 }
                 return months;
             })(),
+            agentLeaderboard: agentLeaderboard.map((item: any) => ({
+                agentName: item.agentName,
+                agentRole: item.agentRole,
+                total: item.total,
+                won: item.won,
+            })),
         };
     } catch (error) {
         console.error("getDashboardStats error:", error);

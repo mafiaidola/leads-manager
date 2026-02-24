@@ -36,6 +36,7 @@ const LeadSchema = z.object({
     tags: z.string().optional(), // Comma separated
     public: z.string().optional(), // Checkbox
     contactedToday: z.string().optional(), // Checkbox
+    followUpDate: z.string().optional(), // ISO date string
 });
 
 // ─── Real-time duplicate phone check ────────────────────────────────────────
@@ -259,6 +260,7 @@ export async function updateLead(prevState: any, formData: FormData) {
         lead.tags = tagList;
         lead.public = rawFormData.public === "on";
         lead.contactedToday = rawFormData.contactedToday === "on";
+        lead.followUpDate = rest.followUpDate ? new Date(rest.followUpDate) : undefined;
         lead.updatedBy = new mongoose.Types.ObjectId(session.user.id);
 
         await lead.save();
@@ -307,6 +309,7 @@ export async function createLead(prevState: any, formData: FormData) {
         await dbConnect();
         const newLead = await Lead.create({
             ...rest,
+            followUpDate: rest.followUpDate ? new Date(rest.followUpDate) : undefined,
             assignedTo: assignedTo || undefined,
             address: {
                 addressLine: rest.address,
@@ -435,17 +438,41 @@ export async function getLeads(searchParams: any) {
             query.tags = searchParams.tag;
         }
 
+        // Value range filter
+        if (searchParams.minValue || searchParams.maxValue) {
+            query.value = {};
+            if (searchParams.minValue) query.value.$gte = Number(searchParams.minValue);
+            if (searchParams.maxValue) query.value.$lte = Number(searchParams.maxValue);
+        }
+
         // Starred filter
         if (searchParams.starred === "true") {
             query.starred = new mongoose.Types.ObjectId(session.user.id);
+        }
+
+        // Overdue follow-up filter
+        if (searchParams.overdue === "true") {
+            query.followUpDate = { $lte: new Date(), $ne: null };
         }
 
         const page = Number(searchParams.page) || 1;
         const limit = 50;
         const skip = (page - 1) * limit;
 
+        // Dynamic sort — whitelist fields to prevent injection
+        const ALLOWED_SORT_FIELDS: Record<string, string> = {
+            name: "name",
+            value: "value",
+            status: "status",
+            createdAt: "createdAt",
+            followUpDate: "followUpDate",
+        };
+        const sortField = ALLOWED_SORT_FIELDS[searchParams.sort] || "createdAt";
+        const sortDir = searchParams.dir === "asc" ? 1 : -1;
+        const sortObj: Record<string, 1 | -1> = { [sortField]: sortDir };
+
         const leads = await Lead.find(query)
-            .sort({ createdAt: -1 })
+            .sort(sortObj)
             .skip(skip)
             .limit(limit)
             .populate("assignedTo", "name")
@@ -486,6 +513,7 @@ export async function getLeads(searchParams: any) {
                     updatedAt: (l.updatedAt as Date).toISOString(),
                     noteCount: noteMap.get(id) || 0,
                     actionCount: actionMap.get(id) || 0,
+                    followUpDate: l.followUpDate ? (l.followUpDate as Date).toISOString() : null,
                 };
             }),
             total
@@ -597,6 +625,7 @@ export async function getLeadDetails(id: string) {
                 createdAt: lead.createdAt.toISOString(),
                 updatedAt: lead.updatedAt.toISOString(),
                 lastContactAt: lead.lastContactAt?.toISOString(),
+                followUpDate: (lead as any).followUpDate ? (lead as any).followUpDate.toISOString() : null,
             },
             notes: notes.map(n => ({
                 ...n,

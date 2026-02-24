@@ -10,7 +10,7 @@ import { updateSettings, updateBranding, updateGoals, updateTheme } from "@/lib/
 import { createUser, updateUser, deleteUser, changePassword, adminResetPassword } from "@/lib/actions/users";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { X, Pencil, Trash2, Download, Shield, Palette, Key, Target, Save, UserPlus, Check, Sparkles } from "lucide-react";
+import { X, Pencil, Trash2, Download, Shield, Palette, Key, Target, Save, UserPlus, Check, Sparkles, Database, HardDrive, FileDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
@@ -81,7 +81,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
     };
 
     const handleAddStatus = () => {
-        setStatuses([...statuses, { key: `status_${Date.now()}`, label: "New Status", color: "gray" }]);
+        setStatuses([...statuses, { key: "new_status", label: "New Status", color: "#8b5cf6" }]);
     }
 
     const handleRemoveStatus = (index: number) => {
@@ -92,7 +92,12 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
 
     const handleStatusChange = (index: number, field: string, value: string) => {
         const newStatuses = [...statuses];
-        newStatuses[index] = { ...newStatuses[index], [field]: value };
+        const updated: any = { ...newStatuses[index], [field]: value };
+        // Auto-sync key when label changes
+        if (field === 'label') {
+            updated.key = value.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        }
+        newStatuses[index] = updated;
         setStatuses(newStatuses);
     }
 
@@ -201,6 +206,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                 <TabsTrigger value="branding" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Branding</TabsTrigger>
                 <TabsTrigger value="roles" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Roles</TabsTrigger>
                 <TabsTrigger value="account" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Account</TabsTrigger>
+                <TabsTrigger value="system" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">System</TabsTrigger>
             </TabsList>
 
             {/* ── General Tab ─────────────────────────────── */}
@@ -863,6 +869,73 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                         </Button>
                     </CardContent>
                 </Card>
+            </TabsContent>
+
+            {/* ── System Tab ────────────────────────────────── */}
+            <TabsContent value="system">
+                <div className="grid gap-6 md:grid-cols-2">
+                    {/* Backup */}
+                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                <Database className="h-5 w-5 text-blue-500" />
+                                Database Backup
+                            </CardTitle>
+                            <CardDescription className="text-muted-foreground/80">
+                                Download a full JSON backup of all leads, users, settings, notes, and actions.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20">
+                                <p className="text-xs text-blue-400 font-medium mb-1">📦 Includes:</p>
+                                <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                                    <li>All leads and their data</li>
+                                    <li>Team members and roles</li>
+                                    <li>Notes and action history</li>
+                                    <li>Application settings</li>
+                                </ul>
+                            </div>
+                            <Button
+                                onClick={handleBackup}
+                                className="rounded-xl bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/20 gap-2"
+                            >
+                                <HardDrive className="h-4 w-4" />
+                                Download Backup (JSON)
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    {/* Export All Leads */}
+                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                <FileDown className="h-5 w-5 text-emerald-500" />
+                                Export All Leads
+                            </CardTitle>
+                            <CardDescription className="text-muted-foreground/80">
+                                Download all active leads as a CSV file (26 fields including contact, deal, and address data).
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                                <p className="text-xs text-emerald-400 font-medium mb-1">📊 CSV includes:</p>
+                                <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                                    <li>Name, phone, email, company</li>
+                                    <li>Status, source, product, value</li>
+                                    <li>Address, city, country, tags</li>
+                                    <li>Assigned agent, created date</li>
+                                </ul>
+                            </div>
+                            <Button
+                                onClick={() => { window.location.href = "/api/leads/export"; }}
+                                className="rounded-xl bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 gap-2"
+                            >
+                                <Download className="h-4 w-4" />
+                                Export All Leads (CSV)
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
             </TabsContent>
         </Tabs >
     );

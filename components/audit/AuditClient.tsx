@@ -20,12 +20,12 @@ const ACTION_COLORS: Record<string, string> = {
     UPDATE: "bg-blue-500/10 text-blue-500 border-blue-500/20",
     DELETE: "bg-red-500/10 text-red-500 border-red-500/20",
     IMPORT: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+    EXPORT: "bg-sky-500/10 text-sky-500 border-sky-500/20",
+    LOGIN: "bg-green-500/10 text-green-500 border-green-500/20",
     TRANSFER: "bg-amber-500/10 text-amber-500 border-amber-500/20",
     RESTORE: "bg-teal-500/10 text-teal-500 border-teal-500/20",
     BULK_UPDATE: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
     BULK_DELETE: "bg-rose-500/10 text-rose-500 border-rose-500/20",
-    BULK_ASSIGN: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
-    PERMANENT_DELETE: "bg-red-600/10 text-red-600 border-red-600/20",
 };
 
 export function AuditClient() {
@@ -97,10 +97,10 @@ export function AuditClient() {
                         <SelectItem value="IMPORT">Import</SelectItem>
                         <SelectItem value="TRANSFER">Transfer</SelectItem>
                         <SelectItem value="RESTORE">Restore</SelectItem>
+                        <SelectItem value="EXPORT">Export</SelectItem>
+                        <SelectItem value="LOGIN">Login</SelectItem>
                         <SelectItem value="BULK_UPDATE">Bulk Update</SelectItem>
-                        <SelectItem value="BULK_ASSIGN">Bulk Assign</SelectItem>
                         <SelectItem value="BULK_DELETE">Bulk Delete</SelectItem>
-                        <SelectItem value="PERMANENT_DELETE">Permanent Delete</SelectItem>
                     </SelectContent>
                 </Select>
                 <Select value={entityFilter} onValueChange={(v) => { setEntityFilter(v); setPage(1); }}>
