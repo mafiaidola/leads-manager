@@ -303,6 +303,7 @@ export default function ReportsClient() {
                                 </div>
                             </div>
                             <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden">
+                                {/* eslint-disable-next-line react/forbid-dom-props */}
                                 <div className={`h-full rounded-full transition-all duration-700 progress-bar ${leadGoalPercent >= 100 ? 'bg-emerald-500' : leadGoalPercent >= 70 ? 'bg-amber-500' : 'bg-red-400'}`}
                                     style={{ '--progress': `${Math.min(100, leadGoalPercent)}%` } as React.CSSProperties} />
                             </div>
@@ -328,6 +329,7 @@ export default function ReportsClient() {
                                 </div>
                             </div>
                             <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden">
+                                {/* eslint-disable-next-line react/forbid-dom-props */}
                                 <div className={`h-full rounded-full transition-all duration-700 progress-bar ${convGoalPercent >= 100 ? 'bg-emerald-500' : convGoalPercent >= 70 ? 'bg-amber-500' : 'bg-red-400'}`}
                                     style={{ '--progress': `${Math.min(100, convGoalPercent)}%` } as React.CSSProperties} />
                             </div>
@@ -406,6 +408,7 @@ export default function ReportsClient() {
                                                 </div>
                                             </div>
                                             <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                                {/* eslint-disable-next-line react/forbid-dom-props */}
                                                 <div
                                                     className={`h-full rounded-full transition-all duration-700 ${pct >= 50 ? 'bg-emerald-400' : pct >= 25 ? 'bg-amber-400' : 'bg-blue-400'}`}
                                                     style={{ width: `${Math.max(4, pct)}%` }}

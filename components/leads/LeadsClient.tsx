@@ -329,6 +329,7 @@ export function LeadsClient({
                         <DropdownMenuContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
                             {settings?.statuses.map((s: any) => (
                                 <DropdownMenuItem key={s.key} onClick={() => handleBulkStatus(s.key)} className="cursor-pointer">
+                                    {/* eslint-disable-next-line react/forbid-dom-props */}
                                     <span className="w-2 h-2 rounded-full mr-2 status-dot" style={{ '--status-color': s.color } as React.CSSProperties} aria-hidden="true" />
                                     {s.label}
                                 </DropdownMenuItem>
@@ -509,7 +510,12 @@ export function LeadsClient({
                                         {lead.company && <div className="text-xs text-muted-foreground truncate">{lead.company}</div>}
                                     </div>
                                     <div className="flex items-center gap-1.5 shrink-0">
-                                        <button onClick={(e) => { e.stopPropagation(); handleStar(lead._id); }} className="hover:scale-125 transition-transform">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleStar(lead._id); }}
+                                            className="hover:scale-125 transition-transform"
+                                            title={isStarred ? "Remove star" : "Star this lead"}
+                                            aria-label={isStarred ? "Remove star" : "Star this lead"}
+                                        >
                                             <Star className={cn("h-4 w-4", isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30")} />
                                         </button>
                                         {!isMarketing && (

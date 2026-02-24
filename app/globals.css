@@ -393,6 +393,15 @@
   animation: blob-drift 15s ease-in-out infinite;
 }
 
+/* Animation delay utilities (avoids inline style on login page blobs) */
+.animation-delay-5 {
+  animation-delay: -5s;
+}
+
+.animation-delay-10 {
+  animation-delay: -10s;
+}
+
 /* Shimmer loading */
 .animate-shimmer {
   background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);

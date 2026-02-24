@@ -28,8 +28,8 @@ export default function LoginPage() {
         <div className="relative flex items-center justify-center min-h-screen bg-[#09090b] overflow-hidden selection:bg-primary/30">
             {/* Animated Background Blobs */}
             <div className="absolute top-[-15%] left-[-15%] w-[50%] h-[50%] bg-primary/15 rounded-full blur-[140px] animate-blob-drift" />
-            <div className="absolute bottom-[-15%] right-[-15%] w-[50%] h-[50%] bg-violet-600/15 rounded-full blur-[140px] animate-blob-drift" style={{ animationDelay: "-5s" }} />
-            <div className="absolute top-[40%] left-[60%] w-[30%] h-[30%] bg-pink-500/10 rounded-full blur-[120px] animate-blob-drift" style={{ animationDelay: "-10s" }} />
+            <div className="absolute bottom-[-15%] right-[-15%] w-[50%] h-[50%] bg-violet-600/15 rounded-full blur-[140px] animate-blob-drift animation-delay-5" />
+            <div className="absolute top-[40%] left-[60%] w-[30%] h-[30%] bg-pink-500/10 rounded-full blur-[120px] animate-blob-drift animation-delay-10" />
 
             {/* Floating Particles */}
             <FloatingParticles />
@@ -212,7 +212,7 @@ function FloatingParticles() {
                 <div
                     key={i}
                     className="absolute rounded-full bg-primary/20 animate-float"
-                    style={{
+                    style={{ // eslint-disable-line react/forbid-dom-props
                         left: p.left,
                         top: p.top,
                         width: `${p.size}px`,
