@@ -2,7 +2,8 @@ import { Sidebar } from "@/components/Sidebar";
 import { MobileSidebar } from "@/components/MobileSidebar";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { LogOut, UserCircle2, Bell, Search } from "lucide-react";
+import { LogOut, UserCircle2, Search } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { handleSignOut } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
@@ -43,10 +44,7 @@ export default async function DashboardLayout({
                             </div>
 
                             {/* Notifications */}
-                            <button aria-label="Notifications" className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all relative">
-                                <Bell className="h-5 w-5" />
-                                <span className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full border-2 border-white dark:border-black" />
-                            </button>
+                            <NotificationBell />
 
                             <div className="h-8 w-[1px] bg-border mx-1" />
 

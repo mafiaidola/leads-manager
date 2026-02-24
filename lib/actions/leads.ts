@@ -12,6 +12,7 @@ import { z } from "zod";
 import mongoose from "mongoose";
 import { logAudit } from "@/lib/actions/audit";
 import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
+import { createNotification, getAdminUserIds } from "@/lib/actions/notifications";
 
 
 const LeadSchema = z.object({
@@ -263,9 +264,21 @@ export async function updateLead(prevState: any, formData: FormData) {
         lead.followUpDate = rest.followUpDate ? new Date(rest.followUpDate) : undefined;
         lead.updatedBy = new mongoose.Types.ObjectId(session.user.id);
 
+        const prevAssignedTo = lead.assignedTo?.toString();
         await lead.save();
 
         logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, `Updated lead: ${lead.name}`);
+
+        // Notify newly assigned user (if assignment changed)
+        if (assignedTo && assignedTo !== prevAssignedTo) {
+            createNotification({
+                userIds: [assignedTo],
+                type: "lead_assigned",
+                title: "Lead Assigned to You",
+                message: `${session.user.name} assigned "${lead.name}" to you.`,
+                leadId: id,
+            }).catch(console.error);
+        }
 
         revalidatePath("/leads");
         revalidatePath(`/leads/${id}`);
@@ -352,6 +365,18 @@ export async function createLead(prevState: any, formData: FormData) {
 
         logAudit(AUDIT_ACTIONS.CREATE, ENTITY_TYPES.LEAD, newLead._id.toString(), `Created lead: ${rest.name}`);
 
+        // Notify all admins about the new lead
+        getAdminUserIds().then((adminIds) => {
+            const targets = [...new Set([...adminIds, ...(assignedTo ? [assignedTo] : [])])];
+            createNotification({
+                userIds: targets,
+                type: "new_lead",
+                title: "New Lead Created",
+                message: `${session.user.name} created a new lead: "${rest.name}"${rest.phone ? ` (${rest.phone})` : ""}.`,
+                leadId: newLead._id.toString(),
+            });
+        }).catch(console.error);
+
     } catch (error) {
         console.error("Failed to create lead:", error);
         return { message: "Database Error: Failed to create lead." };
@@ -394,6 +419,17 @@ export async function updateLeadStatus(id: string, newStatus: string) {
         });
 
         logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, `Status changed from ${oldStatus} to ${newStatus}`);
+
+        // Notify assigned user about status change
+        if (lead.assignedTo) {
+            createNotification({
+                userIds: [lead.assignedTo.toString()],
+                type: "status_changed",
+                title: "Lead Status Changed",
+                message: `"${lead.name}" status changed from ${oldStatus} → ${newStatus}.`,
+                leadId: id,
+            }).catch(console.error);
+        }
 
         revalidatePath(`/leads/${id}`);
         revalidatePath("/leads");

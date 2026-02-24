@@ -5,11 +5,11 @@ import {
     Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend,
     PieChart, Pie, Cell, AreaChart, Area, CartesianGrid, ComposedChart, Line, ReferenceLine
 } from "recharts";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { getSettings } from "@/lib/actions/settings";
 import { cn } from "@/lib/utils";
-import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText } from "lucide-react";
+import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,6 +36,8 @@ export default function ReportsClient() {
     const [settings, setSettings] = useState<any>(null);
     const [dateRange, setDateRange] = useState<DateRange>("all");
     const { toast } = useToast();
+    const reportRef = useRef<HTMLDivElement>(null);
+    const [isExportingPDF, setIsExportingPDF] = useState(false);
 
     useEffect(() => {
         setData(null);
@@ -154,6 +156,41 @@ export default function ReportsClient() {
         toast({ title: "Report exported as JSON" });
     };
 
+    const handleExportPDF = async () => {
+        if (!reportRef.current || isExportingPDF) return;
+        setIsExportingPDF(true);
+        toast({ title: "Generating PDF, please wait..." });
+        try {
+            const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+                import("jspdf"),
+                import("html2canvas"),
+            ]);
+            const canvas = await html2canvas(reportRef.current, {
+                scale: 1.5,
+                useCORS: true,
+                backgroundColor: "#09090b",
+                logging: false,
+            });
+            const imgData = canvas.toDataURL("image/jpeg", 0.85);
+            const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            let yOffset = 0;
+            while (yOffset < pdfHeight) {
+                pdf.addImage(imgData, "JPEG", 0, -yOffset, pdfWidth, pdfHeight);
+                yOffset += pageHeight;
+                if (yOffset < pdfHeight) pdf.addPage();
+            }
+            pdf.save(`leads-report-${new Date().toISOString().split("T")[0]}.pdf`);
+            toast({ title: "✅ PDF downloaded successfully!" });
+        } catch (err) {
+            console.error("PDF export error:", err);
+            toast({ title: "PDF export failed", variant: "destructive" });
+        } finally {
+            setIsExportingPDF(false);
+        }
+    };
     const DATE_RANGES: { label: string; value: DateRange }[] = [
         { label: "7 Days", value: "7d" },
         { label: "30 Days", value: "30d" },
@@ -188,6 +225,9 @@ export default function ReportsClient() {
                     </Button>
                     <Button variant="outline" size="sm" onClick={handleExportJSON} className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
                         <FileText className="h-4 w-4 mr-1.5" /> Export JSON
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={isExportingPDF} className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-50">
+                        <FileDown className="h-4 w-4 mr-1.5" /> {isExportingPDF ? "Generating..." : "Download PDF"}
                     </Button>
                 </div>
             </div>
