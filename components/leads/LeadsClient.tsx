@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -42,6 +42,12 @@ export function LeadsClient({
     const router = useRouter();
     const searchParams = useSearchParams();
     const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+
+    // Auto-refresh every 60 seconds
+    useEffect(() => {
+        const interval = setInterval(() => { router.refresh(); }, 60000);
+        return () => clearInterval(interval);
+    }, [router]);
     const { toast } = useToast();
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
@@ -483,9 +489,80 @@ export function LeadsClient({
                 />
             )}
 
-            {/* Table View */}
+            {/* Mobile Card View — shown only on small screens in table mode */}
+            {viewMode === "table" && leads.length > 0 && (
+                <div className="md:hidden space-y-2">
+                    {leads.map((lead) => {
+                        const isStarred = lead.starred?.includes(currentUserId);
+                        const isOverdue = lead.followUpDate && new Date(lead.followUpDate) <= now;
+                        const statusBadge = settings?.statuses?.find((s: any) => s.key === lead.status);
+                        return (
+                            <div key={lead._id}
+                                className={cn("rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl p-4 space-y-2 cursor-pointer hover:bg-primary/5 transition-colors", selectedIds.has(lead._id) && "bg-primary/10")}
+                                onClick={() => setSelectedLeadId(lead._id)}>
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="font-semibold text-sm text-foreground truncate">{lead.name}</span>
+                                            {isOverdue && <span className="text-amber-400 text-xs">🔔</span>}
+                                        </div>
+                                        {lead.company && <div className="text-xs text-muted-foreground truncate">{lead.company}</div>}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <button onClick={(e) => { e.stopPropagation(); handleStar(lead._id); }} className="hover:scale-125 transition-transform">
+                                            <Star className={cn("h-4 w-4", isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30")} />
+                                        </button>
+                                        {!isMarketing && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                    <Button variant="ghost" className="h-7 w-7 p-0 rounded-full hover:bg-primary/10">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                                    {isTrashView ? (isAdmin && <>
+                                                        <DropdownMenuItem onClick={() => handleRestore(lead._id)} className="cursor-pointer text-emerald-400 flex items-center gap-2"><RotateCcw className="h-4 w-4" /> Restore</DropdownMenuItem>
+                                                        <DropdownMenuSeparator className="bg-white/5" />
+                                                        <DropdownMenuItem onClick={() => handlePermanentDelete(lead._id)} className="cursor-pointer text-destructive flex items-center gap-2"><Trash2 className="h-4 w-4" /> Delete Permanently</DropdownMenuItem>
+                                                    </>) : (<>
+                                                        {(isAdmin || isSales) && <DropdownMenuItem onClick={() => { setLeadToEdit(lead); setIsEditOpen(true); }} className="cursor-pointer flex items-center gap-2"><Pencil className="h-4 w-4" /> Edit</DropdownMenuItem>}
+                                                        {isAdmin && <DropdownMenuItem onClick={() => { setLeadToDelete(lead._id); setIsDeleteConfirmOpen(true); }} className="cursor-pointer text-destructive flex items-center gap-2"><Trash2 className="h-4 w-4" /> Delete</DropdownMenuItem>}
+                                                    </>)}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {statusBadge && (
+                                        <Badge variant="outline" className="text-[11px] h-5 px-1.5" style={{ backgroundColor: `${statusBadge.color}15`, color: statusBadge.color, borderColor: `${statusBadge.color}50` }}>
+                                            {statusBadge.label || lead.status}
+                                        </Badge>
+                                    )}
+                                    {lead.source && <span className="text-[11px] text-muted-foreground">{lead.source}</span>}
+                                    {lead.value && <span className="text-[11px] font-semibold text-primary ml-auto">{lead.currency} {lead.value}</span>}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {lead.phone && (
+                                        <a href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                                            className="flex items-center gap-1 text-[11px] text-green-400 hover:underline">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.008-.57-.008-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" /></svg>
+                                            WhatsApp
+                                        </a>
+                                    )}
+                                    {isOverdue && (
+                                        <span className="text-[11px] text-red-400 ml-auto">🔔 {new Date(lead.followUpDate).toLocaleDateString()}</span>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Table View — hidden on mobile, shown md+ */}
             {viewMode === "table" && (
-                <div className="rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl overflow-hidden shadow-sm">
+                <div className="hidden md:block rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl overflow-hidden shadow-sm">
                     <Table>
                         <TableHeader className="bg-white/5">
                             <TableRow className="hover:bg-transparent border-white/5">
