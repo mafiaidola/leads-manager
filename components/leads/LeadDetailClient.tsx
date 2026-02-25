@@ -4,10 +4,10 @@ import React, { useState, useTransition, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-    ArrowLeft, Building2, Mail, Phone, Globe, MapPin, Tag, Star, StarOff,
+    ArrowLeft, Building2, Phone, Star, StarOff,
     Calendar, Clock, MessageSquare, PhoneCall, Video, Send, Users, MoreHorizontal,
-    Plus, CheckCircle2, XCircle, AlertCircle, Briefcase, DollarSign, Hash,
-    ChevronDown, Sparkles, ExternalLink, Pencil, Trash2, Download, Bell,
+    Plus, AlertCircle, Briefcase, Tag,
+    Sparkles, Pencil, Trash2, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { updateLeadStatus, addNote, addLeadAction, toggleStarLead, deleteLead } from "@/lib/actions/leads";
