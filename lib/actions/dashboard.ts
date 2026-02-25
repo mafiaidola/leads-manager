@@ -1,5 +1,4 @@
 "use server";
-import { serialize } from "@/lib/serialize";
 
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
@@ -158,8 +157,8 @@ export async function getDashboardStats(
                 source: item._id || "Unknown",
                 count: item.count
             })),
-            recentLeads: serialize(recentLeads),
-            recentActivity: serialize(recentActivity),
+            recentLeads: JSON.parse(JSON.stringify(recentLeads)),
+            recentActivity: JSON.parse(JSON.stringify(recentActivity)),
             monthlyTrends: (() => {
                 const raw = monthlyTrends.map((item) => ({
                     name: item._id,
