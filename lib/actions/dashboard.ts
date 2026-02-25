@@ -83,7 +83,7 @@ export async function getDashboardStats(
                 { $group: { _id: "$source", count: { $sum: 1 } } },
             ]),
             // Recent Leads
-            Lead.find(matchStage).sort({ createdAt: -1 }).limit(5).populate("assignedTo", "name email"),
+            Lead.find(matchStage).sort({ createdAt: -1 }).limit(5).populate("assignedTo", "name email").lean(),
             // Monthly Trend (Last 6 months)
             Lead.aggregate([
                 { $match: matchStage },
@@ -104,7 +104,8 @@ export async function getDashboardStats(
                 .sort({ createdAt: -1 })
                 .limit(10)
                 .populate("leadId", "name")
-                .populate("authorId", "name"),
+                .populate("authorId", "name")
+                .lean(),
             // Agent Leaderboard
             Lead.aggregate([
                 { $match: matchStage },

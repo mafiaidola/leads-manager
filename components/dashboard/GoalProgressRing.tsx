@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 interface GoalProgressRingProps {
     current: number;
     target: number;
@@ -7,7 +9,7 @@ interface GoalProgressRingProps {
     color?: string;
 }
 
-export function GoalProgressRing({ current, target, label, color = "var(--primary)" }: GoalProgressRingProps) {
+export const GoalProgressRing = React.memo(function GoalProgressRing({ current, target, label, color = "var(--primary)" }: GoalProgressRingProps) {
     const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
     const radius = 54;
     const circumference = 2 * Math.PI * radius;
@@ -45,4 +47,4 @@ export function GoalProgressRing({ current, target, label, color = "var(--primar
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">{label}</p>
         </div>
     );
-}
+});

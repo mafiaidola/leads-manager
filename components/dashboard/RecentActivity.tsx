@@ -1,11 +1,12 @@
 "use client";
 
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export function RecentActivity({ activities }: { activities: any[] }) {
+export const RecentActivity = React.memo(function RecentActivity({ activities }: { activities: any[] }) {
     return (
         <Card className="col-span-1 lg:col-span-3 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start">
             <CardHeader className="pb-4">
@@ -58,4 +59,4 @@ export function RecentActivity({ activities }: { activities: any[] }) {
             </CardContent>
         </Card>
     );
-}
+});

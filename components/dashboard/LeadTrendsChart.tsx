@@ -1,8 +1,9 @@
 "use client";
 
+import React from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 
-export function LeadTrendsChart({ data }: { data: any[] }) {
+export const LeadTrendsChart = React.memo(function LeadTrendsChart({ data }: { data: any[] }) {
     if (!data || data.length === 0) {
         return (
             <div className="h-[300px] flex items-center justify-center text-muted-foreground italic bg-white/5 rounded-2xl border border-dashed border-white/10">
@@ -59,4 +60,4 @@ export function LeadTrendsChart({ data }: { data: any[] }) {
             </ResponsiveContainer>
         </div>
     );
-}
+});
