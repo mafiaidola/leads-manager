@@ -73,56 +73,40 @@ export default function ReportsClient() {
         fetchData();
     }, [fetchData, dateRange, customStart, customEnd]);
 
-    if (!data) return (
-        <div className="p-8 space-y-8 bg-background/50">
-            <div className="flex items-center justify-between">
-                <div className="h-9 w-64 bg-white/5 rounded-xl animate-pulse" />
-            </div>
-            <div className="grid gap-6 md:grid-cols-4">
-                {[...Array(4)].map((_, i) => (
-                    <div key={i} className="p-6 rounded-3xl bg-white/5 animate-pulse h-[110px]" />
-                ))}
-            </div>
-            <div className="grid gap-6 md:grid-cols-2">
-                {[...Array(2)].map((_, i) => (
-                    <div key={i} className="p-6 rounded-3xl bg-white/5 animate-pulse h-[400px]" />
-                ))}
-            </div>
-        </div>
-    );
 
-    const statusData = useMemo(() => data.leadsByStatus.map((item: any) => ({
+    const statusData = useMemo(() => (data?.leadsByStatus || []).map((item: any) => ({
         name: item.status.replace(/_/g, " "),
         value: item.count
-    })), [data.leadsByStatus]);
+    })), [data?.leadsByStatus]);
 
-    const sourceData = useMemo(() => data.leadsBySource.map((item: any) => ({
+    const sourceData = useMemo(() => (data?.leadsBySource || []).map((item: any) => ({
         name: item.source || "Unknown",
         value: item.count
-    })), [data.leadsBySource]);
+    })), [data?.leadsBySource]);
 
-    const conversionRate = useMemo(() => data.totalLeads > 0
-        ? ((data.customers / data.totalLeads) * 100).toFixed(1)
-        : "0.0", [data.totalLeads, data.customers]);
+    const conversionRate = useMemo(() => (data?.totalLeads ?? 0) > 0
+        ? (((data?.customers ?? 0) / (data?.totalLeads ?? 1)) * 100).toFixed(1)
+        : "0.0", [data?.totalLeads, data?.customers]);
 
-    const trendChange = useMemo(() => data.monthlyTrends.length >= 2
-        ? data.monthlyTrends[data.monthlyTrends.length - 1].total - data.monthlyTrends[data.monthlyTrends.length - 2].total
-        : 0, [data.monthlyTrends]);
+    const trendChange = useMemo(() => (data?.monthlyTrends?.length ?? 0) >= 2
+        ? data!.monthlyTrends[data!.monthlyTrends.length - 1].total - data!.monthlyTrends[data!.monthlyTrends.length - 2].total
+        : 0, [data?.monthlyTrends]);
 
     // Goal vs Actual data
     const monthlyLeadTarget = settings?.goals?.monthlyLeadTarget || 50;
     const monthlyConversionTarget = settings?.goals?.monthlyConversionTarget || 10;
-    const currentMonthLeads = useMemo(() => data.monthlyTrends.length > 0 ? data.monthlyTrends[data.monthlyTrends.length - 1].total : 0, [data.monthlyTrends]);
+    const currentMonthLeads = useMemo(() => (data?.monthlyTrends?.length ?? 0) > 0 ? data!.monthlyTrends[data!.monthlyTrends.length - 1].total : 0, [data?.monthlyTrends]);
     const leadGoalPercent = useMemo(() => Math.min(100, Math.round((currentMonthLeads / monthlyLeadTarget) * 100)), [currentMonthLeads, monthlyLeadTarget]);
-    const convGoalPercent = useMemo(() => Math.min(100, Math.round((data.customers / monthlyConversionTarget) * 100)), [data.customers, monthlyConversionTarget]);
+    const convGoalPercent = useMemo(() => Math.min(100, Math.round(((data?.customers ?? 0) / monthlyConversionTarget) * 100)), [data?.customers, monthlyConversionTarget]);
 
-    const goalVsActualData = useMemo(() => data.monthlyTrends.map((m: any) => ({
+    const goalVsActualData = useMemo(() => (data?.monthlyTrends || []).map((m: any) => ({
         ...m,
         target: monthlyLeadTarget,
-    })), [data.monthlyTrends, monthlyLeadTarget]);
+    })), [data?.monthlyTrends, monthlyLeadTarget]);
 
     // Export handlers
     const handleExportCSV = useCallback(() => {
+        if (!data) return;
         const rows = [
             ["Metric", "Value"],
             ["Total Leads", data.totalLeads],
@@ -153,6 +137,7 @@ export default function ReportsClient() {
     }, [data, conversionRate, monthlyLeadTarget, monthlyConversionTarget, toast]);
 
     const handleExportJSON = useCallback(() => {
+        if (!data) return;
         const report = {
             exportedAt: new Date().toISOString(),
             summary: {
@@ -217,6 +202,26 @@ export default function ReportsClient() {
             setIsExportingPDF(false);
         }
     }, [isExportingPDF, toast]);
+
+    if (!data) return (
+        <div className="p-8 space-y-8 bg-background/50">
+            <div className="flex items-center justify-between">
+                <div className="h-9 w-64 bg-white/5 rounded-xl animate-pulse" />
+            </div>
+            <div className="grid gap-6 md:grid-cols-4">
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="p-6 rounded-3xl bg-white/5 animate-pulse h-[110px]" />
+                ))}
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+                {[...Array(2)].map((_, i) => (
+                    <div key={i} className="p-6 rounded-3xl bg-white/5 animate-pulse h-[400px]" />
+                ))}
+            </div>
+        </div>
+    );
+
+
 
     const DATE_RANGES: { label: string; value: DateRange }[] = [
         { label: "7 Days", value: "7d" },
