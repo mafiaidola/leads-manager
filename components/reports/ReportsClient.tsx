@@ -43,19 +43,7 @@ export default function ReportsClient() {
     const { toast } = useToast();
     const reportRef = useRef<HTMLDivElement>(null);
     const [isExportingPDF, setIsExportingPDF] = useState(false);
-    const [chartsReady, setChartsReady] = useState(false);
 
-    // Delay chart rendering until after the layout has painted
-    useEffect(() => {
-        if (data) {
-            const raf = requestAnimationFrame(() => {
-                setChartsReady(true);
-            });
-            return () => cancelAnimationFrame(raf);
-        } else {
-            setChartsReady(false);
-        }
-    }, [data]);
 
     // Fetch agents list once
     useEffect(() => {
@@ -428,7 +416,7 @@ export default function ReportsClient() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="h-[350px] pt-4">
-                    {chartsReady && <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={goalVsActualData}>
                             <defs>
                                 <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
@@ -444,7 +432,7 @@ export default function ReportsClient() {
                             <Area type="monotone" dataKey="total" name="Actual Leads" stroke="#10b981" strokeWidth={2.5} fill="url(#actualGradient)" dot={{ r: 4, fill: '#10b981', strokeWidth: 0 }} />
                             <Line type="monotone" dataKey="target" name="Target" stroke="#f59e0b" strokeWidth={2} strokeDasharray="8 4" dot={false} />
                         </ComposedChart>
-                    </ResponsiveContainer>}
+                    </ResponsiveContainer>
                 </CardContent>
             </Card>
 
@@ -513,7 +501,7 @@ export default function ReportsClient() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="h-[350px] pt-4">
-                        {chartsReady && <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={data.monthlyTrends}>
                                 <defs>
                                     <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
@@ -527,7 +515,7 @@ export default function ReportsClient() {
                                 <Tooltip contentStyle={{ backgroundColor: 'rgba(23, 23, 23, 0.9)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }} itemStyle={{ color: '#fff' }} labelStyle={{ color: '#aaa', fontSize: 11 }} />
                                 <Area type="monotone" dataKey="total" stroke="var(--primary)" strokeWidth={2.5} fill="url(#areaGradient)" dot={{ r: 4, fill: 'var(--primary)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
                             </AreaChart>
-                        </ResponsiveContainer>}
+                        </ResponsiveContainer>
                     </CardContent>
                 </Card>
 
@@ -539,7 +527,7 @@ export default function ReportsClient() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="h-[350px] pt-4">
-                        {chartsReady && <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={statusData} layout="vertical">
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
                                 <XAxis type="number" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'currentColor', opacity: 0.5 }} allowDecimals={false} />
@@ -551,7 +539,7 @@ export default function ReportsClient() {
                                     ))}
                                 </Bar>
                             </BarChart>
-                        </ResponsiveContainer>}
+                        </ResponsiveContainer>
                     </CardContent>
                 </Card>
             </div>
@@ -566,7 +554,7 @@ export default function ReportsClient() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="h-[350px] pt-4">
-                        {chartsReady && <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie data={statusData} cx="50%" cy="45%" innerRadius={70} outerRadius={110} fill="#8884d8" paddingAngle={4} dataKey="value" stroke="none">
                                     {statusData.map((entry: any, index: number) => (
@@ -576,7 +564,7 @@ export default function ReportsClient() {
                                 <Tooltip contentStyle={{ backgroundColor: 'rgba(23, 23, 23, 0.9)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }} />
                                 <Legend verticalAlign="bottom" height={36} iconType="circle" />
                             </PieChart>
-                        </ResponsiveContainer>}
+                        </ResponsiveContainer>
                     </CardContent>
                 </Card>
 
@@ -588,7 +576,7 @@ export default function ReportsClient() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="h-[350px] pt-4">
-                        {chartsReady && <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={sourceData}>
                                 <defs>
                                     <linearGradient id="sourceGradient" x1="0" y1="0" x2="0" y2="1">
@@ -602,7 +590,7 @@ export default function ReportsClient() {
                                 <Tooltip contentStyle={{ backgroundColor: 'rgba(23, 23, 23, 0.9)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }} itemStyle={{ color: '#fff' }} />
                                 <Bar dataKey="value" fill="url(#sourceGradient)" radius={[6, 6, 0, 0]} barSize={40} />
                             </BarChart>
-                        </ResponsiveContainer>}
+                        </ResponsiveContainer>
                     </CardContent>
                 </Card>
             </div>
