@@ -22,6 +22,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { updateLeadStatus, addNote, addLeadAction, toggleStarLead, deleteLead } from "@/lib/actions/leads";
 import { updateLead } from "@/lib/actions/leads";
+import { LeadContactCard } from "./LeadContactCard";
+import { LeadDealCard } from "./LeadDealCard";
+import { LeadTimeline } from "./LeadTimeline";
+import { LeadEditDialog } from "./LeadEditDialog";
 import { FadeIn } from "@/components/dashboard/DashboardAnimations";
 
 // Action type options
@@ -365,122 +369,9 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Left: Profile Card */}
                 <FadeIn delay={0.1} className="lg:col-span-1 space-y-6">
-                    {/* Contact Info */}
-                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                <Hash className="h-4 w-4 text-primary" />
-                                Contact Information
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {lead.phone && (
-                                <a href={`tel:${lead.phone}`} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                                    <div className="h-8 w-8 rounded-lg bg-emerald-500/15 flex items-center justify-center"><Phone className="h-4 w-4 text-emerald-400" /></div>
-                                    <div>
-                                        <div className="text-xs text-muted-foreground">Phone</div>
-                                        <div className="text-sm font-medium group-hover:text-primary transition-colors">{lead.phone}</div>
-                                    </div>
-                                    <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </a>
-                            )}
-                            {lead.email && (
-                                <a href={`mailto:${lead.email}`} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                                    <div className="h-8 w-8 rounded-lg bg-blue-500/15 flex items-center justify-center"><Mail className="h-4 w-4 text-blue-400" /></div>
-                                    <div>
-                                        <div className="text-xs text-muted-foreground">Email</div>
-                                        <div className="text-sm font-medium group-hover:text-primary transition-colors">{lead.email}</div>
-                                    </div>
-                                    <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </a>
-                            )}
-                            {lead.website && (
-                                <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                                    <div className="h-8 w-8 rounded-lg bg-purple-500/15 flex items-center justify-center"><Globe className="h-4 w-4 text-purple-400" /></div>
-                                    <div>
-                                        <div className="text-xs text-muted-foreground">Website</div>
-                                        <div className="text-sm font-medium group-hover:text-primary transition-colors truncate max-w-[180px]">{lead.website}</div>
-                                    </div>
-                                    <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </a>
-                            )}
-                            {lead.phone && (
-                                <a href={`https://wa.me/${lead.phone}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                                    <div className="h-8 w-8 rounded-lg bg-green-500/15 flex items-center justify-center"><MessageSquare className="h-4 w-4 text-green-400" /></div>
-                                    <div>
-                                        <div className="text-xs text-muted-foreground">WhatsApp</div>
-                                        <div className="text-sm font-medium group-hover:text-primary transition-colors">Send Message</div>
-                                    </div>
-                                    <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </a>
-                            )}
-                            {(lead.address?.city || lead.address?.country) && (
-                                <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5">
-                                    <div className="h-8 w-8 rounded-lg bg-amber-500/15 flex items-center justify-center"><MapPin className="h-4 w-4 text-amber-400" /></div>
-                                    <div>
-                                        <div className="text-xs text-muted-foreground">Location</div>
-                                        <div className="text-sm font-medium">
-                                            {[lead.address?.addressLine, lead.address?.city, lead.address?.state, lead.address?.country].filter(Boolean).join(", ")}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {lead.followUpDate && (() => {
-                                const fDate = new Date(lead.followUpDate);
-                                const isOverdue = fDate <= new Date();
-                                return (
-                                    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5">
-                                        <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center", isOverdue ? "bg-red-500/15" : "bg-amber-500/15")}>
-                                            <Bell className={cn("h-4 w-4", isOverdue ? "text-red-400" : "text-amber-400")} />
-                                        </div>
-                                        <div>
-                                            <div className="text-xs text-muted-foreground">Follow-up Date</div>
-                                            <div className={cn("text-sm font-medium flex items-center gap-1.5", isOverdue ? "text-red-400" : "text-amber-400")}>
-                                                {fDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
-                                                {isOverdue && <span className="text-[10px] bg-red-500/20 px-1.5 py-0.5 rounded-full font-semibold">OVERDUE</span>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-                        </CardContent>
-                    </Card>
+                    <LeadContactCard lead={lead} />
 
-                    {/* Deal Info */}
-                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                <DollarSign className="h-4 w-4 text-primary" />
-                                Deal Details
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {(lead.value !== undefined && lead.value !== null) && (
-                                <div className="flex justify-between items-center p-2.5 rounded-xl bg-white/5">
-                                    <span className="text-xs text-muted-foreground">Value</span>
-                                    <span className="text-sm font-bold text-emerald-400">{lead.currency} {Number(lead.value).toLocaleString()}</span>
-                                </div>
-                            )}
-                            {lead.source && (
-                                <div className="flex justify-between items-center p-2.5 rounded-xl bg-white/5">
-                                    <span className="text-xs text-muted-foreground">Source</span>
-                                    <Badge variant="outline" className="rounded-full text-xs border-white/10">{lead.source}</Badge>
-                                </div>
-                            )}
-                            {lead.product && (
-                                <div className="flex justify-between items-center p-2.5 rounded-xl bg-white/5">
-                                    <span className="text-xs text-muted-foreground">Product</span>
-                                    <span className="text-sm font-medium">{lead.product}</span>
-                                </div>
-                            )}
-                            {lead.lastContactAt && (
-                                <div className="flex justify-between items-center p-2.5 rounded-xl bg-white/5">
-                                    <span className="text-xs text-muted-foreground">Last Contact</span>
-                                    <span className="text-sm font-medium">{formatDate(lead.lastContactAt)}</span>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                    <LeadDealCard lead={lead} formatDate={formatDate} />
 
                     {/* Tags */}
                     {lead.tags && lead.tags.length > 0 && (
@@ -627,142 +518,26 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                         </Card>
                     )}
 
-                    {/* Activity Timeline */}
-                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <CardHeader>
-                            <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-primary" />
-                                Activity Timeline
-                                <Badge variant="outline" className="ml-auto rounded-full text-[10px] border-white/10">{timeline.length} events</Badge>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {timeline.length === 0 ? (
-                                <div className="text-center py-12 text-muted-foreground">
-                                    <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                                    <p className="text-sm">No activity yet</p>
-                                    <p className="text-xs mt-1">Add a note or log an action to get started</p>
-                                </div>
-                            ) : (
-                                <div className="relative">
-                                    {/* Timeline line */}
-                                    <div className="absolute left-[19px] top-0 bottom-0 w-px bg-white/5" />
-
-                                    <div className="space-y-1">
-                                        {timeline.map((item, i) => (
-                                            <div key={item._id} className="relative flex gap-3 py-3 group">
-                                                {/* Icon */}
-                                                <div className={cn(
-                                                    "relative z-10 h-10 w-10 rounded-full flex items-center justify-center shrink-0 ring-4 ring-background transition-all",
-                                                    getTimelineColor(item.kind, item.type)
-                                                )}>
-                                                    {getTimelineIcon(item.kind, item.type)}
-                                                </div>
-
-                                                {/* Content */}
-                                                <div className="flex-1 min-w-0 pt-0.5">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div className="min-w-0">
-                                                            <div className="flex items-center gap-2 mb-0.5">
-                                                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                                                    {item.kind === "action" ? item.type.replace("_", " ") : item.type.replace("_", " ")}
-                                                                </span>
-                                                                {item.kind === "action" && (
-                                                                    <Badge variant="outline" className="text-[9px] rounded-full border-white/10 px-1.5 h-4">Action</Badge>
-                                                                )}
-                                                            </div>
-                                                            <p className="text-sm">{item.message || item.description}</p>
-                                                            {item.outcome && (
-                                                                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                                                    <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                                                                    Outcome: {item.outcome}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0 pt-1">
-                                                            {timeAgo(item.createdAt)}
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-[10px] text-muted-foreground mt-1">
-                                                        by {item.authorName || (item.authorId?.name) || "System"} · {formatDate(item.createdAt)} {formatTime(item.createdAt)}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                    <LeadTimeline
+                        timeline={timeline}
+                        getTimelineIcon={getTimelineIcon}
+                        getTimelineColor={getTimelineColor}
+                        timeAgo={timeAgo}
+                        formatDate={formatDate}
+                        formatTime={formatTime}
+                    />
                 </FadeIn>
             </div>
 
-            {/* ── Edit Lead Dialog ─────────────────────────────── */}
-            <Dialog open={showEdit} onOpenChange={setShowEdit}>
-                <DialogContent className="rounded-2xl border-white/10 bg-card/95 backdrop-blur-2xl max-w-lg max-h-[85vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Edit Lead</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-2">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Name *</Label>
-                                <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Company</Label>
-                                <Input value={editForm.company} onChange={e => setEditForm({ ...editForm, company: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Phone</Label>
-                                <Input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Email</Label>
-                                <Input value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Source</Label>
-                                <Select value={editForm.source || "__none"} onValueChange={v => setEditForm({ ...editForm, source: v === "__none" ? "" : v })}>
-                                    <SelectTrigger className="rounded-xl border-white/10 bg-black/20"><SelectValue placeholder="Select" /></SelectTrigger>
-                                    <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                        <SelectItem value="__none">None</SelectItem>
-                                        {sources.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Product</Label>
-                                <Input value={editForm.product} onChange={e => setEditForm({ ...editForm, product: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Value</Label>
-                                <Input type="number" value={editForm.value} onChange={e => setEditForm({ ...editForm, value: e.target.value })} className="rounded-xl border-white/10 bg-black/20" placeholder="0" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Tags (comma separated)</Label>
-                                <Input value={editForm.tags} onChange={e => setEditForm({ ...editForm, tags: e.target.value })} className="rounded-xl border-white/10 bg-black/20" placeholder="tag1, tag2" />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs">Description</Label>
-                            <Textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="rounded-xl border-white/10 bg-black/20 min-h-[80px] resize-none" />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="ghost" className="rounded-xl" onClick={() => setShowEdit(false)}>Cancel</Button>
-                        <Button className="rounded-xl bg-primary" onClick={handleEditSave} disabled={!editForm.name.trim() || isPending}>
-                            {isPending ? "Saving..." : "Save Changes"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <LeadEditDialog
+                open={showEdit}
+                onOpenChange={setShowEdit}
+                editForm={editForm}
+                setEditForm={setEditForm}
+                sources={sources}
+                onSave={handleEditSave}
+                isPending={isPending}
+            />
         </div>
     );
 }
