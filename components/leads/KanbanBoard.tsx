@@ -98,7 +98,6 @@ export function KanbanBoard({ leads, statuses, currentUserId, onLeadClick }: Kan
                         <div className="p-4 border-b border-white/10">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    {/* eslint-disable-next-line react/forbid-dom-props */}
                                     <span
                                         className="w-3 h-3 rounded-full status-dot"
                                         style={{ '--status-color': status.color } as React.CSSProperties}

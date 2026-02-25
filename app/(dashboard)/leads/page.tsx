@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+import { serialize } from "@/lib/serialize";
 import { auth } from "@/auth";
 
 import { getLeads, getLeadsStats, getLeadsByStatus } from "@/lib/actions/leads";
@@ -25,12 +26,12 @@ export default async function LeadsPage({
         getLeadsByStatus(),
     ]);
 
-    // Ensure everything is plain objects for Client Components
-    const serializedLeads = JSON.parse(JSON.stringify(leadsData.leads));
-    const serializedStats = JSON.parse(JSON.stringify(stats));
-    const serializedSettings = JSON.parse(JSON.stringify(settings));
-    const serializedUsers = JSON.parse(JSON.stringify(users));
-    const serializedKanban = JSON.parse(JSON.stringify(kanbanLeads));
+    // Serialize Mongoose docs (ObjectId/Date → primitives) for Client Components
+    const serializedLeads = serialize(leadsData.leads);
+    const serializedStats = serialize(stats);
+    const serializedSettings = serialize(settings);
+    const serializedUsers = serialize(users);
+    const serializedKanban = serialize(kanbanLeads);
 
     return (
         <div className="p-8 space-y-6">

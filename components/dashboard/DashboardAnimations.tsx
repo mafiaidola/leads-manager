@@ -23,13 +23,8 @@ export function FadeIn({
     return (
         <div
             ref={ref}
-            className={className}
-            style={{
-                opacity: visible ? 1 : 0,
-                transform: visible ? "translateY(0)" : "translateY(20px)",
-                transition: `opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)`,
-                transitionDelay: `${delay}ms`,
-            }}
+            className={`fade-in-up${visible ? ' visible' : ''} ${className}`}
+            style={{ '--fade-delay': `${delay}ms` } as React.CSSProperties}
         >
             {children}
         </div>

@@ -308,6 +308,42 @@
   opacity: 0.9;
 }
 
+/* FadeIn animation — receives --fade-delay from React, toggled via .visible */
+.fade-in-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--fade-delay, 0ms);
+}
+
+.fade-in-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Dynamic status chip — badge with dynamic colors via CSS vars */
+.status-chip-dynamic {
+  background-color: var(--chip-bg);
+  color: var(--chip-fg);
+  border-color: var(--chip-border);
+}
+
+/* Login page floating particle — receives position/size/timing from React */
+.login-particle {
+  left: var(--particle-x);
+  top: var(--particle-y);
+  width: var(--particle-size);
+  height: var(--particle-size);
+  animation-duration: var(--float-duration);
+  animation-delay: var(--float-delay);
+}
+
+/* Status distribution width bar — receives --bar-width from React */
+.dist-bar {
+  width: var(--bar-width);
+}
+
 /* ─── Animation Keyframes ──────────────────────────────────────────────────── */
 
 @keyframes float {

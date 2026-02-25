@@ -211,15 +211,14 @@ function FloatingParticles() {
             {particles.map((p, i) => (
                 <div
                     key={i}
-                    className="absolute rounded-full bg-primary/20 animate-float"
-                    style={{ // eslint-disable-line react/forbid-dom-props
-                        left: p.left,
-                        top: p.top,
-                        width: `${p.size}px`,
-                        height: `${p.size}px`,
-                        ["--float-duration" as string]: `${p.duration}s`,
-                        ["--float-delay" as string]: `${p.delay}s`,
-                    }}
+                    className="absolute rounded-full bg-primary/20 animate-float login-particle"
+                    style={{
+                        '--particle-x': p.left,
+                        '--particle-y': p.top,
+                        '--particle-size': `${p.size}px`,
+                        '--float-duration': `${p.duration}s`,
+                        '--float-delay': `${p.delay}s`,
+                    } as React.CSSProperties}
                 />
             ))}
         </div>

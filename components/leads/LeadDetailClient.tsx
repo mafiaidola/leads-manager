@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -99,11 +99,11 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
 
-    // Timeline: merge notes + actions sorted by date
-    const timeline = [
+    // Timeline: merge notes + actions sorted by date (memoized — expensive sort)
+    const timeline = useMemo(() => [
         ...notes.map(n => ({ ...n, kind: "note" as const })),
         ...actions.map(a => ({ ...a, kind: "action" as const, message: a.description, type: a.type })),
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), [notes, actions]);
 
     // Note form
     const [noteText, setNoteText] = useState("");
@@ -116,19 +116,19 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
     // Status
     const [currentStatus, setCurrentStatus] = useState(lead.status);
 
-    // Build a color map from settings (falls back to hardcoded STATUS_COLORS)
-    const statusColorMap: Record<string, string> = {};
-    (settings?.statuses || []).forEach((s: any) => {
-        if (s.color) {
-            // Convert hex color to a Tailwind-compatible inline style approach
-            statusColorMap[s.key] = s.color;
-        }
-    });
-    const getStatusChipClass = (status: string) => STATUS_COLORS[status] || "bg-primary/15 text-primary border-primary/30";
-    const getStatusChipStyle = (status: string): React.CSSProperties => {
+    // Build a color map from settings (memoized)
+    const statusColorMap = useMemo(() => {
+        const map: Record<string, string> = {};
+        (settings?.statuses || []).forEach((s: any) => {
+            if (s.color) map[s.key] = s.color;
+        });
+        return map;
+    }, [settings?.statuses]);
+    const getStatusChipClass = useCallback((status: string) => STATUS_COLORS[status] || "bg-primary/15 text-primary border-primary/30", []);
+    const getStatusChipStyle = useCallback((status: string): React.CSSProperties => {
         const hex = statusColorMap[status];
-        return hex ? { backgroundColor: `${hex}25`, color: hex, borderColor: `${hex}50` } : {};
-    };
+        return hex ? { '--chip-bg': `${hex}25`, '--chip-fg': hex, '--chip-border': `${hex}50` } as React.CSSProperties : {};
+    }, [statusColorMap]);
 
     // Edit dialog
     const [showEdit, setShowEdit] = useState(false);
@@ -147,7 +147,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
     // Delete confirmation
     const [showDelete, setShowDelete] = useState(false);
 
-    const handleStatusChange = async (newStatus: string) => {
+    const handleStatusChange = useCallback(async (newStatus: string) => {
         setCurrentStatus(newStatus);
         startTransition(async () => {
             const result = await updateLeadStatus(lead._id, newStatus);
@@ -159,9 +159,9 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                 toast({ title: result?.message || "Error", variant: "destructive" });
             }
         });
-    };
+    }, [lead._id, lead.status, toast, router, startTransition]);
 
-    const handleAddNote = async () => {
+    const handleAddNote = useCallback(async () => {
         if (!noteText.trim()) return;
         startTransition(async () => {
             const result = await addNote(lead._id, noteText.trim());
@@ -174,9 +174,9 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                 toast({ title: result?.message || "Error", variant: "destructive" });
             }
         });
-    };
+    }, [lead._id, noteText, toast, router, startTransition]);
 
-    const handleAddAction = async () => {
+    const handleAddAction = useCallback(async () => {
         if (!actionForm.description.trim()) return;
         startTransition(async () => {
             const result = await addLeadAction(lead._id, {
@@ -193,16 +193,16 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                 toast({ title: result?.message || "Error", variant: "destructive" });
             }
         });
-    };
+    }, [lead._id, actionForm, toast, router, startTransition]);
 
-    const handleToggleStar = async () => {
+    const handleToggleStar = useCallback(async () => {
         startTransition(async () => {
             await toggleStarLead(lead._id);
             router.refresh();
         });
-    };
+    }, [lead._id, router, startTransition]);
 
-    const handleEditSave = async () => {
+    const handleEditSave = useCallback(async () => {
         const formData = new FormData();
         formData.set("id", lead._id);
         formData.set("name", editForm.name);
@@ -225,9 +225,9 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                 toast({ title: result?.message || "Error", variant: "destructive" });
             }
         });
-    };
+    }, [lead._id, editForm, currentStatus, toast, router, startTransition]);
 
-    const handleDelete = async () => {
+    const handleDelete = useCallback(async () => {
         startTransition(async () => {
             const result = await deleteLead(lead._id);
             if (result?.success) {
@@ -237,9 +237,12 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                 toast({ title: result?.message || "Error", variant: "destructive" });
             }
         });
-    };
+    }, [lead._id, toast, router, startTransition]);
 
-    const handleExport = () => {
+    const isStarred = useMemo(() => (lead.starred || []).includes(userId), [lead.starred, userId]);
+    const assignedName = lead.assignedTo?.name || "Unassigned";
+
+    const handleExport = useCallback(() => {
         const data = {
             Name: lead.name,
             Company: lead.company || "",
@@ -263,22 +266,19 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
         a.click();
         URL.revokeObjectURL(url);
         toast({ title: "Lead exported as CSV" });
-    };
+    }, [lead, currentStatus, assignedName, toast]);
 
-    const isStarred = (lead.starred || []).includes(userId);
-    const assignedName = lead.assignedTo?.name || "Unassigned";
-
-    const formatDate = (dateStr: string) => {
+    const formatDate = useCallback((dateStr: string) => {
         const d = new Date(dateStr);
         return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    };
+    }, []);
 
-    const formatTime = (dateStr: string) => {
+    const formatTime = useCallback((dateStr: string) => {
         const d = new Date(dateStr);
         return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-    };
+    }, []);
 
-    const timeAgo = (dateStr: string) => {
+    const timeAgo = useCallback((dateStr: string) => {
         const d = new Date(dateStr);
         const now = new Date();
         const diff = now.getTime() - d.getTime();
@@ -290,7 +290,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
         const days = Math.floor(hrs / 24);
         if (days < 7) return `${days}d ago`;
         return formatDate(dateStr);
-    };
+    }, [formatDate]);
 
     return (
         <div className="space-y-6 pb-12">
@@ -335,7 +335,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                         </AlertDialog>
                         <Select value={currentStatus} onValueChange={handleStatusChange}>
                             <SelectTrigger
-                                className={cn("w-[140px] rounded-full border font-semibold text-xs h-8", !statusColorMap[currentStatus] && (STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30"))}
+                                className={cn("w-[140px] rounded-full border font-semibold text-xs h-8 status-chip-dynamic", !statusColorMap[currentStatus] && (STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30"))}
                                 style={getStatusChipStyle(currentStatus)}
                             >
                                 <SelectValue />

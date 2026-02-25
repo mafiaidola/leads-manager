@@ -1,7 +1,7 @@
 "use client";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, useCallback } from "react";
 import Link from "next/link";
 import { getLeadDetails, addNote, updateLeadStatus, addLeadAction, getLeadTimeline } from "@/lib/actions/leads";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import {
     Zap,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import WhatsAppSendDialog from "@/components/whatsapp/WhatsAppSendDialog";
 
 interface LeadDetailsSheetProps {
     leadId: string | null;
@@ -64,6 +65,7 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
     const [actionType, setActionType] = useState("CALL");
     const [actionDesc, setActionDesc] = useState("");
     const [actionOutcome, setActionOutcome] = useState("");
+    const [showWADialog, setShowWADialog] = useState(false);
 
     const isMarketing = currentUserRole === "MARKETING";
     const canEdit = !isMarketing; // Admin + Sales can add notes, change status, add actions
@@ -84,7 +86,7 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
         }
     }, [leadId]);
 
-    const handleAddNote = async () => {
+    const handleAddNote = useCallback(async () => {
         if (!note.trim() || !leadId) return;
         await addNote(leadId, note);
         setNote("");
@@ -95,9 +97,9 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
         ]);
         setData(result);
         setTimeline(tl);
-    };
+    }, [leadId, note, toast]);
 
-    const handleStatusChange = async (newStatus: string) => {
+    const handleStatusChange = useCallback(async (newStatus: string) => {
         if (!leadId) return;
         await updateLeadStatus(leadId, newStatus);
         toast({ title: "Status updated" });
@@ -107,9 +109,9 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
         ]);
         setData(result);
         setTimeline(tl);
-    };
+    }, [leadId, toast]);
 
-    const handleAddAction = async () => {
+    const handleAddAction = useCallback(async () => {
         if (!actionDesc.trim() || !leadId) return;
         const result = await addLeadAction(leadId, {
             type: actionType,
@@ -130,7 +132,7 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
         } else {
             toast({ title: "Error", description: result?.message, variant: "destructive" });
         }
-    };
+    }, [leadId, actionType, actionDesc, actionOutcome, toast]);
 
     if (!leadId) return null;
 
@@ -285,14 +287,24 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                                 </div>
                                             </div>
                                             {data.lead.phone && (
-                                                <a
-                                                    href={`https://wa.me/${data.lead.phone?.replace(/[^0-9]/g, "")}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="h-8 px-3 rounded-lg bg-green-500 text-white text-xs font-bold flex items-center gap-1.5 hover:bg-green-600 transition-colors"
-                                                >
-                                                    WhatsApp
-                                                </a>
+                                                <div className="flex items-center gap-1.5">
+                                                    <a
+                                                        href={`https://wa.me/${data.lead.phone?.replace(/[^0-9]/g, "")}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="h-8 px-3 rounded-lg bg-green-500 text-white text-xs font-bold flex items-center gap-1.5 hover:bg-green-600 transition-colors"
+                                                    >
+                                                        WhatsApp
+                                                    </a>
+                                                    <button
+                                                        onClick={() => setShowWADialog(true)}
+                                                        className="h-8 px-2.5 rounded-lg bg-green-700 text-white text-xs font-bold flex items-center gap-1 hover:bg-green-800 transition-colors"
+                                                        title="Send via WhatsApp Cloud API"
+                                                    >
+                                                        <MessageCircle className="h-3.5 w-3.5" />
+                                                        API
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
 
@@ -636,6 +648,17 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                     </Button>
                 </div>
             </SheetContent>
+
+            {/* WhatsApp Send Dialog */}
+            {data && (
+                <WhatsAppSendDialog
+                    open={showWADialog}
+                    onOpenChange={setShowWADialog}
+                    leadId={leadId || ""}
+                    leadName={data.lead?.name || ""}
+                    leadPhone={data.lead?.phone}
+                />
+            )}
         </Sheet>
     );
 }

@@ -5,11 +5,12 @@ import {
     Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend,
     PieChart, Pie, Cell, AreaChart, Area, CartesianGrid, ComposedChart, Line, ReferenceLine
 } from "recharts";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { getSettings } from "@/lib/actions/settings";
+import { getUsers } from "@/lib/actions/users";
 import { cn } from "@/lib/utils";
-import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText, FileDown } from "lucide-react";
+import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText, FileDown, Filter, CalendarDays, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,23 +30,47 @@ const COLORS = [
     '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
 ];
 
-type DateRange = "7d" | "30d" | "90d" | "all";
+type DateRange = "7d" | "30d" | "90d" | "all" | "custom";
 
 export default function ReportsClient() {
     const [data, setData] = useState<any>(null);
     const [settings, setSettings] = useState<any>(null);
     const [dateRange, setDateRange] = useState<DateRange>("all");
+    const [selectedAgent, setSelectedAgent] = useState<string>("");
+    const [agents, setAgents] = useState<{ _id: string; name: string; role: string }[]>([]);
+    const [customStart, setCustomStart] = useState("");
+    const [customEnd, setCustomEnd] = useState("");
     const { toast } = useToast();
     const reportRef = useRef<HTMLDivElement>(null);
     const [isExportingPDF, setIsExportingPDF] = useState(false);
 
+    // Fetch agents list once
     useEffect(() => {
+        getUsers().then((users) => {
+            setAgents(users.map((u: any) => ({ _id: u._id, name: u.name, role: u.role })));
+        });
+    }, []);
+
+    // Fetch dashboard data when filters change
+    const fetchData = useCallback(() => {
         setData(null);
-        Promise.all([getDashboardStats(dateRange), getSettings()]).then(([d, s]) => {
+        const range = dateRange === "custom" ? undefined : dateRange;
+        const start = dateRange === "custom" ? customStart : undefined;
+        const end = dateRange === "custom" ? customEnd : undefined;
+        Promise.all([
+            getDashboardStats(range, selectedAgent || undefined, start, end),
+            getSettings(),
+        ]).then(([d, s]) => {
             setData(d);
             setSettings(s);
         });
-    }, [dateRange]);
+    }, [dateRange, selectedAgent, customStart, customEnd]);
+
+    useEffect(() => {
+        // For custom date, only fetch when both dates are set
+        if (dateRange === "custom" && (!customStart || !customEnd)) return;
+        fetchData();
+    }, [fetchData, dateRange, customStart, customEnd]);
 
     if (!data) return (
         <div className="p-8 space-y-8 bg-background/50">
@@ -65,38 +90,38 @@ export default function ReportsClient() {
         </div>
     );
 
-    const statusData = data.leadsByStatus.map((item: any) => ({
+    const statusData = useMemo(() => data.leadsByStatus.map((item: any) => ({
         name: item.status.replace(/_/g, " "),
         value: item.count
-    }));
+    })), [data.leadsByStatus]);
 
-    const sourceData = data.leadsBySource.map((item: any) => ({
+    const sourceData = useMemo(() => data.leadsBySource.map((item: any) => ({
         name: item.source || "Unknown",
         value: item.count
-    }));
+    })), [data.leadsBySource]);
 
-    const conversionRate = data.totalLeads > 0
+    const conversionRate = useMemo(() => data.totalLeads > 0
         ? ((data.customers / data.totalLeads) * 100).toFixed(1)
-        : "0.0";
+        : "0.0", [data.totalLeads, data.customers]);
 
-    const trendChange = data.monthlyTrends.length >= 2
+    const trendChange = useMemo(() => data.monthlyTrends.length >= 2
         ? data.monthlyTrends[data.monthlyTrends.length - 1].total - data.monthlyTrends[data.monthlyTrends.length - 2].total
-        : 0;
+        : 0, [data.monthlyTrends]);
 
     // Goal vs Actual data
     const monthlyLeadTarget = settings?.goals?.monthlyLeadTarget || 50;
     const monthlyConversionTarget = settings?.goals?.monthlyConversionTarget || 10;
-    const currentMonthLeads = data.monthlyTrends.length > 0 ? data.monthlyTrends[data.monthlyTrends.length - 1].total : 0;
-    const leadGoalPercent = Math.min(100, Math.round((currentMonthLeads / monthlyLeadTarget) * 100));
-    const convGoalPercent = Math.min(100, Math.round((data.customers / monthlyConversionTarget) * 100));
+    const currentMonthLeads = useMemo(() => data.monthlyTrends.length > 0 ? data.monthlyTrends[data.monthlyTrends.length - 1].total : 0, [data.monthlyTrends]);
+    const leadGoalPercent = useMemo(() => Math.min(100, Math.round((currentMonthLeads / monthlyLeadTarget) * 100)), [currentMonthLeads, monthlyLeadTarget]);
+    const convGoalPercent = useMemo(() => Math.min(100, Math.round((data.customers / monthlyConversionTarget) * 100)), [data.customers, monthlyConversionTarget]);
 
-    const goalVsActualData = data.monthlyTrends.map((m: any) => ({
+    const goalVsActualData = useMemo(() => data.monthlyTrends.map((m: any) => ({
         ...m,
         target: monthlyLeadTarget,
-    }));
+    })), [data.monthlyTrends, monthlyLeadTarget]);
 
     // Export handlers
-    const handleExportCSV = () => {
+    const handleExportCSV = useCallback(() => {
         const rows = [
             ["Metric", "Value"],
             ["Total Leads", data.totalLeads],
@@ -124,9 +149,9 @@ export default function ReportsClient() {
         a.click();
         URL.revokeObjectURL(url);
         toast({ title: "Report exported as CSV" });
-    };
+    }, [data, conversionRate, monthlyLeadTarget, monthlyConversionTarget, toast]);
 
-    const handleExportJSON = () => {
+    const handleExportJSON = useCallback(() => {
         const report = {
             exportedAt: new Date().toISOString(),
             summary: {
@@ -154,9 +179,9 @@ export default function ReportsClient() {
         a.click();
         URL.revokeObjectURL(url);
         toast({ title: "Report exported as JSON" });
-    };
+    }, [data, conversionRate, monthlyLeadTarget, monthlyConversionTarget, currentMonthLeads, leadGoalPercent, convGoalPercent, toast]);
 
-    const handleExportPDF = async () => {
+    const handleExportPDF = useCallback(async () => {
         if (!reportRef.current || isExportingPDF) return;
         setIsExportingPDF(true);
         toast({ title: "Generating PDF, please wait..." });
@@ -190,19 +215,43 @@ export default function ReportsClient() {
         } finally {
             setIsExportingPDF(false);
         }
-    };
+    }, [isExportingPDF, toast]);
+
     const DATE_RANGES: { label: string; value: DateRange }[] = [
         { label: "7 Days", value: "7d" },
         { label: "30 Days", value: "30d" },
         { label: "90 Days", value: "90d" },
         { label: "All Time", value: "all" },
+        { label: "Custom", value: "custom" },
     ];
 
     return (
         <div className="p-8 space-y-8 bg-background/50">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Analytics Reports</h2>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    {/* Agent Filter */}
+                    <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5">
+                        <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                        <select
+                            value={selectedAgent}
+                            onChange={(e) => setSelectedAgent(e.target.value)}
+                            className="bg-transparent text-xs font-medium outline-none cursor-pointer text-foreground"
+                            aria-label="Filter by agent"
+                        >
+                            <option value="" className="bg-card">All Agents</option>
+                            {agents.map((a) => (
+                                <option key={a._id} value={a._id} className="bg-card">
+                                    {a.name} ({a.role})
+                                </option>
+                            ))}
+                        </select>
+                        {selectedAgent && (
+                            <button onClick={() => setSelectedAgent("")} className="text-muted-foreground hover:text-foreground" aria-label="Clear agent filter">
+                                <X className="h-3 w-3" />
+                            </button>
+                        )}
+                    </div>
                     {/* Date Range Selector */}
                     <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-0.5">
                         {DATE_RANGES.map((r) => (
@@ -220,6 +269,27 @@ export default function ReportsClient() {
                             </button>
                         ))}
                     </div>
+                    {/* Custom Date Inputs */}
+                    {dateRange === "custom" && (
+                        <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1">
+                            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                            <input
+                                type="date"
+                                value={customStart}
+                                onChange={(e) => setCustomStart(e.target.value)}
+                                className="bg-transparent text-xs outline-none text-foreground"
+                                aria-label="Start date"
+                            />
+                            <span className="text-xs text-muted-foreground">→</span>
+                            <input
+                                type="date"
+                                value={customEnd}
+                                onChange={(e) => setCustomEnd(e.target.value)}
+                                className="bg-transparent text-xs outline-none text-foreground"
+                                aria-label="End date"
+                            />
+                        </div>
+                    )}
                     <Button variant="outline" size="sm" onClick={handleExportCSV} className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
                         <FileSpreadsheet className="h-4 w-4 mr-1.5" /> Export CSV
                     </Button>
@@ -303,7 +373,6 @@ export default function ReportsClient() {
                                 </div>
                             </div>
                             <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden">
-                                {/* eslint-disable-next-line react/forbid-dom-props */}
                                 <div className={`h-full rounded-full transition-all duration-700 progress-bar ${leadGoalPercent >= 100 ? 'bg-emerald-500' : leadGoalPercent >= 70 ? 'bg-amber-500' : 'bg-red-400'}`}
                                     style={{ '--progress': `${Math.min(100, leadGoalPercent)}%` } as React.CSSProperties} />
                             </div>
@@ -329,7 +398,6 @@ export default function ReportsClient() {
                                 </div>
                             </div>
                             <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden">
-                                {/* eslint-disable-next-line react/forbid-dom-props */}
                                 <div className={`h-full rounded-full transition-all duration-700 progress-bar ${convGoalPercent >= 100 ? 'bg-emerald-500' : convGoalPercent >= 70 ? 'bg-amber-500' : 'bg-red-400'}`}
                                     style={{ '--progress': `${Math.min(100, convGoalPercent)}%` } as React.CSSProperties} />
                             </div>
@@ -408,10 +476,9 @@ export default function ReportsClient() {
                                                 </div>
                                             </div>
                                             <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                                {/* eslint-disable-next-line react/forbid-dom-props */}
                                                 <div
-                                                    className={`h-full rounded-full transition-all duration-700 ${pct >= 50 ? 'bg-emerald-400' : pct >= 25 ? 'bg-amber-400' : 'bg-blue-400'}`}
-                                                    style={{ width: `${Math.max(4, pct)}%` }}
+                                                    className={`h-full rounded-full transition-all duration-700 dist-bar ${pct >= 50 ? 'bg-emerald-400' : pct >= 25 ? 'bg-amber-400' : 'bg-blue-400'}`}
+                                                    style={{ '--bar-width': `${Math.max(4, pct)}%` } as React.CSSProperties}
                                                 />
                                             </div>
                                         </div>

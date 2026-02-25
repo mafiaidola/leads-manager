@@ -1,0 +1,108 @@
+ã!/**
+ * @module dashboard/userFormContent â€” User create/edit form with validation.
+ */
+
+export const USER_FORM_CONTENT = `import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Save, ArrowLeft } from 'lucide-react';
+import { MOCK_USERS } from '../data/mockData';
+
+export default function UserForm() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEdit = Boolean(id);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [form, setForm] = useState({ name: '', email: '', role: 'Viewer', status: 'active' });
+
+  useEffect(() => {
+    if (isEdit) {
+      const user = MOCK_USERS.find(u => u.id === Number(id));
+      if (user) setForm({ name: user.name, email: user.email, role: user.role, status: user.status });
+    }
+  }, [id, isEdit]);
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'Name is required';
+    if (!form.email.trim()) e.email = 'Email is required';
+    else if (!/\\S+@\\S+\\.\\S+/.test(form.email)) e.email = 'Invalid email format';
+    if (!form.role) e.role = 'Role is required';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setSaving(true);
+    await new Promise(r => setTimeout(r, 800));
+    setSaving(false);
+    setToast(isEdit ? 'User updated successfully!' : 'User created successfully!');
+    setTimeout(() => navigate('/users'), 1500);
+  };
+
+  const updateField = (key, value) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+    if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }));
+  };
+
+  return (
+    <div className="page-content">
+      <div className="page-header">
+        <div>
+          <button className="btn btn-ghost" onClick={() => navigate('/users')}>
+            <ArrowLeft size={16} /> Back to Users
+          </button>
+          <h2 className="page-title">{isEdit ? 'Edit User' : 'Create New User'}</h2>
+        </div>
+      </div>
+
+      <form className="form-card" onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="name">Full Name *</label>
+          <input id="name" type="text" value={form.name} onChange={e => updateField('name', e.target.value)}
+            className={\`form-input \${errors.name ? 'error' : ''}\`} placeholder="Enter full name" />
+          {errors.name && <span className="form-error">{errors.name}</span>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="email">Email Address *</label>
+          <input id="email" type="email" value={form.email} onChange={e => updateField('email', e.target.value)}
+            className={\`form-input \${errors.email ? 'error' : ''}\`} placeholder="user@example.com" />
+          {errors.email && <span className="form-error">{errors.email}</span>}
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="role">Role *</label>
+            <select id="role" value={form.role} onChange={e => updateField('role', e.target.value)} className="form-input">
+              <option value="Admin">Admin</option>
+              <option value="Editor">Editor</option>
+              <option value="Viewer">Viewer</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label htmlFor="status">Status</label>
+            <select id="status" value={form.status} onChange={e => updateField('status', e.target.value)} className="form-input">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="form-actions">
+          <button type="button" className="btn btn-secondary" onClick={() => navigate('/users')}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>
+            <Save size={16} /> {saving ? 'Saving...' : isEdit ? 'Update User' : 'Create User'}
+          </button>
+        </div>
+      </form>
+
+      {toast && <div className="toast success">{toast}</div>}
+    </div>
+  );
+}`;
+ã!2/file:///Users/homework/Documents/Flexity.ai-new

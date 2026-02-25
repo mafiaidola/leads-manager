@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { serialize } from "@/lib/serialize";
 import { getLeadDetails } from "@/lib/actions/leads";
 import { getSettings } from "@/lib/actions/settings";
 import { redirect } from "next/navigation";
@@ -21,8 +22,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     const statuses: string[] = rawStatuses.map((s: any) => typeof s === "string" ? s : s.key || s.label || String(s));
     const rawSources = settings?.sources || [];
     const sources: string[] = rawSources.map((s: any) => typeof s === "string" ? s : s.key || s.label || String(s));
-    const serializedSettings = JSON.parse(JSON.stringify(settings || {}));
-    const serializedUsers = JSON.parse(JSON.stringify(users));
+    const serializedSettings = serialize(settings || {});
+    const serializedUsers = serialize(users);
 
     return (
         <LeadDetailClient

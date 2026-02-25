@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 import { auth } from "@/auth";
 
 import { getSettings } from "@/lib/actions/settings";

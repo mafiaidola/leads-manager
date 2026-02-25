@@ -1,5 +1,5 @@
-export const dynamic = "force-dynamic";
 import { getDashboardStats } from "@/lib/actions/dashboard";
+import { serialize } from "@/lib/serialize";
 import { getSettings } from "@/lib/actions/settings";
 import { auth } from "@/auth";
 
@@ -22,8 +22,8 @@ export default async function DashboardPage() {
 
     if (!rawStats) return <div>Loading...</div>;
 
-    // Deep serialization for Client Components
-    const stats = JSON.parse(JSON.stringify(rawStats));
+    // Serialize Mongoose docs (ObjectId/Date → primitives) for Client Components
+    const stats = serialize(rawStats);
     const conversionRate = stats.totalLeads > 0 ? parseFloat(((stats.customers / stats.totalLeads) * 100).toFixed(1)) : 0;
 
     const hour = new Date().getHours();

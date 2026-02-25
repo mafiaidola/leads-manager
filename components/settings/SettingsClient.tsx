@@ -1,22 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { updateSettings, updateBranding, updateGoals, updateTheme } from "@/lib/actions/settings";
-import { createUser, updateUser, deleteUser, changePassword, adminResetPassword } from "@/lib/actions/users";
+import { changePassword } from "@/lib/actions/users";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
-import { X, Pencil, Trash2, Download, Shield, Palette, Key, Target, Save, UserPlus, Check, Sparkles, Database, HardDrive, FileDown } from "lucide-react";
+import { X, Shield, Key, Save, Check, Database, HardDrive, FileDown, Download } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import {
-    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger
-} from "@/components/ui/dialog";
 import { useTheme } from "@/components/ThemeProvider";
+import WhatsAppConnectCard from "@/components/whatsapp/WhatsAppConnectCard";
+
+// Extracted tab components
+import { GeneralTab } from "./GeneralTab";
+import { ProductsTab } from "./ProductsTab";
+import { TeamTab } from "./TeamTab";
+import { BrandingTab } from "./BrandingTab";
 
 const ALL_PERMISSIONS = [
     { key: "view_leads", label: "View Leads" },
@@ -61,11 +64,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
     // Password change state
     const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
 
-    // User edit state
-    const [editingUser, setEditingUser] = useState<any>(null);
-    const [isEditOpen, setIsEditOpen] = useState(false);
-
-    const handleSaveSettings = async () => {
+    const handleSaveSettings = useCallback(async () => {
         const result = await updateSettings({
             statuses,
             sources,
@@ -78,75 +77,33 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
         } else {
             toast({ title: "Error saving settings", variant: "destructive" });
         }
-    };
+    }, [statuses, sources, products, customFields, customRoles, toast]);
 
-    const handleAddStatus = () => {
-        setStatuses([...statuses, { key: "new_status", label: "New Status", color: "#8b5cf6" }]);
-    }
+    const handleAddStatus = useCallback(() => {
+        setStatuses(prev => [...prev, { key: "new_status", label: "New Status", color: "#8b5cf6" }]);
+    }, []);
 
-    const handleRemoveStatus = (index: number) => {
-        const newStatuses = [...statuses];
-        newStatuses.splice(index, 1);
-        setStatuses(newStatuses);
-    }
-
-    const handleStatusChange = (index: number, field: string, value: string) => {
-        const newStatuses = [...statuses];
-        const updated: any = { ...newStatuses[index], [field]: value };
-        // Auto-sync key when label changes
-        if (field === 'label') {
-            updated.key = value.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-        }
-        newStatuses[index] = updated;
-        setStatuses(newStatuses);
-    }
-
-    // User creation state
-    const [newUser, setNewUser] = useState({ name: "", username: "", password: "", role: "SALES" });
-    const [resetPassword, setResetPassword] = useState("");
-
-    const handleCreateUser = async () => {
-        const formData = new FormData();
-        formData.append("name", newUser.name);
-        formData.append("username", newUser.username);
-        formData.append("password", newUser.password);
-        formData.append("role", newUser.role);
-
-        const result = await createUser(null, formData);
-        if (result?.success) {
-            toast({ title: "User created", description: `${newUser.role} user created successfully.` });
-            setNewUser({ name: "", username: "", password: "", role: "SALES" });
-        } else {
-            toast({ title: result?.message || "Error", variant: "destructive" });
-        }
-    }
-
-    const handleUpdateUser = async () => {
-        if (!editingUser) return;
-        const result = await updateUser(editingUser._id, {
-            name: editingUser.name,
-            username: editingUser.username,
-            role: editingUser.role,
-            active: editingUser.active,
+    const handleRemoveStatus = useCallback((index: number) => {
+        setStatuses(prev => {
+            const newStatuses = [...prev];
+            newStatuses.splice(index, 1);
+            return newStatuses;
         });
-        if (result?.success) {
-            toast({ title: "User updated" });
-            setIsEditOpen(false);
-        } else {
-            toast({ title: result?.message || "Error", variant: "destructive" });
-        }
-    };
+    }, []);
 
-    const handleDeleteUser = async (userId: string) => {
-        const result = await deleteUser(userId);
-        if (result?.success) {
-            toast({ title: "User deactivated" });
-        } else {
-            toast({ title: result?.message || "Error", variant: "destructive" });
-        }
-    };
+    const handleStatusChange = useCallback((index: number, field: string, value: string) => {
+        setStatuses(prev => {
+            const newStatuses = [...prev];
+            const updated: any = { ...newStatuses[index], [field]: value };
+            if (field === 'label') {
+                updated.key = value.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+            }
+            newStatuses[index] = updated;
+            return newStatuses;
+        });
+    }, []);
 
-    const handleChangePassword = async () => {
+    const handleChangePassword = useCallback(async () => {
         if (passwordForm.newPassword !== passwordForm.confirmPassword) {
             toast({ title: "Passwords don't match", variant: "destructive" });
             return;
@@ -158,31 +115,31 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
         } else {
             toast({ title: result?.message || "Error", variant: "destructive" });
         }
-    };
+    }, [passwordForm, toast]);
 
-    const handleSaveBranding = async () => {
+    const handleSaveBranding = useCallback(async () => {
         const result = await updateBranding(branding);
         if (result?.success) {
             toast({ title: "Branding updated" });
         } else {
             toast({ title: result?.message || "Error", variant: "destructive" });
         }
-    };
+    }, [branding, toast]);
 
-    const handleSaveGoals = async () => {
+    const handleSaveGoals = useCallback(async () => {
         const result = await updateGoals(goals);
         if (result?.success) {
             toast({ title: "Goals updated" });
         } else {
             toast({ title: result?.message || "Error", variant: "destructive" });
         }
-    };
+    }, [goals, toast]);
 
-    const handleBackup = () => {
+    const handleBackup = useCallback(() => {
         window.location.href = "/api/backup";
-    };
+    }, []);
 
-    const handleChangeTheme = async (theme: "violet" | "ocean" | "emerald") => {
+    const handleChangeTheme = useCallback(async (theme: "violet" | "ocean" | "emerald") => {
         setCurrentTheme(theme);
         setTheme(theme);
         const result = await updateTheme(theme);
@@ -191,11 +148,11 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
         } else {
             toast({ title: result?.message || "Error", variant: "destructive" });
         }
-    };
+    }, [setTheme, toast]);
 
     // Roles
     const builtinRoles = ["ADMIN", "MARKETING", "SALES"];
-    const allRoles = [...builtinRoles, ...customRoles.map((r: any) => r.name)];
+    const allRoles = useMemo(() => [...builtinRoles, ...customRoles.map((r: any) => r.name)], [customRoles]);
 
     return (
         <Tabs defaultValue="general" className="space-y-6">
@@ -207,557 +164,51 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                 <TabsTrigger value="roles" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Roles</TabsTrigger>
                 <TabsTrigger value="account" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Account</TabsTrigger>
                 <TabsTrigger value="system" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">System</TabsTrigger>
+                <TabsTrigger value="whatsapp" className="rounded-xl data-[state=active]:bg-green-600 data-[state=active]:text-white transition-all">WhatsApp</TabsTrigger>
             </TabsList>
 
             {/* ── General Tab ─────────────────────────────── */}
             <TabsContent value="general">
-                <div className="grid gap-6 md:grid-cols-2">
-                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <span className="w-1.5 h-5 bg-primary rounded-full" />
-                                Lead Statuses
-                            </CardTitle>
-                            <CardDescription className="text-muted-foreground/80">Configure possible lead stages.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-3">
-                                {statuses.map((status, index) => (
-                                    <div key={index} className="flex items-center gap-2 group bg-white/5 p-2 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
-                                        <div className="flex-1 space-y-1">
-                                            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">Label</Label>
-                                            <Input
-                                                value={status.label}
-                                                onChange={(e) => handleStatusChange(index, 'label', e.target.value)}
-                                                placeholder="Label"
-                                                className="h-9 rounded-xl border-white/10 bg-black/20"
-                                            />
-                                        </div>
-                                        <div className="w-20 space-y-1">
-                                            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">Color</Label>
-                                            <Input
-                                                type="color"
-                                                value={status.color}
-                                                onChange={(e) => handleStatusChange(index, 'color', e.target.value)}
-                                                className="h-9 p-1 rounded-xl border-white/10 bg-black/20"
-                                            />
-                                        </div>
-                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveStatus(index)} className="h-9 w-9 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity mt-5">
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                            <Button onClick={handleAddStatus} variant="outline" size="sm" className="rounded-xl border-white/10 hover:bg-primary/10 hover:text-primary transition-colors">
-                                Add New Status
-                            </Button>
-                            <div className="pt-6 border-t border-white/5">
-                                <Button onClick={handleSaveSettings} className="rounded-xl bg-primary hover:bg-primary/80 px-8 shadow-lg shadow-primary/20">Save Status Changes</Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <span className="w-1.5 h-5 bg-blue-500 rounded-full" />
-                                Lead Sources
-                            </CardTitle>
-                            <CardDescription className="text-muted-foreground/80">Where your leads come from.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-3">
-                                {sources.map((source, index) => (
-                                    <div key={index} className="flex items-center gap-2 group bg-white/5 p-2 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
-                                        <div className="flex-1">
-                                            <Input
-                                                value={source.label}
-                                                onChange={(e) => {
-                                                    const newSources = [...sources];
-                                                    newSources[index] = { ...source, label: e.target.value, key: e.target.value.toLowerCase().replace(/\s/g, '_') };
-                                                    setSources(newSources);
-                                                }}
-                                                className="h-9 rounded-xl border-white/10 bg-black/20"
-                                            />
-                                        </div>
-                                        <Button variant="ghost" size="icon" onClick={() => {
-                                            const newSources = [...sources];
-                                            newSources.splice(index, 1);
-                                            setSources(newSources);
-                                        }} className="h-9 w-9 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                            <Button onClick={() => setSources([...sources, { key: `source_${Date.now()}`, label: "New Source" }])} variant="outline" size="sm" className="rounded-xl border-white/10 hover:bg-blue-500/10 hover:text-blue-500 transition-colors">
-                                Add New Source
-                            </Button>
-                            <div className="pt-6 border-t border-white/5">
-                                <Button onClick={handleSaveSettings} className="rounded-xl bg-blue-500 hover:bg-blue-600 px-8 shadow-lg shadow-blue-500/20">Save Source Changes</Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Goals */}
-                    <Card className="md:col-span-2 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <Target className="h-5 w-5 text-amber-500" />
-                                Monthly Goals
-                            </CardTitle>
-                            <CardDescription className="text-muted-foreground/80">Set targets for the Reports &quot;Goal vs Actual&quot; chart.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid gap-6 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label className="text-xs ml-1">Monthly Lead Target</Label>
-                                    <Input type="number" value={goals.monthlyLeadTarget} onChange={(e) => setGoals({ ...goals, monthlyLeadTarget: Number(e.target.value) })} className="rounded-xl border-white/10 bg-black/20" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs ml-1">Monthly Conversion Target</Label>
-                                    <Input type="number" value={goals.monthlyConversionTarget} onChange={(e) => setGoals({ ...goals, monthlyConversionTarget: Number(e.target.value) })} className="rounded-xl border-white/10 bg-black/20" />
-                                </div>
-                            </div>
-                            <div className="pt-6">
-                                <Button onClick={handleSaveGoals} className="rounded-xl bg-amber-500 hover:bg-amber-600 px-8 shadow-lg shadow-amber-500/20">
-                                    <Save className="h-4 w-4 mr-2" />Save Goals
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <GeneralTab
+                    statuses={statuses}
+                    sources={sources}
+                    goals={goals}
+                    onStatusChange={handleStatusChange}
+                    onAddStatus={handleAddStatus}
+                    onRemoveStatus={handleRemoveStatus}
+                    onSourcesChange={setSources}
+                    onGoalsChange={setGoals}
+                    onSaveSettings={handleSaveSettings}
+                    onSaveGoals={handleSaveGoals}
+                />
             </TabsContent>
 
             {/* ── Products Tab ────────────────────────────── */}
             <TabsContent value="products">
-                <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold flex items-center gap-2">
-                            <span className="w-1.5 h-5 bg-emerald-500 rounded-full" />
-                            Products / Services
-                        </CardTitle>
-                        <CardDescription className="text-muted-foreground/80">Manage the offerings your leads are interested in.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            {products.map((product, index) => (
-                                <div key={index} className="flex items-center gap-2 group bg-white/5 p-3 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
-                                    <div className="flex-1">
-                                        <Input
-                                            value={product.label}
-                                            onChange={(e) => {
-                                                const newProducts = [...products];
-                                                newProducts[index] = { ...product, label: e.target.value, key: e.target.value.toLowerCase().replace(/\s/g, '_') };
-                                                setProducts(newProducts);
-                                            }}
-                                            className="h-9 rounded-xl border-white/10 bg-black/20"
-                                        />
-                                    </div>
-                                    <Button variant="ghost" size="icon" onClick={() => {
-                                        const newProducts = [...products];
-                                        newProducts.splice(index, 1);
-                                        setProducts(newProducts);
-                                    }} className="h-9 w-9 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                        <Button onClick={() => setProducts([...products, { key: `product_${Date.now()}`, label: "New Product" }])} variant="outline" size="sm" className="rounded-xl border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors">
-                            Add New Product
-                        </Button>
-                        <div className="pt-6 border-t border-white/5 flex gap-3">
-                            <Button onClick={handleSaveSettings} className="rounded-xl bg-emerald-500 hover:bg-emerald-600 px-8 shadow-lg shadow-emerald-500/20">Save Product Changes</Button>
-                        </div>
-
-                        {/* Custom Fields */}
-                        <div className="pt-6 border-t border-white/5">
-                            <h3 className="text-sm font-bold mb-4 flex items-center gap-2"><span className="w-1.5 h-4 bg-cyan-500 rounded-full" />Custom Lead Fields</h3>
-                            <div className="space-y-3">
-                                {customFields.map((field, index) => (
-                                    <div key={index} className="flex items-center gap-2 group bg-white/5 p-3 rounded-2xl border border-white/5">
-                                        <Input
-                                            value={field.label}
-                                            onChange={(e) => {
-                                                const newFields = [...customFields];
-                                                newFields[index] = { ...field, label: e.target.value, key: e.target.value.toLowerCase().replace(/\s/g, '_') };
-                                                setCustomFields(newFields);
-                                            }}
-                                            placeholder="Field name"
-                                            className="h-9 flex-1 rounded-xl border-white/10 bg-black/20"
-                                        />
-                                        <Select value={field.type} onValueChange={(v) => {
-                                            const newFields = [...customFields];
-                                            newFields[index] = { ...field, type: v };
-                                            setCustomFields(newFields);
-                                        }}>
-                                            <SelectTrigger className="w-28 h-9 rounded-xl border-white/10 bg-black/20">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                                <SelectItem value="text">Text</SelectItem>
-                                                <SelectItem value="number">Number</SelectItem>
-                                                <SelectItem value="date">Date</SelectItem>
-                                                <SelectItem value="select">Select</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <Button variant="ghost" size="icon" onClick={() => {
-                                            const newFields = [...customFields];
-                                            newFields.splice(index, 1);
-                                            setCustomFields(newFields);
-                                        }} className="h-9 w-9 text-red-400">
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                            <Button onClick={() => setCustomFields([...customFields, { key: `cf_${Date.now()}`, label: "", type: "text" }])} variant="outline" size="sm" className="mt-3 rounded-xl border-white/10 hover:bg-cyan-500/10 hover:text-cyan-500 transition-colors">
-                                Add Custom Field
-                            </Button>
-                            <div className="pt-4">
-                                <Button onClick={handleSaveSettings} className="rounded-xl bg-cyan-500 hover:bg-cyan-600 px-8 shadow-lg shadow-cyan-500/20">Save Fields</Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <ProductsTab
+                    products={products}
+                    customFields={customFields}
+                    onProductsChange={setProducts}
+                    onCustomFieldsChange={setCustomFields}
+                    onSaveSettings={handleSaveSettings}
+                />
             </TabsContent>
 
             {/* ── Team Tab ─────────────────────────────────── */}
             <TabsContent value="users">
-                <div className="grid gap-6 md:grid-cols-5">
-                    <Card className="md:col-span-2 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <UserPlus className="h-5 w-5 text-violet-500" />
-                                Create User
-                            </CardTitle>
-                            <CardDescription className="text-muted-foreground/80">Add new team members.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-4 bg-primary/5 p-6 rounded-3xl border border-primary/10">
-                                <div className="space-y-2">
-                                    <Label className="text-xs ml-1">Full Name</Label>
-                                    <Input value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} className="rounded-xl border-white/10 bg-black/20" placeholder="Jane Doe" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs ml-1">Username</Label>
-                                    <Input value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, '') })} className="rounded-xl border-white/10 bg-black/20" placeholder="jane.doe" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs ml-1">Initial Password</Label>
-                                    <Input value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} type="password" className="rounded-xl border-white/10 bg-black/20" placeholder="••••••••" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-xs ml-1">Role</Label>
-                                    <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
-                                        <SelectTrigger className="rounded-xl border-white/10 bg-black/20">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                            {allRoles.map(r => (
-                                                <SelectItem key={r} value={r}>{r}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <Button onClick={handleCreateUser} disabled={!newUser.name || !newUser.username || !newUser.password}
-                                    className="w-full rounded-xl bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-500/20 transition-all font-bold">
-                                    Register Team Member
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="md:col-span-3 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold">Team Members</CardTitle>
-                            <CardDescription>Manage access and roles.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                {users.map((user) => (
-                                    <div key={user._id} className="flex items-center justify-between p-4 border border-white/5 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors group">
-                                        <div className="flex items-center gap-3">
-                                            <div className={cn("h-10 w-10 rounded-full flex items-center justify-center font-bold border",
-                                                user.active !== false ? "bg-violet-500/20 text-violet-500 border-violet-500/10" : "bg-red-500/20 text-red-400 border-red-500/10"
-                                            )}>
-                                                {user.name.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-bold group-hover:text-primary transition-colors flex items-center gap-1.5">
-                                                    {user.name}
-                                                    {user.active === false && <Badge variant="outline" className="text-[8px] px-1 py-0 text-red-400 border-red-400/30">Inactive</Badge>}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">@{user.username || user.email}</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <Badge variant="outline" className={cn(
-                                                "rounded-full text-[10px] font-bold border-white/10 uppercase tracking-widest px-2 h-6",
-                                                user.role === 'ADMIN' ? 'bg-violet-500/15 text-violet-500 border-violet-500/30'
-                                                    : user.role === 'MARKETING' ? 'bg-teal-500/15 text-teal-500 border-teal-500/30'
-                                                        : 'bg-primary/15 text-primary border-primary/30'
-                                            )}>
-                                                {user.role}
-                                            </Badge>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { setEditingUser({ ...user }); setIsEditOpen(true); }}>
-                                                <Pencil className="h-3 w-3" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleDeleteUser(user._id)}>
-                                                <Trash2 className="h-3 w-3" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Edit User Dialog */}
-                <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                    <DialogContent className="rounded-3xl border-white/10 bg-card/95 backdrop-blur-xl">
-                        <DialogHeader>
-                            <DialogTitle>Edit User</DialogTitle>
-                            <DialogDescription>Update user details and role.</DialogDescription>
-                        </DialogHeader>
-                        {editingUser && (
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Name</Label>
-                                    <Input value={editingUser.name} onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Username</Label>
-                                    <Input value={editingUser.username || ""} onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, '') })} className="rounded-xl border-white/10 bg-black/20" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Role</Label>
-                                    <Select value={editingUser.role} onValueChange={(v) => setEditingUser({ ...editingUser, role: v })}>
-                                        <SelectTrigger className="rounded-xl border-white/10 bg-black/20"><SelectValue /></SelectTrigger>
-                                        <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                            {allRoles.map(r => (<SelectItem key={r} value={r}>{r}</SelectItem>))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <input type="checkbox" id="userActive" checked={editingUser.active !== false} onChange={(e) => setEditingUser({ ...editingUser, active: e.target.checked })} aria-label="User active status" />
-                                    <Label htmlFor="userActive">Active</Label>
-                                </div>
-                                <div className="border-t border-white/10 pt-4 mt-2 space-y-2">
-                                    <Label className="text-xs text-muted-foreground">Reset Password</Label>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            type="password"
-                                            value={resetPassword}
-                                            onChange={(e) => setResetPassword(e.target.value)}
-                                            placeholder="New password (min 6 chars)"
-                                            className="rounded-xl border-white/10 bg-black/20 flex-1"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="rounded-xl border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                                            disabled={resetPassword.length < 6}
-                                            onClick={async () => {
-                                                const res = await adminResetPassword(editingUser._id, resetPassword);
-                                                if (res?.success) {
-                                                    toast({ title: res.message });
-                                                    setResetPassword("");
-                                                } else {
-                                                    toast({ title: res?.message || "Error", variant: "destructive" });
-                                                }
-                                            }}
-                                        >
-                                            Reset
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        <DialogFooter>
-                            <Button onClick={handleUpdateUser} className="rounded-xl bg-primary">Save Changes</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <TeamTab users={users} allRoles={allRoles} />
             </TabsContent>
 
             {/* ── Branding Tab ─────────────────────────────── */}
             <TabsContent value="branding">
-                <div className="grid gap-6 md:grid-cols-2">
-                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <Palette className="h-5 w-5 text-pink-500" />
-                                App Branding
-                            </CardTitle>
-                            <CardDescription className="text-muted-foreground/80">Customize your CRM&apos;s appearance.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-2">
-                                <Label className="text-xs ml-1">App Name</Label>
-                                <Input value={branding.appName} onChange={(e) => setBranding({ ...branding, appName: e.target.value })} className="rounded-xl border-white/10 bg-black/20" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs ml-1">Accent Color</Label>
-                                <div className="flex gap-3 items-center">
-                                    <Input type="color" value={branding.accentColor} onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })} className="h-10 w-16 p-1 rounded-xl border-white/10 bg-black/20" />
-                                    <Input value={branding.accentColor} onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })} className="rounded-xl border-white/10 bg-black/20 font-mono" />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs ml-1">Logo URL (optional)</Label>
-                                <Input value={branding.logoUrl} onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })} placeholder="https://..." className="rounded-xl border-white/10 bg-black/20" />
-                            </div>
-                            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                <p className="text-xs text-muted-foreground mb-2">Preview</p>
-                                <div className="flex items-center gap-3">
-                                    {/* eslint-disable-next-line react/forbid-dom-props */}
-                                    <div className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold branding-preview" style={{ backgroundColor: branding.accentColor }} aria-hidden="true">
-                                        {branding.appName.charAt(0)}
-                                    </div>
-                                    <span className="font-bold">{branding.appName}</span>
-                                </div>
-                            </div>
-                            <Button onClick={handleSaveBranding} className="rounded-xl bg-pink-500 hover:bg-pink-600 px-8 shadow-lg shadow-pink-500/20">
-                                <Save className="h-4 w-4 mr-2" />Save Branding
-                            </Button>
-                        </CardContent>
-                    </Card>
-
-                    {/* Theme Picker */}
-                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start md:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <Sparkles className="h-5 w-5 text-amber-500" />
-                                App Theme
-                            </CardTitle>
-                            <CardDescription className="text-muted-foreground/80">Choose a theme for all users. This applies globally across the entire application.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-                                {/* Violet Noir */}
-                                <button
-                                    onClick={() => handleChangeTheme("violet")}
-                                    className={cn(
-                                        "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02]",
-                                        currentTheme === "violet" ? "border-violet-500 shadow-lg shadow-violet-500/25" : "border-white/10 hover:border-white/30"
-                                    )}
-                                >
-                                    <div className="rounded-xl overflow-hidden">
-                                        <div className="h-24 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 relative">
-                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent)]" />
-                                            <div className="absolute bottom-2 left-3 flex gap-1">
-                                                <div className="h-2 w-8 bg-white/40 rounded-full" />
-                                                <div className="h-2 w-5 bg-white/25 rounded-full" />
-                                            </div>
-                                        </div>
-                                        <div className="p-3 bg-card/80">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-bold">Violet Noir</p>
-                                                    <p className="text-[10px] text-muted-foreground">Premium & Modern</p>
-                                                </div>
-                                                {currentTheme === "violet" && (
-                                                    <div className="h-6 w-6 rounded-full bg-violet-500 flex items-center justify-center">
-                                                        <Check className="h-3.5 w-3.5 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-
-                                {/* Ocean Blue */}
-                                <button
-                                    onClick={() => handleChangeTheme("ocean")}
-                                    className={cn(
-                                        "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02]",
-                                        currentTheme === "ocean" ? "border-blue-500 shadow-lg shadow-blue-500/25" : "border-white/10 hover:border-white/30"
-                                    )}
-                                >
-                                    <div className="rounded-xl overflow-hidden">
-                                        <div className="h-24 bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 relative">
-                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent)]" />
-                                            <div className="absolute bottom-2 left-3 flex gap-1">
-                                                <div className="h-2 w-8 bg-white/40 rounded-full" />
-                                                <div className="h-2 w-5 bg-white/25 rounded-full" />
-                                            </div>
-                                        </div>
-                                        <div className="p-3 bg-card/80">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-bold">Ocean Blue</p>
-                                                    <p className="text-[10px] text-muted-foreground">Corporate & Clean</p>
-                                                </div>
-                                                {currentTheme === "ocean" && (
-                                                    <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center">
-                                                        <Check className="h-3.5 w-3.5 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-
-                                {/* Emerald Forest */}
-                                <button
-                                    onClick={() => handleChangeTheme("emerald")}
-                                    className={cn(
-                                        "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02]",
-                                        currentTheme === "emerald" ? "border-emerald-500 shadow-lg shadow-emerald-500/25" : "border-white/10 hover:border-white/30"
-                                    )}
-                                >
-                                    <div className="rounded-xl overflow-hidden">
-                                        <div className="h-24 bg-gradient-to-br from-emerald-600 via-green-600 to-teal-600 relative">
-                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent)]" />
-                                            <div className="absolute bottom-2 left-3 flex gap-1">
-                                                <div className="h-2 w-8 bg-white/40 rounded-full" />
-                                                <div className="h-2 w-5 bg-white/25 rounded-full" />
-                                            </div>
-                                        </div>
-                                        <div className="p-3 bg-card/80">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm font-bold">Emerald Forest</p>
-                                                    <p className="text-[10px] text-muted-foreground">Fresh & Natural</p>
-                                                </div>
-                                                {currentTheme === "emerald" && (
-                                                    <div className="h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
-                                                        <Check className="h-3.5 w-3.5 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Data Management - separated as full width */}
-                <div className="mt-6">
-                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <Download className="h-5 w-5 text-green-500" />
-                                Data Management
-                            </CardTitle>
-                            <CardDescription className="text-muted-foreground/80">Export and backup your data.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="p-6 rounded-2xl bg-green-500/5 border border-green-500/10">
-                                <h3 className="font-bold text-sm mb-2">Full Backup</h3>
-                                <p className="text-xs text-muted-foreground mb-4">Download all leads, users, settings, notes, and actions as a JSON file.</p>
-                                <Button onClick={handleBackup} className="rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/20">
-                                    <Download className="h-4 w-4 mr-2" />Download Backup (.json)
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <BrandingTab
+                    branding={branding}
+                    currentTheme={currentTheme}
+                    onBrandingChange={setBranding}
+                    onSaveBranding={handleSaveBranding}
+                    onChangeTheme={handleChangeTheme}
+                    onBackup={handleBackup}
+                />
             </TabsContent>
 
             {/* ── Roles Tab ────────────────────────────────── */}
@@ -895,10 +346,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                                     <li>Application settings</li>
                                 </ul>
                             </div>
-                            <Button
-                                onClick={handleBackup}
-                                className="rounded-xl bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/20 gap-2"
-                            >
+                            <Button onClick={handleBackup} className="rounded-xl bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/20 gap-2">
                                 <HardDrive className="h-4 w-4" />
                                 Download Backup (JSON)
                             </Button>
@@ -937,6 +385,35 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                     </Card>
                 </div>
             </TabsContent>
-        </Tabs >
+
+            {/* ── WhatsApp Tab ─────────────────────────────── */}
+            <TabsContent value="whatsapp">
+                <div className="grid gap-6 md:grid-cols-2">
+                    <WhatsAppConnectCard />
+                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                <span className="w-1.5 h-5 bg-green-500 rounded-full" />
+                                How It Works
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm text-muted-foreground">
+                            <p>1️⃣ Click <strong>Connect WhatsApp</strong> to link your Meta Business account</p>
+                            <p>2️⃣ Authorize the app to access your WhatsApp Business API</p>
+                            <p>3️⃣ Go to any lead with a phone number and click the <strong>WhatsApp</strong> button</p>
+                            <p>4️⃣ Send free-text messages (within 24h window) or pre-approved templates</p>
+                            <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                <p className="text-xs text-amber-400 font-medium">⚠️ Requirements</p>
+                                <ul className="text-xs text-muted-foreground mt-1 space-y-1 list-disc list-inside">
+                                    <li>Meta Business account with WhatsApp Business API</li>
+                                    <li>Facebook App with whatsapp_business_messaging scope</li>
+                                    <li>Phone number registered in WhatsApp Business Manager</li>
+                                </ul>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </TabsContent>
+        </Tabs>
     );
 }

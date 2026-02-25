@@ -1,12 +1,19 @@
 "use server";
+import { serialize } from "@/lib/serialize";
 
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Lead from "@/models/Lead";
 import LeadNote from "@/models/LeadNote";
 import { USER_ROLES } from "@/models/User";
+import mongoose from "mongoose";
 
-export async function getDashboardStats(dateRange?: "7d" | "30d" | "90d" | "all") {
+export async function getDashboardStats(
+    dateRange?: "7d" | "30d" | "90d" | "all",
+    agentId?: string,
+    startDate?: string,
+    endDate?: string
+) {
     const session = await auth();
     if (!session) return null;
 
@@ -17,8 +24,19 @@ export async function getDashboardStats(dateRange?: "7d" | "30d" | "90d" | "all"
         if (session.user.role === USER_ROLES.SALES) {
             matchStage.assignedTo = session.user.id;
         }
-        // Apply date range filter
-        if (dateRange && dateRange !== "all") {
+
+        // Agent filter (Admin/Marketing only) — overrides role-based default
+        if (agentId && session.user.role !== USER_ROLES.SALES) {
+            matchStage.assignedTo = new mongoose.Types.ObjectId(agentId);
+        }
+
+        // Custom date range takes priority over preset
+        if (startDate && endDate) {
+            matchStage.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+            };
+        } else if (dateRange && dateRange !== "all") {
             const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
             matchStage.createdAt = { $gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) };
         }
@@ -140,8 +158,8 @@ export async function getDashboardStats(dateRange?: "7d" | "30d" | "90d" | "all"
                 source: item._id || "Unknown",
                 count: item.count
             })),
-            recentLeads: JSON.parse(JSON.stringify(recentLeads)),
-            recentActivity: JSON.parse(JSON.stringify(recentActivity)),
+            recentLeads: serialize(recentLeads),
+            recentActivity: serialize(recentActivity),
             monthlyTrends: (() => {
                 const raw = monthlyTrends.map((item) => ({
                     name: item._id,

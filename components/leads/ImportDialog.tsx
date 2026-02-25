@@ -113,10 +113,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <FileSpreadsheet className="h-5 w-5 text-primary" />
-                        Import Leads from CSV
+                        Import Leads from CSV / Excel
                     </DialogTitle>
                     <DialogDescription>
-                        {step === "upload" && "Upload a CSV file to get started."}
+                        {step === "upload" && "Upload a CSV or Excel (.xlsx) file to get started."}
                         {step === "mapping" && "Map your CSV columns to lead fields."}
                         {step === "preview" && "Review mapped data before importing."}
                         {step === "result" && "Import complete."}
@@ -142,16 +142,16 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 {step === "upload" && (
                     <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-white/10 rounded-2xl">
                         <Upload className="h-12 w-12 text-muted-foreground mb-4" />
-                        <p className="text-sm text-muted-foreground mb-4">Drop a CSV file here or click to browse</p>
+                        <p className="text-sm text-muted-foreground mb-4">Drop a CSV or Excel file here or click to browse</p>
                         <Button onClick={() => fileRef.current?.click()} className="rounded-xl">
-                            Choose CSV File
+                            Choose File (CSV / XLSX)
                         </Button>
                         <input
                             ref={fileRef}
                             type="file"
-                            accept=".csv"
+                            accept=".csv,.xlsx,.xls"
                             className="hidden"
-                            aria-label="Choose CSV file to import"
+                            aria-label="Choose CSV or Excel file to import"
                             onChange={handleFileUpload}
                         />
                         {loading && <Loader2 className="h-5 w-5 animate-spin mt-4 text-primary" />}

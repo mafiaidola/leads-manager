@@ -11,6 +11,25 @@ import mongoose from "mongoose";
 import { logAudit } from "@/lib/actions/audit";
 import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
 import { LEAD_FIELD_OPTIONS } from "@/lib/constants/leadFields";
+import * as XLSX from "xlsx";
+
+/**
+ * Convert an uploaded file (CSV or Excel) into a CSV text string.
+ * Excel files are parsed with the xlsx library and the first sheet
+ * is converted to CSV so the rest of the pipeline stays unchanged.
+ */
+async function fileToCSVText(file: File): Promise<string> {
+    const name = file.name.toLowerCase();
+    if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: "array" });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        return XLSX.utils.sheet_to_csv(firstSheet);
+    }
+    // Default: treat as CSV/text
+    return file.text();
+}
+
 
 /**
  * Preview a CSV file: return headers and first 5 rows.
@@ -25,7 +44,7 @@ export async function previewCSVImport(formData: FormData) {
     if (!file) return { error: "No file uploaded" };
 
     try {
-        const text = await file.text();
+        const text = await fileToCSVText(file);
         const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
         const headers = parsed.meta.fields || [];
         const preview = (parsed.data as any[]).slice(0, 5);
@@ -52,7 +71,7 @@ export async function importLeadsWithMapping(
     const file = formData.get("file") as File;
     if (!file) return { message: "No file uploaded" };
 
-    const text = await file.text();
+    const text = await fileToCSVText(file);
 
     try {
         await dbConnect();

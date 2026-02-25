@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "check:styles": "node scripts/check-inline-styles.mjs",
+    "check:all": "npm run typecheck && npm run lint && npm run check:styles",
+    "seed:prod": "node scripts/seed_prod.mjs",
+    "deploy": "npm run check:all && git add -A && git commit -m \"deploy\" && git push origin master && npx vercel --prod",
+    "db:health": "node -e \"const m=require('mongoose');require('dotenv').config({path:'.env.local'});m.connect(process.env.MONGODB_URI).then(()=>{console.log('✅ MongoDB connected');process.exit(0)}).catch(e=>{console.error('❌ MongoDB failed:',e.message);process.exit(1)})\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -42,6 +48,7 @@
     "react-hook-form": "^7.71.1",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.4.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {

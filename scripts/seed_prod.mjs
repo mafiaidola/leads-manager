@@ -11,55 +11,61 @@ dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
+const UserSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    username: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: { type: String },
+    passwordHash: { type: String, required: true },
+    role: { type: String, enum: ["ADMIN", "SALES", "MARKETING"], default: "SALES" },
+    active: { type: Boolean, default: true }
+}, { timestamps: true });
+
 async function seed() {
     try {
         await mongoose.connect(MONGODB_URI);
-        console.log("Connected to MongoDB");
-
-        // Use Mongoose connection to insert directly since we have issues with model imports
-        const UserSchema = new mongoose.Schema({
-            name: String,
-            email: String,
-            passwordHash: String,
-            role: String,
-            active: { type: Boolean, default: true }
-        }, { timestamps: true });
+        console.log("✅ Connected to MongoDB");
 
         const User = mongoose.models.User || mongoose.model("User", UserSchema);
 
-        const adminEmail = "admin@example.com";
-        const existingAdmin = await User.findOne({ email: adminEmail });
+        const users = [
+            { name: "Admin User", username: "admin", password: "admin123", role: "ADMIN" },
+            { name: "Sales User 1", username: "sales1", password: "sales123", role: "SALES" },
+            { name: "Marketing", username: "marketing", password: "market123", role: "MARKETING" },
+        ];
 
-        if (!existingAdmin) {
-            const hashedPassword = await bcrypt.hash("admin123", 10);
-            await User.create({
-                name: "Admin User",
-                email: adminEmail,
-                passwordHash: hashedPassword,
-                role: "ADMIN"
-            });
-            console.log("Admin created");
-        } else {
-            console.log("Admin already exists");
+        for (const u of users) {
+            const existing = await User.findOne({ username: u.username });
+            if (!existing) {
+                const passwordHash = await bcrypt.hash(u.password, 10);
+                await User.create({
+                    name: u.name,
+                    username: u.username,
+                    email: `${u.username}@leads.local`,
+                    passwordHash,
+                    role: u.role,
+                    active: true,
+                });
+                console.log(`✅ Created: ${u.username} (${u.role})`);
+            } else {
+                // Update password in case it changed
+                const passwordHash = await bcrypt.hash(u.password, 10);
+                existing.passwordHash = passwordHash;
+                existing.name = u.name;
+                existing.role = u.role;
+                existing.active = true;
+                await existing.save();
+                console.log(`🔄 Updated: ${u.username} (${u.role})`);
+            }
         }
 
-        const salesEmail = "sales1@example.com";
-        const existingSales = await User.findOne({ email: salesEmail });
-        if (!existingSales) {
-            const hashedPassword = await bcrypt.hash("sales123", 10);
-            await User.create({
-                name: "Sales User 1",
-                email: salesEmail,
-                passwordHash: hashedPassword,
-                role: "SALES"
-            });
-            console.log("Sales user created");
-        }
+        console.log("\n📋 Login credentials:");
+        console.log("  Admin:     username=admin      password=admin123");
+        console.log("  Sales:     username=sales1     password=sales123");
+        console.log("  Marketing: username=marketing  password=market123");
 
-        console.log("Seeding finished");
         process.exit(0);
     } catch (error) {
-        console.error("Seeding failed", error);
+        console.error("❌ Seeding failed", error);
         process.exit(1);
     }
 }

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileSidebar } from "@/components/MobileSidebar";
 import { auth } from "@/auth";
@@ -82,7 +83,17 @@ export default async function DashboardLayout({
                 </header>
 
                 <div className="px-4">
-                    {children}
+                    <Suspense fallback={
+                        <div className="p-8 space-y-6 animate-pulse">
+                            <div className="h-8 w-48 bg-muted/20 rounded-xl" />
+                            <div className="grid gap-5 grid-cols-2 lg:grid-cols-4">
+                                {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-muted/10 rounded-3xl border border-white/5" />)}
+                            </div>
+                            <div className="h-64 bg-muted/10 rounded-3xl border border-white/5" />
+                        </div>
+                    }>
+                        {children}
+                    </Suspense>
                 </div>
                 <CommandPalette />
             </main>
