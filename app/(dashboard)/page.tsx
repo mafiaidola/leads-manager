@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { serialize } from "@/lib/serialize";
 import { getSettings } from "@/lib/actions/settings";
