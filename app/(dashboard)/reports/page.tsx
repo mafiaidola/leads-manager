@@ -20,7 +20,6 @@ const ReportsClient = nextDynamic(() => import("@/components/reports/ReportsClie
             </div>
         </div>
     ),
-    ssr: false,
 });
 
 export default async function ReportsPage() {
