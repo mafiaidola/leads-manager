@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
-import { Search, FileUp, Download, Trash2, Filter, Star, LayoutGrid, Table2, Users2, Bell } from "lucide-react";
+import { Search, FileUp, Download, Trash2, Filter, Star, LayoutGrid, Table2, Users2, Bell, FileSpreadsheet, FileText, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
@@ -38,7 +38,8 @@ export interface LeadsToolbarProps {
     onTagFilter: (tag: string) => void;
     onOverdueFilter: () => void;
     onValueRange: (min: string, max: string) => void;
-    onExport: () => void;
+    onExport: (format: string) => void;
+    onCreatedByFilter: (role: string) => void;
     onImportOpen: () => void;
     onBulkStatusOpen: (open: boolean) => void;
     onBulkAssignOpen: (open: boolean) => void;
@@ -55,7 +56,7 @@ export function LeadsToolbar({
     viewMode, selectedIds, bulkStatusOpen, bulkAssignOpen,
     onViewModeChange, onViewToggle, onSearch, onStatusFilter, onSourceFilter,
     onAssigneeFilter, onTagFilter, onOverdueFilter, onValueRange,
-    onExport, onImportOpen, onBulkStatusOpen, onBulkAssignOpen,
+    onExport, onCreatedByFilter, onImportOpen, onBulkStatusOpen, onBulkAssignOpen,
     onBulkStatus, onBulkAssign, onBulkDelete, onClearSelection,
 }: LeadsToolbarProps) {
     return (
@@ -190,9 +191,24 @@ export function LeadsToolbar({
                     </Select>
                     {isAdmin && (
                         <>
-                            <Button variant="outline" size="icon" onClick={onExport} title="Export CSV" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
-                                <Download className="h-4 w-4" />
-                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon" title="Export" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
+                                        <Download className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                    <DropdownMenuItem onClick={() => onExport("csv")} className="cursor-pointer">
+                                        <FileText className="h-4 w-4 mr-2 text-muted-foreground" /> CSV
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onExport("excel")} className="cursor-pointer">
+                                        <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-500" /> Excel (.xlsx)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onExport("word")} className="cursor-pointer">
+                                        <FileText className="h-4 w-4 mr-2 text-blue-500" /> Word (.docx)
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                             <Button variant="outline" size="icon" onClick={onImportOpen} title="Import CSV" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
                                 <FileUp className="h-4 w-4" />
                             </Button>
@@ -235,6 +251,20 @@ export function LeadsToolbar({
                             className="w-20 h-8 text-xs rounded-xl border-white/10 bg-white/5"
                         />
                     </div>
+
+                    {/* Added By role filter */}
+                    <Select value={searchParams.get("createdByRole") || "all"} onValueChange={onCreatedByFilter}>
+                        <SelectTrigger className="w-[160px] rounded-xl border-white/10 bg-white/5 h-8 text-xs">
+                            <UserPlus className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                            <SelectValue placeholder="Added By" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                            <SelectItem value="all">All Creators</SelectItem>
+                            <SelectItem value="ADMIN">Admin</SelectItem>
+                            <SelectItem value="MARKETING">Marketing</SelectItem>
+                            <SelectItem value="SALES">Sales</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             )}
 

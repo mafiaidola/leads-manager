@@ -27,9 +27,8 @@ export default async function DashboardPage() {
     const stats = serialize(rawStats);
     const conversionRate = stats.totalLeads > 0 ? parseFloat(((stats.customers / stats.totalLeads) * 100).toFixed(1)) : 0;
 
-    const hour = new Date().getHours();
-    const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-    const firstName = session?.user?.name?.split(" ")[0] || "there";
+    const greeting = "مرحبا";
+    const firstName = session?.user?.name?.split(" ")[0] || "";
 
     // Sparkline data from monthly trends
     const trendLine = stats.monthlyTrends.map((m: { total: number }) => m.total);

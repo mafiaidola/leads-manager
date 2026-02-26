@@ -224,6 +224,13 @@ export async function getLeads(searchParams: any) {
             query.tags = searchParams.tag;
         }
 
+        // "Added By" role filter — show leads created by users of a specific role
+        if (searchParams.createdByRole) {
+            const User = (await import("@/models/User")).default;
+            const roleUsers = await User.find({ role: searchParams.createdByRole }).select("_id").lean();
+            query.createdBy = { $in: roleUsers.map((u: any) => u._id) };
+        }
+
         // Value range filter
         if (searchParams.minValue || searchParams.maxValue) {
             query.value = {};

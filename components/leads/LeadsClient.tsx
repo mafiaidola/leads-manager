@@ -151,10 +151,18 @@ export function LeadsClient({
 
     const now = new Date();
 
-    const handleExport = useCallback(() => {
+    const handleExport = useCallback((format: string) => {
         const params = new URLSearchParams(searchParams);
+        params.set("format", format);
         window.location.href = `/api/leads/export?${params.toString()}`;
     }, [searchParams]);
+
+    const handleCreatedByFilter = useCallback((role: string) => {
+        const params = new URLSearchParams(searchParams);
+        if (role === "all") { params.delete("createdByRole"); } else { params.set("createdByRole", role); }
+        params.delete("page");
+        router.replace(`/leads?${params.toString()}`);
+    }, [searchParams, router]);
 
     const handleDelete = useCallback(async () => {
         if (!leadToDelete) return;
@@ -298,6 +306,7 @@ export function LeadsClient({
                 onOverdueFilter={handleOverdueFilter}
                 onValueRange={handleValueRange}
                 onExport={handleExport}
+                onCreatedByFilter={handleCreatedByFilter}
                 onImportOpen={() => setIsImportOpen(true)}
                 onBulkStatusOpen={setBulkStatusOpen}
                 onBulkAssignOpen={setBulkAssignOpen}
