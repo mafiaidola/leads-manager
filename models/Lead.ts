@@ -1,9 +1,12 @@
 import mongoose, { Schema, Model, models } from "mongoose";
+import { getNextSequence } from "./Counter";
 
 export interface ILead {
     _id: mongoose.Types.ObjectId;
+    serialNumber: number;
     name: string;
     company?: string;
+    countryCode: string;
     email?: string;
     phone?: string;
     website?: string;
@@ -39,8 +42,10 @@ export interface ILead {
 
 const LeadSchema = new Schema<ILead>(
     {
+        serialNumber: { type: Number, unique: true, index: true },
         name: { type: String, required: true, index: true },
         company: { type: String, index: true },
+        countryCode: { type: String, default: "971" },
         email: { type: String, index: true },
         phone: String,
         website: String,
@@ -97,6 +102,13 @@ LeadSchema.index(
 LeadSchema.pre("save", function () {
     if (this.phone) {
         this.phone = this.phone.replace(/[^0-9]/g, "");
+    }
+});
+
+// Pre-validate hook: auto-assign serial number
+LeadSchema.pre("validate", async function () {
+    if (this.isNew && !this.serialNumber) {
+        this.serialNumber = await getNextSequence("lead_serial");
     }
 });
 

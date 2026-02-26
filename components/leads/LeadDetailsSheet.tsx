@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import WhatsAppSendDialog from "@/components/whatsapp/WhatsAppSendDialog";
+import { formatPhoneDisplay } from "@/lib/constants/countryCodes";
 
 interface LeadDetailsSheetProps {
     leadId: string | null;
@@ -199,7 +200,12 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                             <TabsContent value="profile" className="mt-0 space-y-6 pb-8">
                                 {/* Header Info */}
                                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                                    <h2 className="text-xl font-bold text-foreground">{data.lead.name}</h2>
+                                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                                        {data.lead.name}
+                                        {data.lead.serialNumber && (
+                                            <Badge variant="outline" className="font-mono text-[10px] border-primary/30 text-primary/70 px-1.5">LM-{data.lead.serialNumber}</Badge>
+                                        )}
+                                    </h2>
                                     <p className="text-sm text-primary font-medium">{data.lead.position || "Contact Person"}</p>
                                     <div className="flex items-center space-x-2 text-muted-foreground mt-2">
                                         <Building2 className="h-4 w-4" />
@@ -283,7 +289,7 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] text-muted-foreground uppercase font-bold">Phone Number</span>
-                                                    <span className="text-sm font-medium">{data.lead.phone || "No Phone"}</span>
+                                                    <span className="text-sm font-medium">{formatPhoneDisplay(data.lead.phone) || "No Phone"}</span>
                                                 </div>
                                             </div>
                                             {data.lead.phone && (
@@ -568,18 +574,20 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                 {timeline.length > 0 ? (
                                     <div className="space-y-0">
                                         {timeline.map((item, idx) => {
+                                            const isAudit = item.kind === "audit";
                                             const isNote = item.kind === "note";
                                             const isSystem = isNote && item.type === "SYSTEM";
                                             const isStatusChange = isNote && item.type === "STATUS_CHANGE";
-                                            const actionCfg = !isNote ? (ACTION_TYPE_CONFIG[item.type] || ACTION_TYPE_CONFIG.OTHER) : null;
+                                            const actionCfg = (!isNote && !isAudit) ? (ACTION_TYPE_CONFIG[item.type] || ACTION_TYPE_CONFIG.OTHER) : null;
                                             const ActionIcon = actionCfg?.icon;
 
                                             return (
                                                 <div key={item._id} className="relative pl-6 pb-4 border-l border-white/10 last:pb-0">
-                                                    <div className={`absolute left-[-9px] top-1 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${isSystem ? "bg-card border-slate-400" :
-                                                        isStatusChange ? "bg-card border-amber-400" :
-                                                            isNote ? "bg-card border-blue-400" :
-                                                                "bg-card border-white/20"
+                                                    <div className={`absolute left-[-9px] top-1 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${isAudit ? "bg-card border-indigo-400" :
+                                                        isSystem ? "bg-card border-slate-400" :
+                                                            isStatusChange ? "bg-card border-amber-400" :
+                                                                isNote ? "bg-card border-blue-400" :
+                                                                    "bg-card border-white/20"
                                                         }`}>
                                                         {isSystem ? <History className="h-2.5 w-2.5 text-slate-400" /> :
                                                             isStatusChange ? <Zap className="h-2.5 w-2.5 text-amber-400" /> :

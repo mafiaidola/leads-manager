@@ -1,14 +1,14 @@
 "use client";
 
-import React from "react";
-import { Clock, MessageSquare, CheckCircle2 } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Clock, MessageSquare, CheckCircle2, Shield } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface TimelineItem {
     _id: string;
-    kind: "note" | "action";
+    kind: "note" | "action" | "audit";
     type: string;
     message?: string;
     description?: string;
@@ -27,6 +27,15 @@ interface LeadTimelineProps {
     formatTime: (dateStr: string) => string;
 }
 
+type FilterKind = "all" | "note" | "action" | "audit";
+
+const FILTER_OPTIONS: { key: FilterKind; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "note", label: "Notes" },
+    { key: "action", label: "Actions" },
+    { key: "audit", label: "System" },
+];
+
 export const LeadTimeline = React.memo(function LeadTimeline({
     timeline,
     getTimelineIcon,
@@ -35,17 +44,53 @@ export const LeadTimeline = React.memo(function LeadTimeline({
     formatDate,
     formatTime,
 }: LeadTimelineProps) {
+    const [filter, setFilter] = useState<FilterKind>("all");
+
+    const filteredTimeline = useMemo(() => {
+        if (filter === "all") return timeline;
+        return timeline.filter((item) => item.kind === filter);
+    }, [timeline, filter]);
+
+    // Provide defaults for audit kind icons/colors
+    const resolveIcon = (kind: string, type: string) => {
+        if (kind === "audit") return <Shield className="h-4 w-4 text-indigo-400" />;
+        return getTimelineIcon(kind, type);
+    };
+
+    const resolveColor = (kind: string, type: string) => {
+        if (kind === "audit") return "bg-indigo-500/10 text-indigo-400";
+        return getTimelineColor(kind, type);
+    };
+
     return (
         <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
             <CardHeader>
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                     <Clock className="h-4 w-4 text-primary" />
                     Activity Timeline
-                    <Badge variant="outline" className="ml-auto rounded-full text-[10px] border-white/10">{timeline.length} events</Badge>
+                    <Badge variant="outline" className="ml-auto rounded-full text-[10px] border-white/10">{filteredTimeline.length} events</Badge>
                 </CardTitle>
+                {/* Filter Toggles */}
+                <div className="flex gap-1.5 mt-2">
+                    {FILTER_OPTIONS.map(({ key, label }) => (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => setFilter(key)}
+                            className={cn(
+                                "text-[10px] px-3 py-1 rounded-full border transition-all font-medium",
+                                filter === key
+                                    ? "bg-primary/20 border-primary/40 text-primary"
+                                    : "border-white/10 text-muted-foreground hover:bg-white/5"
+                            )}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
             </CardHeader>
             <CardContent>
-                {timeline.length === 0 ? (
+                {filteredTimeline.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                         <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
                         <p className="text-sm">No activity yet</p>
@@ -57,14 +102,14 @@ export const LeadTimeline = React.memo(function LeadTimeline({
                         <div className="absolute left-[19px] top-0 bottom-0 w-px bg-white/5" />
 
                         <div className="space-y-1">
-                            {timeline.map((item) => (
+                            {filteredTimeline.map((item) => (
                                 <div key={item._id} className="relative flex gap-3 py-3 group">
                                     {/* Icon */}
                                     <div className={cn(
                                         "relative z-10 h-10 w-10 rounded-full flex items-center justify-center shrink-0 ring-4 ring-background transition-all",
-                                        getTimelineColor(item.kind, item.type)
+                                        resolveColor(item.kind, item.type)
                                     )}>
-                                        {getTimelineIcon(item.kind, item.type)}
+                                        {resolveIcon(item.kind, item.type)}
                                     </div>
 
                                     {/* Content */}
@@ -73,10 +118,13 @@ export const LeadTimeline = React.memo(function LeadTimeline({
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2 mb-0.5">
                                                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                                        {item.kind === "action" ? item.type.replace("_", " ") : item.type.replace("_", " ")}
+                                                        {item.type.replace(/_/g, " ")}
                                                     </span>
                                                     {item.kind === "action" && (
                                                         <Badge variant="outline" className="text-[9px] rounded-full border-white/10 px-1.5 h-4">Action</Badge>
+                                                    )}
+                                                    {item.kind === "audit" && (
+                                                        <Badge variant="outline" className="text-[9px] rounded-full border-indigo-400/30 text-indigo-400 px-1.5 h-4">System</Badge>
                                                     )}
                                                 </div>
                                                 <p className="text-sm">{item.message || item.description}</p>

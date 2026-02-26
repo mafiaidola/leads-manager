@@ -28,12 +28,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, Ban } from "lucide-react";
+import { PhoneInputWithCountry } from "@/components/ui/PhoneInputWithCountry";
 
 const formSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters."),
     company: z.string().optional(),
     email: z.string().optional(),
     phone: z.string().regex(/^\d*$/, "Phone number must contain only digits (no spaces, dashes or special characters)").optional(),
+    countryCode: z.string().optional(),
     status: z.string().min(1, "Please select a status."),
     source: z.string().optional(),
     product: z.string().optional(),
@@ -59,7 +61,6 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
     const { toast } = useToast();
     const [duplicateWarning, setDuplicateWarning] = useState<{ exists: boolean; leadName?: string } | null>(null);
     const [checkingPhone, setCheckingPhone] = useState(false);
-    const [phoneCheckTimeout, setPhoneCheckTimeout] = useState<NodeJS.Timeout | null>(null);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -68,6 +69,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
             company: "",
             email: "",
             phone: "",
+            countryCode: "971",
             status: "interesting",
             source: "",
             product: "",
@@ -89,30 +91,12 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
         },
     });
 
-    const sanitizePhone = (val: string) => val.replace(/[^0-9]/g, "");
-
-    const handlePhoneChange = useCallback((rawPhone: string) => {
-        const phone = sanitizePhone(rawPhone);
-        if (phoneCheckTimeout) clearTimeout(phoneCheckTimeout);
-
-        if (!phone || phone.length < 4) {
-            setDuplicateWarning(null);
-            return;
-        }
-
-        setCheckingPhone(true);
-        setPhoneCheckTimeout(setTimeout(async () => {
-            try {
-                const result = await checkDuplicatePhone(phone);
-                setDuplicateWarning(result);
-            } catch {
-                setDuplicateWarning(null);
-            }
-            setCheckingPhone(false);
-        }, 400));
-    }, [phoneCheckTimeout]);
-
     const isPhoneBlocked = duplicateWarning?.exists === true || checkingPhone;
+
+    const handlePhoneDuplicateStatus = useCallback((status: { exists: boolean; leadName?: string } | null, checking: boolean) => {
+        setDuplicateWarning(status);
+        setCheckingPhone(checking);
+    }, []);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         // Final duplicate guard — hard-block
@@ -126,9 +110,11 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
             if (key === 'public' || key === 'contactedToday') {
                 if (value === true) formData.append(key, "on");
             } else if (key === 'phone') {
-                formData.append(key, sanitizePhone(String(value)));
+                // Store full international number: countryCode + localDigits
+                const fullPhone = (values.countryCode || "971") + String(value ?? "").replace(/[^0-9]/g, "");
+                formData.append(key, fullPhone);
             } else {
-                formData.append(key, String(value));
+                formData.append(key, String(value ?? ""));
             }
         });
 
@@ -297,7 +283,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                         </FormItem>
                                     )}
                                 />
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
                                     <FormField
                                         control={form.control}
                                         name="phone"
@@ -305,40 +291,23 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                             <FormItem>
                                                 <FormLabel>Phone</FormLabel>
                                                 <FormControl>
-                                                    <Input
-                                                        placeholder="971XXXXXXXXX"
-                                                        className={`rounded-xl border-white/10 bg-white/5 ${duplicateWarning?.exists ? 'border-red-500/50 focus:ring-red-500/40' : ''}`}
-                                                        {...field}
-                                                        onChange={(e) => {
-                                                            const sanitized = sanitizePhone(e.target.value);
-                                                            field.onChange(sanitized);
-                                                            handlePhoneChange(sanitized);
+                                                    <PhoneInputWithCountry
+                                                        value={field.value || ""}
+                                                        countryCode={form.watch("countryCode") || "971"}
+                                                        onChange={(phone, cc) => {
+                                                            field.onChange(phone);
+                                                            form.setValue("countryCode", cc);
                                                         }}
-                                                        inputMode="numeric"
-                                                        pattern="[0-9]*"
+                                                        checkDuplicate={(fullPhone) => checkDuplicatePhone(fullPhone)}
+                                                        onDuplicateStatus={handlePhoneDuplicateStatus}
                                                     />
                                                 </FormControl>
-                                                <FormDescription className="text-[10px] text-muted-foreground/60">
-                                                    Digits only — no spaces, dashes, or + signs
-                                                </FormDescription>
-                                                {checkingPhone && (
-                                                    <p className="text-xs text-blue-400 animate-pulse flex items-center gap-1.5">
-                                                        <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-ping" />
-                                                        Checking for duplicates...
-                                                    </p>
-                                                )}
-                                                {duplicateWarning?.exists && (
-                                                    <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/40 text-red-500">
-                                                        <Ban className="h-4 w-4 shrink-0" />
-                                                        <p className="text-xs font-bold">
-                                                            ⛔ This phone already belongs to <strong>&quot;{duplicateWarning.leadName}&quot;</strong>. Duplicate leads cannot be created.
-                                                        </p>
-                                                    </div>
-                                                )}
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
                                     <FormField
                                         control={form.control}
                                         name="value"
@@ -352,20 +321,20 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                             </FormItem>
                                         )}
                                     />
+                                    <FormField
+                                        control={form.control}
+                                        name="website"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Website</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="https://..." className="rounded-xl border-white/10 bg-white/5" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                 </div>
-                                <FormField
-                                    control={form.control}
-                                    name="website"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Website</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="https://..." className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                             </div>
 
                             {/* Right Column: Address & Details */}
@@ -577,6 +546,6 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                     </form>
                 </Form>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }

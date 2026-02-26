@@ -10,6 +10,7 @@ import {
     Sparkles, Pencil, Trash2, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatPhoneDisplay } from "@/lib/constants/countryCodes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -353,12 +354,18 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
             {/* Lead Name & Meta */}
             <FadeIn delay={0.05}>
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-3xl font-extrabold tracking-tight">{lead.name}</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl font-extrabold tracking-tight">{lead.name}</h1>
+                        {lead.serialNumber && (
+                            <Badge variant="outline" className="font-mono text-xs border-primary/30 text-primary/80 px-2 py-0.5 rounded-lg">LM-{lead.serialNumber}</Badge>
+                        )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                         {lead.company && <span className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" /> {lead.company}</span>}
                         {lead.position && <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" /> {lead.position}</span>}
                         <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {assignedName}</span>
                         <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Created {formatDate(lead.createdAt)}</span>
+                        {lead.createdBy?.name && <span className="text-xs text-muted-foreground/60">by {lead.createdBy.name}</span>}
                     </div>
                 </div>
             </FadeIn>

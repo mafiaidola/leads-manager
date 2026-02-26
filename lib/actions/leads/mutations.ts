@@ -18,6 +18,7 @@ const LeadSchema = z.object({
     company: z.string().optional(),
     email: z.string().email().optional().or(z.literal("")),
     phone: z.string().regex(/^\d*$/, "Phone number must contain only digits").optional(),
+    countryCode: z.string().optional(),
     status: z.string(),
     source: z.string().optional(),
     product: z.string().optional(),
@@ -70,6 +71,7 @@ export async function createLead(prevState: any, formData: FormData) {
         await dbConnect();
         const newLead = await Lead.create({
             ...rest,
+            countryCode: rest.countryCode || "971",
             followUpDate: rest.followUpDate ? new Date(rest.followUpDate) : undefined,
             assignedTo: assignedTo || undefined,
             address: {
@@ -163,11 +165,39 @@ export async function updateLead(prevState: any, formData: FormData) {
             return { message: "Unauthorized" };
         }
 
+        // Duplicate phone check (server-side guard)
+        if (rest.phone) {
+            const sanitizedPhone = rest.phone.replace(/[^0-9]/g, "");
+            rest.phone = sanitizedPhone;
+            const existingLead = await Lead.findOne({ phone: sanitizedPhone, deletedAt: null, _id: { $ne: id } });
+            if (existingLead) {
+                return { message: `Phone number already belongs to "${existingLead.name}". Duplicates not allowed.`, duplicate: true };
+            }
+        }
+
+        // Build structured change diff for audit
+        const changes: string[] = [];
+        const trackField = (label: string, oldVal: any, newVal: any) => {
+            const o = String(oldVal ?? "").trim();
+            const n = String(newVal ?? "").trim();
+            if (o !== n) changes.push(`${label}: ${o || "(empty)"} → ${n || "(empty)"}`);
+        };
+        trackField("Name", lead.name, rest.name);
+        trackField("Company", lead.company, rest.company);
+        trackField("Email", lead.email, rest.email);
+        trackField("Phone", lead.phone, rest.phone);
+        trackField("Status", lead.status, rest.status);
+        trackField("Source", lead.source, rest.source);
+        trackField("Product", lead.product, rest.product);
+        trackField("Value", lead.value, rest.value);
+        trackField("Website", lead.website, rest.website);
+
         // Update fields
         lead.name = rest.name;
         lead.company = rest.company;
         lead.email = rest.email;
         lead.phone = rest.phone;
+        lead.countryCode = rest.countryCode || lead.countryCode || "971";
         lead.status = rest.status;
         lead.source = rest.source;
         lead.product = rest.product;
@@ -199,7 +229,7 @@ export async function updateLead(prevState: any, formData: FormData) {
         const prevAssignedTo = lead.assignedTo?.toString();
         await lead.save();
 
-        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, `Updated lead: ${lead.name}`);
+        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, changes.length > 0 ? changes.join(" | ") : `Updated lead: ${lead.name}`);
 
         // Notify newly assigned user (if assignment changed)
         if (assignedTo && assignedTo !== prevAssignedTo) {

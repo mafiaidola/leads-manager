@@ -5,11 +5,12 @@ import dbConnect from "@/lib/db";
 import Lead from "@/models/Lead";
 import LeadNote from "@/models/LeadNote";
 import LeadAction from "@/models/LeadAction";
+import AuditLog from "@/models/AuditLog";
 import { USER_ROLES } from "@/models/User";
 import mongoose from "mongoose";
 
 // ─── Real-time duplicate phone check ────────────────────────────────────────
-export async function checkDuplicatePhone(phone: string) {
+export async function checkDuplicatePhone(phone: string, excludeId?: string) {
     const session = await auth();
     if (!session) return { exists: false };
 
@@ -19,7 +20,10 @@ export async function checkDuplicatePhone(phone: string) {
 
     try {
         await dbConnect();
-        const existingLead = await Lead.findOne({ phone: sanitized, deletedAt: null })
+        const query: any = { phone: sanitized, deletedAt: null };
+        if (excludeId) query._id = { $ne: excludeId };
+
+        const existingLead = await Lead.findOne(query)
             .select("name phone")
             .lean();
 
@@ -116,7 +120,7 @@ export async function getLeadsByStatus() {
     }
 }
 
-// ─── Activity Timeline (merged notes + actions) ─────────────────────────────
+// ─── Activity Timeline (merged notes + actions + audit) ─────────────────────
 export async function getLeadTimeline(leadId: string) {
     const session = await auth();
     if (!session) return [];
@@ -124,13 +128,16 @@ export async function getLeadTimeline(leadId: string) {
     try {
         await dbConnect();
 
-        const [notes, actions] = await Promise.all([
+        const [notes, actions, audits] = await Promise.all([
             LeadNote.find({ leadId })
                 .populate("authorId", "name")
                 .sort({ createdAt: -1 })
                 .lean(),
             LeadAction.find({ leadId })
                 .populate("authorId", "name")
+                .sort({ createdAt: -1 })
+                .lean(),
+            AuditLog.find({ entityType: "lead", entityId: leadId })
                 .sort({ createdAt: -1 })
                 .lean(),
         ]);
@@ -157,6 +164,17 @@ export async function getLeadTimeline(leadId: string) {
                 outcome: action.outcome,
                 authorName: (action.authorId as any)?.name || "Unknown",
                 createdAt: action.createdAt ? (action.createdAt as Date).toISOString() : new Date().toISOString(),
+            });
+        }
+
+        for (const audit of audits) {
+            timeline.push({
+                _id: audit._id.toString(),
+                kind: "audit",
+                type: audit.action,
+                message: audit.details,
+                authorName: audit.userName || "System",
+                createdAt: audit.createdAt ? (audit.createdAt as Date).toISOString() : new Date().toISOString(),
             });
         }
 
@@ -234,6 +252,7 @@ export async function getLeads(searchParams: any) {
             status: "status",
             createdAt: "createdAt",
             followUpDate: "followUpDate",
+            serialNumber: "serialNumber",
         };
         const sortField = ALLOWED_SORT_FIELDS[searchParams.sort] || "createdAt";
         const sortDir = searchParams.dir === "asc" ? 1 : -1;
@@ -244,6 +263,7 @@ export async function getLeads(searchParams: any) {
             .skip(skip)
             .limit(limit)
             .populate("assignedTo", "name")
+            .populate("createdBy", "name")
             .lean();
 
         const total = await Lead.countDocuments(query);
@@ -275,6 +295,12 @@ export async function getLeads(searchParams: any) {
                         ...l.assignedTo,
                         _id: (l.assignedTo as any)._id?.toString()
                     } : null,
+                    createdBy: l.createdBy ? {
+                        _id: ((l.createdBy as any)._id || l.createdBy).toString(),
+                        name: (l.createdBy as any).name || null,
+                    } : null,
+                    serialNumber: l.serialNumber || null,
+                    countryCode: l.countryCode || "971",
                     customFields: l.customFields || {},
                     deletedAt: l.deletedAt ? (l.deletedAt as Date).toISOString() : null,
                     createdAt: (l.createdAt as Date).toISOString(),
@@ -325,6 +351,8 @@ export async function searchLeads(query: string) {
 
     try {
         await dbConnect();
+        const searchDigits = query.replace(/[^0-9]/g, "");
+        const searchNoPrefix = query.replace(/^LM-?/i, "");
         const filter: any = {
             deletedAt: null,
             $or: [
@@ -332,6 +360,8 @@ export async function searchLeads(query: string) {
                 { company: { $regex: query, $options: "i" } },
                 { email: { $regex: query, $options: "i" } },
                 { phone: { $regex: query, $options: "i" } },
+                ...(searchDigits.length >= 3 ? [{ serialNumber: parseInt(searchDigits, 10) || -1 }] : []),
+                ...(searchNoPrefix !== query && searchNoPrefix.length >= 3 ? [{ serialNumber: parseInt(searchNoPrefix, 10) || -1 }] : []),
             ],
         };
 
@@ -341,7 +371,7 @@ export async function searchLeads(query: string) {
         }
 
         const leads = await Lead.find(filter)
-            .select("name company status phone email")
+            .select("name company status phone email serialNumber")
             .sort({ updatedAt: -1 })
             .limit(8)
             .lean();
@@ -353,6 +383,7 @@ export async function searchLeads(query: string) {
             status: l.status,
             phone: l.phone || "",
             email: l.email || "",
+            serialNumber: l.serialNumber || null,
         }));
     } catch (error) {
         console.error("searchLeads error:", error);
@@ -367,7 +398,10 @@ export async function getLeadDetails(id: string) {
 
     try {
         await dbConnect();
-        const lead = await Lead.findById(id).populate("assignedTo", "name").lean();
+        const lead = await Lead.findById(id)
+            .populate("assignedTo", "name")
+            .populate("createdBy", "name")
+            .lean();
         if (!lead) return null;
 
         // RBAC: Admin sees all, Marketing sees all (read-only), Sales sees only assigned
@@ -416,8 +450,13 @@ export async function getLeadDetails(id: string) {
                     _id: (l.assignedTo._id || l.assignedTo).toString(),
                     name: l.assignedTo.name || null,
                 } : null,
-                createdBy: l.createdBy.toString(),
+                createdBy: l.createdBy ? {
+                    _id: ((l.createdBy as any)._id || l.createdBy).toString(),
+                    name: (l.createdBy as any).name || null,
+                } : null,
                 updatedBy: l.updatedBy?.toString() || null,
+                serialNumber: l.serialNumber || null,
+                countryCode: l.countryCode || "971",
                 createdAt: l.createdAt.toISOString(),
                 updatedAt: l.updatedAt.toISOString(),
                 lastContactAt: l.lastContactAt?.toISOString() || null,

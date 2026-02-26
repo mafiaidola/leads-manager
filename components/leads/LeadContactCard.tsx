@@ -5,6 +5,7 @@ import { Phone, Mail, Globe, MapPin, MessageSquare, ExternalLink, Bell } from "l
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatPhoneDisplay } from "@/lib/constants/countryCodes";
 
 interface LeadContactCardProps {
     lead: any;
@@ -25,7 +26,7 @@ export const LeadContactCard = React.memo(function LeadContactCard({ lead }: Lea
                         <div className="h-8 w-8 rounded-lg bg-emerald-500/15 flex items-center justify-center"><Phone className="h-4 w-4 text-emerald-400" /></div>
                         <div>
                             <div className="text-xs text-muted-foreground">Phone</div>
-                            <div className="text-sm font-medium group-hover:text-primary transition-colors">{lead.phone}</div>
+                            <div className="text-sm font-medium group-hover:text-primary transition-colors">{formatPhoneDisplay(lead.phone)}</div>
                         </div>
                         <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </a>

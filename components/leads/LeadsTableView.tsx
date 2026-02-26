@@ -69,6 +69,7 @@ export function LeadsTableView({
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1.5">
+                                            {lead.serialNumber && <span className="text-[10px] font-mono text-primary/60">LM-{lead.serialNumber}</span>}
                                             <span className="font-semibold text-sm text-foreground truncate">{lead.name}</span>
                                             {isOverdue && <span className="text-amber-400 text-xs">🔔</span>}
                                         </div>
@@ -143,6 +144,12 @@ export function LeadsTableView({
                             </TableHead>
                             <TableHead className="w-[30px]"></TableHead>
                             <TableHead
+                                className={cn("w-[80px] font-semibold cursor-pointer hover:text-primary transition-colors text-xs", currentSort === "serialNumber" ? "text-primary" : "text-primary/70")}
+                                onClick={() => onSort("serialNumber")}
+                            >
+                                #<SortIcon field="serialNumber" currentSort={currentSort} currentDir={currentDir} />
+                            </TableHead>
+                            <TableHead
                                 className={cn("font-semibold cursor-pointer hover:text-primary transition-colors", currentSort === "name" ? "text-primary" : "text-primary")}
                                 onClick={() => onSort("name")}
                             >
@@ -200,6 +207,9 @@ export function LeadsTableView({
                                             <button onClick={() => onStar(lead._id)} title="Toggle star" aria-label={`Toggle star for ${lead.name}`} className="hover:scale-125 transition-transform">
                                                 <Star className={cn("h-4 w-4", isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30 hover:text-amber-400/50")} />
                                             </button>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs text-primary/70 whitespace-nowrap">
+                                            {lead.serialNumber ? `LM-${lead.serialNumber}` : "—"}
                                         </TableCell>
                                         <TableCell className="font-medium">
                                             <Link href={`/leads/${lead._id}`} className="group/name">
