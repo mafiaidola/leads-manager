@@ -352,7 +352,7 @@ export async function searchLeads(query: string) {
     try {
         await dbConnect();
         const searchDigits = query.replace(/[^0-9]/g, "");
-        const searchNoPrefix = query.replace(/^LM-?/i, "");
+        const searchNoPrefix = query.replace(/^[#]?/i, "");
         const filter: any = {
             deletedAt: null,
             $or: [

@@ -357,7 +357,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                     <div className="flex items-center gap-3">
                         <h1 className="text-3xl font-extrabold tracking-tight">{lead.name}</h1>
                         {lead.serialNumber && (
-                            <Badge variant="outline" className="font-mono text-xs border-primary/30 text-primary/80 px-2 py-0.5 rounded-lg">LM-{lead.serialNumber}</Badge>
+                            <Badge variant="outline" className="font-mono text-xs border-primary/30 text-primary/80 px-2 py-0.5 rounded-lg">#{lead.serialNumber}</Badge>
                         )}
                     </div>
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">

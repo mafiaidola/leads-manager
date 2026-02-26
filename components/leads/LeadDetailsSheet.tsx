@@ -203,7 +203,7 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                                         {data.lead.name}
                                         {data.lead.serialNumber && (
-                                            <Badge variant="outline" className="font-mono text-[10px] border-primary/30 text-primary/70 px-1.5">LM-{data.lead.serialNumber}</Badge>
+                                            <Badge variant="outline" className="font-mono text-[10px] border-primary/30 text-primary/70 px-1.5">#{data.lead.serialNumber}</Badge>
                                         )}
                                     </h2>
                                     <p className="text-sm text-primary font-medium">{data.lead.position || "Contact Person"}</p>

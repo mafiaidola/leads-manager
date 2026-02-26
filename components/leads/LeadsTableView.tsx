@@ -69,7 +69,7 @@ export function LeadsTableView({
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1.5">
-                                            {lead.serialNumber && <span className="text-[10px] font-mono text-primary/60">LM-{lead.serialNumber}</span>}
+                                            {lead.serialNumber && <span className="text-[10px] font-mono text-primary/60">#{lead.serialNumber}</span>}
                                             <span className="font-semibold text-sm text-foreground truncate">{lead.name}</span>
                                             {isOverdue && <span className="text-amber-400 text-xs">🔔</span>}
                                         </div>
@@ -209,7 +209,7 @@ export function LeadsTableView({
                                             </button>
                                         </TableCell>
                                         <TableCell className="font-mono text-xs text-primary/70 whitespace-nowrap">
-                                            {lead.serialNumber ? `LM-${lead.serialNumber}` : "—"}
+                                            {lead.serialNumber ? `#${lead.serialNumber}` : "—"}
                                         </TableCell>
                                         <TableCell className="font-medium">
                                             <Link href={`/leads/${lead._id}`} className="group/name">
