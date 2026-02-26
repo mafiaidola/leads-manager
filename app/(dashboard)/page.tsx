@@ -51,7 +51,7 @@ export default async function DashboardPage() {
                         <div>
                             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
                                 <span className="bg-gradient-to-r from-primary via-primary to-foreground bg-clip-text text-transparent">
-                                    {greeting}, {firstName}
+                                    {greeting} {firstName}
                                 </span>
                                 <Sparkles className="inline-block ml-2 h-6 w-6 text-amber-400 animate-pulse" />
                             </h2>

@@ -172,13 +172,13 @@ export function LeadsToolbar({
                     })}
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <div className="relative w-full sm:w-[200px]">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-[200px] order-1">
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="Search leads..." className="pl-8" onChange={(e) => onSearch(e.target.value)} defaultValue={searchParams.get("search")?.toString()} />
                     </div>
                     <Select value={searchParams.get("source") || "all"} onValueChange={onSourceFilter}>
-                        <SelectTrigger className="w-[140px] rounded-xl border-white/10 bg-white/5">
+                        <SelectTrigger className="w-[120px] sm:w-[140px] rounded-xl border-white/10 bg-white/5 order-2">
                             <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                             <SelectValue placeholder="Source" />
                         </SelectTrigger>
@@ -193,7 +193,7 @@ export function LeadsToolbar({
                         <>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="icon" title="Export" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
+                                    <Button variant="outline" size="icon" title="Export" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 order-3">
                                         <Download className="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -209,12 +209,12 @@ export function LeadsToolbar({
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <Button variant="outline" size="icon" onClick={onImportOpen} title="Import CSV" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10">
+                            <Button variant="outline" size="icon" onClick={onImportOpen} title="Import CSV" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 order-4">
                                 <FileUp className="h-4 w-4" />
                             </Button>
                         </>
                     )}
-                    {canAddLead && <AddLeadDialog settings={settings} users={users} />}
+                    {canAddLead && <div className="order-5"><AddLeadDialog settings={settings} users={users} /></div>}
                 </div>
             </div>
 
