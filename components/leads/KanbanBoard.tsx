@@ -134,6 +134,9 @@ export function KanbanBoard({ leads, statuses, currentUserId, onLeadClick }: Kan
                                         <div className="flex items-start justify-between gap-2 mb-2">
                                             <div className="flex items-center gap-1.5 min-w-0">
                                                 <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                {lead.serialNumber && (
+                                                    <span className="text-[10px] font-mono text-muted-foreground/60 flex-shrink-0">#{lead.serialNumber}</span>
+                                                )}
                                                 <Link href={`/leads/${lead._id}`} onClick={(e) => e.stopPropagation()} className="font-medium text-sm truncate hover:text-primary transition-colors">{lead.name}</Link>
                                             </div>
                                             {isStarred && (

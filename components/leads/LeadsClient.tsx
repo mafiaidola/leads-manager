@@ -341,6 +341,7 @@ export function LeadsClient({
                     canSeeAssignment={canSeeAssignment}
                     isTrashView={isTrashView}
                     isStarredView={isStarredView}
+                    isOverdueView={isOverdueView}
                     now={now}
                     onSort={handleSort}
                     onStar={handleStar}

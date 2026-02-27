@@ -50,12 +50,14 @@ export function GeneralTab({
                                 </div>
                                 <div className="w-20 space-y-1">
                                     <Label className="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">Color</Label>
-                                    <Input
-                                        type="color"
-                                        value={status.color}
-                                        onChange={(e) => onStatusChange(index, 'color', e.target.value)}
-                                        className="h-9 p-1 rounded-xl border-white/10 bg-black/20"
-                                    />
+                                    <div className="relative h-9 rounded-xl border border-white/10 overflow-hidden" style={{ backgroundColor: status.color || '#8b5cf6' }}>
+                                        <Input
+                                            type="color"
+                                            value={status.color}
+                                            onChange={(e) => onStatusChange(index, 'color', e.target.value)}
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        />
+                                    </div>
                                 </div>
                                 <Button variant="ghost" size="icon" onClick={() => onRemoveStatus(index)} className="h-9 w-9 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity mt-5">
                                     <X className="h-4 w-4" />

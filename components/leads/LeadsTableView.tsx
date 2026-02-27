@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { MoreHorizontal, Pencil, Trash2, Star, ArrowRightLeft, ChevronUp, ChevronDown, UserPlus, RotateCcw } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Star, ArrowRightLeft, ChevronUp, ChevronDown, UserPlus, RotateCcw, Bell } from "lucide-react";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
@@ -26,6 +26,7 @@ export interface LeadsTableViewProps {
     canSeeAssignment: boolean;
     isTrashView: boolean;
     isStarredView: boolean;
+    isOverdueView: boolean;
     now: Date;
     onSort: (field: string) => void;
     onStar: (id: string) => void;
@@ -49,7 +50,7 @@ function SortIcon({ field, currentSort, currentDir }: { field: string; currentSo
 export function LeadsTableView({
     leads, settings, currentUserId, currentSort, currentDir,
     selectedIds, isAdmin, isMarketing, isSales, canSeeAssignment,
-    isTrashView, isStarredView, now,
+    isTrashView, isStarredView, isOverdueView, now,
     onSort, onStar, onSelect, onSelectAll, onLeadClick,
     onEdit, onDelete, onTransfer, onRestore, onPermanentDelete,
 }: LeadsTableViewProps) {
@@ -357,14 +358,14 @@ export function LeadsTableView({
                                 <TableCell colSpan={10} className="h-40 text-center">
                                     <div className="flex flex-col items-center gap-3 py-8">
                                         <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-                                            {isTrashView ? <Trash2 className="h-7 w-7 text-red-400/50" /> : isStarredView ? <Star className="h-7 w-7 text-amber-400/50" /> : <UserPlus className="h-7 w-7 text-primary/50" />}
+                                            {isTrashView ? <Trash2 className="h-7 w-7 text-red-400/50" /> : isStarredView ? <Star className="h-7 w-7 text-amber-400/50" /> : isOverdueView ? <Bell className="h-7 w-7 text-orange-400/50" /> : <UserPlus className="h-7 w-7 text-primary/50" />}
                                         </div>
                                         <div>
                                             <p className="text-sm font-semibold text-foreground/70">
-                                                {isTrashView ? "Recycle bin is empty" : isStarredView ? "No starred leads" : "No leads found"}
+                                                {isTrashView ? "Recycle bin is empty" : isStarredView ? "No starred leads" : isOverdueView ? "No overdue follow-ups" : "No leads found"}
                                             </p>
                                             <p className="text-xs text-muted-foreground mt-1">
-                                                {isTrashView ? "Deleted leads will appear here" : isStarredView ? "Star leads to see them here" : "Try adjusting your filters or add a new lead"}
+                                                {isTrashView ? "Deleted leads will appear here" : isStarredView ? "Star leads to see them here" : isOverdueView ? "All follow-ups are on schedule 🎉" : "Try adjusting your filters or add a new lead"}
                                             </p>
                                         </div>
                                     </div>
