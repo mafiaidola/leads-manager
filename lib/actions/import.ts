@@ -64,9 +64,11 @@ export async function importLeadsWithMapping(
     columnMapping: Record<string, string>
 ) {
     const session = await auth();
-    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+    if (!session || session.user.role !== USER_ROLES.ADMIN || !session.user.orgId) {
         return { message: "Unauthorized" };
     }
+
+    const orgId = session.user.orgId;
 
     const file = formData.get("file") as File;
     if (!file) return { message: "No file uploaded" };
@@ -76,7 +78,7 @@ export async function importLeadsWithMapping(
     try {
         await dbConnect();
 
-        const users = await User.find({}).select("email _id").lean();
+        const users = await User.find({ orgId }).select("email _id").lean();
         const userMap = new Map(users.map((u) => [u.email, u._id]));
 
         let importedCount = 0;
@@ -91,7 +93,7 @@ export async function importLeadsWithMapping(
         const notesToInsert: any[] = [];
 
         // Collect existing emails/phones for duplicate detection
-        const existingLeads = await Lead.find({ deletedAt: null })
+        const existingLeads = await Lead.find({ deletedAt: null, orgId })
             .select("email phone")
             .lean();
         const existingEmails = new Set(
@@ -145,6 +147,7 @@ export async function importLeadsWithMapping(
 
             leadsToInsert.push({
                 _id: leadId,
+                orgId,
                 name: mapped.name,
                 email: mapped.email,
                 phone: mapped.phone,
@@ -175,6 +178,7 @@ export async function importLeadsWithMapping(
             });
 
             notesToInsert.push({
+                orgId,
                 leadId,
                 type: NOTE_TYPES.SYSTEM,
                 message: "Imported via CSV",
@@ -225,9 +229,11 @@ export async function importLeadsWithMapping(
  */
 export async function importLeads(formData: FormData) {
     const session = await auth();
-    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+    if (!session || session.user.role !== USER_ROLES.ADMIN || !session.user.orgId) {
         return { message: "Unauthorized" };
     }
+
+    const orgId = session.user.orgId;
 
     const file = formData.get("file") as File;
     if (!file) {
@@ -239,7 +245,7 @@ export async function importLeads(formData: FormData) {
     try {
         await dbConnect();
 
-        const users = await User.find({}).select("email _id").lean();
+        const users = await User.find({ orgId }).select("email _id").lean();
         const userMap = new Map(users.map((u) => [u.email, u._id]));
 
         let importedCount = 0;
@@ -267,6 +273,7 @@ export async function importLeads(formData: FormData) {
 
             leadsToInsert.push({
                 _id: leadId,
+                orgId,
                 name: row.name,
                 email: row.email,
                 phone: row.phone,
@@ -295,6 +302,7 @@ export async function importLeads(formData: FormData) {
             });
 
             notesToInsert.push({
+                orgId,
                 leadId,
                 type: NOTE_TYPES.SYSTEM,
                 message: "Imported via CSV",

@@ -12,7 +12,7 @@ import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
 import {
-    ChevronLeft, ChevronRight, Search, Filter, Shield, Clock, User, FileText
+    ChevronLeft, ChevronRight, Search, Filter, Shield, Clock, User, FileText, Building2
 } from "lucide-react";
 
 const ACTION_COLORS: Record<string, string> = {
@@ -28,7 +28,13 @@ const ACTION_COLORS: Record<string, string> = {
     BULK_DELETE: "bg-rose-500/10 text-rose-500 border-rose-500/20",
 };
 
-export function AuditClient() {
+interface AuditOrg {
+    _id: string;
+    name: string;
+    slug: string;
+}
+
+export function AuditClient({ isSuperAdmin = false, organizations = [] }: { isSuperAdmin?: boolean; organizations?: AuditOrg[] }) {
     const [logs, setLogs] = useState<any[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
@@ -36,6 +42,7 @@ export function AuditClient() {
     const [actionFilter, setActionFilter] = useState("all");
     const [entityFilter, setEntityFilter] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [orgFilter, setOrgFilter] = useState("mine");
     const limit = 20;
 
     const fetchLogs = useCallback(async () => {
@@ -44,12 +51,13 @@ export function AuditClient() {
         if (actionFilter !== "all") params.action = actionFilter;
         if (entityFilter !== "all") params.entityType = entityFilter;
         if (searchQuery.trim()) params.search = searchQuery.trim();
+        if (isSuperAdmin && orgFilter !== "mine") params.targetOrgId = orgFilter;
 
         const result = await getAuditLogs(params);
         setLogs(result.logs);
         setTotal(result.total);
         setLoading(false);
-    }, [page, actionFilter, entityFilter, searchQuery]);
+    }, [page, actionFilter, entityFilter, searchQuery, orgFilter, isSuperAdmin]);
 
     useEffect(() => {
         fetchLogs();
@@ -115,10 +123,25 @@ export function AuditClient() {
                         <SelectItem value="USER">User</SelectItem>
                     </SelectContent>
                 </Select>
+                {isSuperAdmin && organizations.length > 0 && (
+                    <Select value={orgFilter} onValueChange={(v) => { setOrgFilter(v); setPage(1); }}>
+                        <SelectTrigger className="w-[200px] bg-white/5 border-white/10 rounded-xl">
+                            <Building2 className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
+                            <SelectValue placeholder="Organization" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                            <SelectItem value="mine">My Organization</SelectItem>
+                            <SelectItem value="all">All Organizations</SelectItem>
+                            {organizations.map(org => (
+                                <SelectItem key={org._id} value={org._id}>{org.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
             </div>
 
             {/* Table */}
-            <div className="rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl overflow-hidden shadow-sm">
+            <div className="rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl overflow-x-auto shadow-sm">
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
                         <div className="flex flex-col items-center gap-2">

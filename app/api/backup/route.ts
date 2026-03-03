@@ -2,35 +2,39 @@ import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Lead from "@/models/Lead";
 import User from "@/models/User";
-import Settings from "@/models/Settings";
+import Organization from "@/models/Organization";
 import LeadNote from "@/models/LeadNote";
 import LeadAction from "@/models/LeadAction";
 import { NextResponse } from "next/server";
 
 export async function GET() {
     const session = await auth();
-    if (!session || session.user.role !== "ADMIN") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const orgId = (session.user as any).orgId;
+    if (!orgId) {
+        return NextResponse.json({ error: "No organization context" }, { status: 400 });
     }
 
     try {
         await dbConnect();
-
-        const [leads, users, settings, notes, actions] = await Promise.all([
-            Lead.find({}).lean(),
-            User.find({}).select("-passwordHash").lean(),
-            Settings.findOne().lean(),
-            LeadNote.find({}).lean(),
-            LeadAction.find({}).lean(),
+        const [leads, users, org, notes, actions] = await Promise.all([
+            Lead.find({ orgId }).lean(),
+            User.find({ orgId }).lean(),
+            Organization.findById(orgId).lean(),
+            LeadNote.find({ orgId }).lean(),
+            LeadAction.find({ orgId }).lean(),
         ]);
 
         const backup = {
             exportedAt: new Date().toISOString(),
-            exportedBy: session.user.email,
+            exportedBy: session.user.name || session.user.email || "Admin",
             data: {
                 leads,
                 users,
-                settings,
+                settings: org?.settings || null,
                 notes,
                 actions,
             },

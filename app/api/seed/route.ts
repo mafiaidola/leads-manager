@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
+import Organization from "@/models/Organization";
 import bcryptjs from "bcryptjs";
 
 export async function GET(request: NextRequest) {
@@ -13,11 +14,41 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // ── Promote action: /api/seed?action=promote&username=Mohamed ──
+    const action = request.nextUrl.searchParams.get("action");
+    if (action === "promote") {
+        const username = request.nextUrl.searchParams.get("username");
+        if (!username) return NextResponse.json({ error: "Missing ?username=" }, { status: 400 });
+        await dbConnect();
+        const user = await User.findOne({ username: new RegExp(`^${username}$`, "i") });
+        if (!user) return NextResponse.json({ error: `User "${username}" not found` }, { status: 404 });
+        user.isSuperAdmin = true;
+        await user.save();
+        return NextResponse.json({
+            message: `✅ "${user.name}" promoted to SuperAdmin. Log out and log back in.`,
+            user: { name: user.name, username: user.username, isSuperAdmin: true },
+        });
+    }
+
     try {
         await dbConnect();
 
+        // Ensure default organization exists
+        let org = await Organization.findOne({ slug: "default" });
+        if (!org) {
+            org = await Organization.create({
+                name: "Default Organization",
+                slug: "default",
+                active: true,
+                branding: { appName: "Leads Manager" },
+            });
+        }
+
         const adminEmail = "admin@example.com";
-        const existingAdmin = await User.findOne({ $or: [{ email: adminEmail }, { username: "admin" }] });
+        const existingAdmin = await User.findOne({
+            $or: [{ email: adminEmail }, { username: "admin" }],
+            orgId: org._id,
+        });
 
         if (!existingAdmin) {
             const hashedPassword = await bcryptjs.hash("admin123", 10);
@@ -27,9 +58,13 @@ export async function GET(request: NextRequest) {
                 email: adminEmail,
                 passwordHash: hashedPassword,
                 role: "ADMIN",
-                active: true
+                active: true,
+                orgId: org._id,
+                isSuperAdmin: true,
             });
-            return NextResponse.json({ message: "Admin seeded successfully. Login with username: admin, password: admin123" });
+            return NextResponse.json({
+                message: `Admin seeded successfully for org "${org.name}" (slug: ${org.slug}). Login with username: admin, password: admin123`,
+            });
         }
 
         return NextResponse.json({ message: "Admin already exists" });

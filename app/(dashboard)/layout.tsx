@@ -9,6 +9,8 @@ import { handleSignOut } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
 import { CommandPalette } from "@/components/CommandPalette";
+import dbConnect from "@/lib/db";
+import Organization from "@/models/Organization";
 
 export default async function DashboardLayout({
     children,
@@ -20,17 +22,38 @@ export default async function DashboardLayout({
         redirect("/login");
     }
 
+    // Fetch org branding for sidebar
+    let orgBranding: { appName?: string; logoUrl?: string; accentColor?: string } = {};
+    try {
+        const orgId = (session.user as any)?.orgId;
+        if (orgId) {
+            await dbConnect();
+            const org = await Organization.findById(orgId).select("branding").lean();
+            if (org?.branding) {
+                orgBranding = {
+                    appName: org.branding.appName,
+                    logoUrl: org.branding.logoUrl,
+                    accentColor: org.branding.accentColor,
+                };
+            }
+        }
+    } catch (e) {
+        // Branding is non-critical
+    }
+
+    const isSuperAdmin = !!(session.user as any)?.isSuperAdmin;
+
     return (
         <div className="h-full relative bg-[#fafafa] dark:bg-[#09090b]">
             <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-[80] p-4">
-                <Sidebar userRole={session.user?.role} />
+                <Sidebar userRole={session.user?.role} orgBranding={orgBranding} isSuperAdmin={isSuperAdmin} />
             </div>
-            <main className="md:pl-72 pb-10 min-h-screen">
+            <main className="md:pl-72 pb-10 min-h-screen overflow-x-hidden">
                 {/* Modern Glassmorphic Header */}
                 <header className="sticky top-0 z-50 p-4">
                     <div className="flex items-center justify-between px-6 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-xl shadow-black/5">
                         <div className="flex items-center gap-4">
-                            <MobileSidebar userRole={session.user?.role} />
+                            <MobileSidebar userRole={session.user?.role} orgBranding={orgBranding} isSuperAdmin={isSuperAdmin} />
                             <div className="hidden md:block">
                                 <HeaderBreadcrumb />
                             </div>
@@ -82,7 +105,7 @@ export default async function DashboardLayout({
                     </div>
                 </header>
 
-                <div className="px-4">
+                <div className="px-4 max-w-full overflow-hidden">
                     <Suspense fallback={
                         <div className="p-8 space-y-6 animate-pulse">
                             <div className="h-8 w-48 bg-muted/20 rounded-xl" />

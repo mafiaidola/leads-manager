@@ -5,7 +5,7 @@ import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Sidebar } from "@/components/Sidebar";
 
-export function MobileSidebar({ userRole }: { userRole: string }) {
+export function MobileSidebar({ userRole, orgBranding, isSuperAdmin }: { userRole: string; orgBranding?: { appName?: string; logoUrl?: string; accentColor?: string }; isSuperAdmin?: boolean }) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -17,7 +17,7 @@ export function MobileSidebar({ userRole }: { userRole: string }) {
             </SheetTrigger>
             <SheetContent side="left" className="p-4 w-72 border-white/10 bg-[#09090b]">
                 <div onClick={() => setOpen(false)}>
-                    <Sidebar userRole={userRole} />
+                    <Sidebar userRole={userRole} orgBranding={orgBranding} isSuperAdmin={isSuperAdmin} />
                 </div>
             </SheetContent>
         </Sheet>

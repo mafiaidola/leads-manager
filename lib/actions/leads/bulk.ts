@@ -15,7 +15,7 @@ import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
 
 export async function bulkUpdateStatus(ids: string[], status: string) {
     const session = await auth();
-    if (!session) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized" };
 
     // Marketing cannot change lead statuses
     if (session.user.role === USER_ROLES.MARKETING) {
@@ -25,7 +25,7 @@ export async function bulkUpdateStatus(ids: string[], status: string) {
     try {
         await dbConnect();
         await Lead.updateMany(
-            { _id: { $in: ids } },
+            { _id: { $in: ids }, orgId: session.user.orgId },
             { status, updatedBy: new mongoose.Types.ObjectId(session.user.id) }
         );
         logAudit(AUDIT_ACTIONS.BULK_UPDATE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk status change to ${status} (${ids.length} leads)`);
@@ -59,7 +59,7 @@ export async function bulkAssign(ids: string[], assignToId: string) {
         }
 
         await Lead.updateMany(
-            { _id: { $in: ids } },
+            { _id: { $in: ids }, orgId: session.user.orgId },
             { assignedTo: new mongoose.Types.ObjectId(assignToId), updatedBy: new mongoose.Types.ObjectId(session.user.id) }
         );
         logAudit(AUDIT_ACTIONS.BULK_UPDATE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk assigned ${ids.length} leads to ${targetUser.name}`);
@@ -81,7 +81,7 @@ export async function bulkSoftDelete(ids: string[]) {
     try {
         await dbConnect();
         await Lead.updateMany(
-            { _id: { $in: ids } },
+            { _id: { $in: ids }, orgId: session.user.orgId },
             { deletedAt: new Date() }
         );
         logAudit(AUDIT_ACTIONS.BULK_DELETE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk soft deleted ${ids.length} leads`);
@@ -104,7 +104,7 @@ export async function restoreLead(id: string) {
 
     try {
         await dbConnect();
-        await Lead.findByIdAndUpdate(id, { deletedAt: null });
+        await Lead.findOneAndUpdate({ _id: id, orgId: session.user.orgId }, { deletedAt: null });
         logAudit(AUDIT_ACTIONS.RESTORE, ENTITY_TYPES.LEAD, id, "Lead restored from recycle bin");
         revalidatePath("/leads");
         return { message: "Lead restored", success: true };
@@ -122,9 +122,9 @@ export async function permanentDeleteLead(id: string) {
 
     try {
         await dbConnect();
-        await Lead.findByIdAndDelete(id);
-        await LeadNote.deleteMany({ leadId: id });
-        await LeadAction.deleteMany({ leadId: id });
+        await Lead.findOneAndDelete({ _id: id, orgId: session.user.orgId });
+        await LeadNote.deleteMany({ leadId: id, orgId: session.user.orgId });
+        await LeadAction.deleteMany({ leadId: id, orgId: session.user.orgId });
         logAudit(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.LEAD, id, "Lead permanently deleted");
         revalidatePath("/leads");
         return { message: "Lead permanently deleted", success: true };

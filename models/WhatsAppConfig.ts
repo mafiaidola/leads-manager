@@ -2,6 +2,7 @@ import mongoose, { Schema, Model, models } from "mongoose";
 
 export interface IWhatsAppConfig {
     _id: mongoose.Types.ObjectId;
+    orgId: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
     accessToken: string;
     phoneNumberId: string;
@@ -15,7 +16,8 @@ export interface IWhatsAppConfig {
 
 const WhatsAppConfigSchema = new Schema<IWhatsAppConfig>(
     {
-        userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+        orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
+        userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
         accessToken: { type: String, required: true },
         phoneNumberId: { type: String, required: true },
         wabaId: { type: String, required: true },

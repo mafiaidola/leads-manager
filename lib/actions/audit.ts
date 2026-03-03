@@ -20,6 +20,7 @@ export async function logAudit(
 
         await dbConnect();
         await AuditLog.create({
+            orgId: session.user.orgId,
             action,
             entityType,
             entityId: entityId || undefined,
@@ -42,9 +43,10 @@ export async function getAuditLogs(params: {
     entityType?: string;
     action?: string;
     search?: string;
+    targetOrgId?: string; // superAdmin: filter by specific org, or "all" for cross-org
 }) {
     const session = await auth();
-    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+    if (!session || session.user.role !== USER_ROLES.ADMIN || !session.user.orgId) {
         return { logs: [], total: 0 };
     }
 
@@ -56,6 +58,15 @@ export async function getAuditLogs(params: {
         const skip = (page - 1) * limit;
 
         const filter: any = {};
+        // SuperAdmin can filter by org or view all
+        if ((session.user as any).isSuperAdmin && params.targetOrgId) {
+            if (params.targetOrgId !== "all") {
+                filter.orgId = params.targetOrgId;
+            }
+            // "all" = no orgId filter
+        } else {
+            filter.orgId = session.user.orgId;
+        }
         if (params.entityType) filter.entityType = params.entityType;
         if (params.action) filter.action = params.action;
         if (params.search) {

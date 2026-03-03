@@ -540,6 +540,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                 editForm={editForm}
                 setEditForm={setEditForm}
                 sources={sources}
+                products={settings?.products}
                 onSave={handleEditSave}
                 isPending={isPending}
             />

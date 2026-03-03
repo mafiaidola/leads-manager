@@ -12,6 +12,7 @@ export type NoteType = (typeof NOTE_TYPES)[keyof typeof NOTE_TYPES];
 
 export interface ILeadNote {
     _id: mongoose.Types.ObjectId;
+    orgId: mongoose.Types.ObjectId;
     leadId: mongoose.Types.ObjectId;
     authorId?: mongoose.Types.ObjectId; // System messages might not have an author
     authorRole?: UserRole | "SYSTEM";
@@ -28,6 +29,7 @@ export interface ILeadNote {
 
 const LeadNoteSchema = new Schema<ILeadNote>(
     {
+        orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
         leadId: { type: Schema.Types.ObjectId, ref: "Lead", required: true, index: true },
         authorId: { type: Schema.Types.ObjectId, ref: "User" },
         authorRole: String,
@@ -46,6 +48,9 @@ const LeadNoteSchema = new Schema<ILeadNote>(
     },
     { timestamps: true } // adds createdAt and updatedAt
 );
+
+// ─── Compound indexes ──────────────────────────────────────────────
+LeadNoteSchema.index({ leadId: 1, createdAt: -1 });  // Timeline queries
 
 const LeadNote: Model<ILeadNote> =
     models.LeadNote || mongoose.model<ILeadNote>("LeadNote", LeadNoteSchema);

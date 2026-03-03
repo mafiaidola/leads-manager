@@ -13,7 +13,7 @@ import mongoose from "mongoose";
 
 export async function addNote(leadId: string, message: string) {
     const session = await auth();
-    if (!session) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized" };
 
     // Marketing cannot add notes
     if (session.user.role === USER_ROLES.MARKETING) {
@@ -23,7 +23,7 @@ export async function addNote(leadId: string, message: string) {
     try {
         // Check access
         await dbConnect();
-        const lead = await Lead.findById(leadId);
+        const lead = await Lead.findOne({ _id: leadId, orgId: session.user.orgId });
         if (!lead) return { message: "Lead not found" };
 
         if (session.user.role !== USER_ROLES.ADMIN && lead.assignedTo?.toString() !== session.user.id) {
@@ -31,6 +31,7 @@ export async function addNote(leadId: string, message: string) {
         }
 
         await LeadNote.create({
+            orgId: session.user.orgId,
             leadId: new mongoose.Types.ObjectId(leadId),
             authorId: new mongoose.Types.ObjectId(session.user.id),
             authorRole: session.user.role,
@@ -53,7 +54,7 @@ export async function addLeadAction(
     data: { type: string; description: string; outcome?: string }
 ) {
     const session = await auth();
-    if (!session) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized" };
 
     // Marketing cannot add actions
     if (session.user.role === USER_ROLES.MARKETING) {
@@ -62,7 +63,7 @@ export async function addLeadAction(
 
     try {
         await dbConnect();
-        const lead = await Lead.findById(leadId);
+        const lead = await Lead.findOne({ _id: leadId, orgId: session.user.orgId });
         if (!lead) return { message: "Lead not found" };
 
         // Only Admin or assigned Sales
@@ -71,6 +72,7 @@ export async function addLeadAction(
         }
 
         await LeadAction.create({
+            orgId: session.user.orgId,
             leadId: new mongoose.Types.ObjectId(leadId),
             authorId: new mongoose.Types.ObjectId(session.user.id),
             type: data.type,
@@ -80,6 +82,7 @@ export async function addLeadAction(
 
         // Also log as a system note for audit trail
         await LeadNote.create({
+            orgId: session.user.orgId,
             leadId: new mongoose.Types.ObjectId(leadId),
             authorId: new mongoose.Types.ObjectId(session.user.id),
             authorRole: session.user.role,

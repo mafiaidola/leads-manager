@@ -13,12 +13,17 @@ export async function GET(req: NextRequest) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const orgId = (session.user as any).orgId;
+    if (!orgId) {
+        return new NextResponse("No organization context", { status: 400 });
+    }
+
     try {
         await dbConnect();
 
         const searchParams = req.nextUrl.searchParams;
         const format = searchParams.get("format") || "csv"; // csv | excel | word
-        const query: any = { deletedAt: null };
+        const query: any = { deletedAt: null, orgId };
 
         if (searchParams.get("status")) query.status = searchParams.get("status");
         if (searchParams.get("source")) query.source = searchParams.get("source");

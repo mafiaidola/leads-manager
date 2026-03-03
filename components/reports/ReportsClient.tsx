@@ -10,7 +10,7 @@ import { getDashboardStats } from "@/lib/actions/dashboard";
 import { getSettings } from "@/lib/actions/settings";
 import { getUsers } from "@/lib/actions/users";
 import { cn } from "@/lib/utils";
-import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText, FileDown, Filter, CalendarDays, X } from "lucide-react";
+import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText, FileDown, Filter, CalendarDays, X, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,7 +32,7 @@ const COLORS = [
 
 type DateRange = "7d" | "30d" | "90d" | "all" | "custom";
 
-export default function ReportsClient() {
+export default function ReportsClient({ isSuperAdmin, organizations }: { isSuperAdmin?: boolean; organizations?: { _id: string; name: string; slug: string }[] }) {
     const [data, setData] = useState<any>(null);
     const [settings, setSettings] = useState<any>(null);
     const [dateRange, setDateRange] = useState<DateRange>("all");
@@ -40,6 +40,7 @@ export default function ReportsClient() {
     const [agents, setAgents] = useState<{ _id: string; name: string; role: string }[]>([]);
     const [customStart, setCustomStart] = useState("");
     const [customEnd, setCustomEnd] = useState("");
+    const [orgFilter, setOrgFilter] = useState("mine");
     const { toast } = useToast();
     const reportRef = useRef<HTMLDivElement>(null);
     const [isExportingPDF, setIsExportingPDF] = useState(false);
@@ -65,7 +66,7 @@ export default function ReportsClient() {
             setData(d);
             setSettings(s);
         });
-    }, [dateRange, selectedAgent, customStart, customEnd]);
+    }, [dateRange, selectedAgent, customStart, customEnd, orgFilter]);
 
     useEffect(() => {
         // For custom date, only fetch when both dates are set
@@ -74,10 +75,17 @@ export default function ReportsClient() {
     }, [fetchData, dateRange, customStart, customEnd]);
 
 
-    const statusData = useMemo(() => (data?.leadsByStatus || []).map((item: any) => ({
-        name: item.status.replace(/_/g, " "),
-        value: item.count
-    })), [data?.leadsByStatus]);
+    const statusData = useMemo(() => {
+        const statuses = settings?.statuses || [];
+        return (data?.leadsByStatus || []).map((item: any) => {
+            const cfg = statuses.find((s: any) => s.key === item.status);
+            return {
+                name: cfg?.label || item.status.replace(/_/g, " "),
+                value: item.count,
+                color: cfg?.color,
+            };
+        });
+    }, [data?.leadsByStatus, settings?.statuses]);
 
     const sourceData = useMemo(() => (data?.leadsBySource || []).map((item: any) => ({
         name: item.source || "Unknown",
@@ -232,7 +240,7 @@ export default function ReportsClient() {
     ];
 
     return (
-        <div className="p-8 space-y-8 bg-background/50">
+        <div className="p-4 sm:p-8 space-y-8 bg-background/50">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Analytics Reports</h2>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -258,6 +266,29 @@ export default function ReportsClient() {
                             </button>
                         )}
                     </div>
+                    {/* Organization Filter (SuperAdmin) */}
+                    {isSuperAdmin && organizations && organizations.length > 0 && (
+                        <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5">
+                            <Building2 className="h-3.5 w-3.5 text-amber-500" />
+                            <select
+                                value={orgFilter}
+                                onChange={(e) => setOrgFilter(e.target.value)}
+                                className="bg-transparent text-xs font-medium outline-none cursor-pointer text-foreground"
+                                aria-label="Filter by organization"
+                            >
+                                <option value="mine" className="bg-card">My Organization</option>
+                                <option value="all" className="bg-card">All Organizations</option>
+                                {organizations.map((o) => (
+                                    <option key={o._id} value={o._id} className="bg-card">{o.name}</option>
+                                ))}
+                            </select>
+                            {orgFilter !== "mine" && (
+                                <button onClick={() => setOrgFilter("mine")} className="text-muted-foreground hover:text-foreground" aria-label="Clear org filter">
+                                    <X className="h-3 w-3" />
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {/* Date Range Selector */}
                     <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-0.5">
                         {DATE_RANGES.map((r) => (

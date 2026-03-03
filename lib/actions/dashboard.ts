@@ -14,12 +14,12 @@ export async function getDashboardStats(
     endDate?: string
 ) {
     const session = await auth();
-    if (!session) return null;
+    if (!session || !session.user?.orgId) return null;
 
     try {
         await dbConnect();
 
-        const matchStage: any = { deletedAt: null };
+        const matchStage: any = { deletedAt: null, orgId: new mongoose.Types.ObjectId(session.user.orgId as string) };
         if (session.user.role === USER_ROLES.SALES) {
             matchStage.assignedTo = session.user.id;
         }

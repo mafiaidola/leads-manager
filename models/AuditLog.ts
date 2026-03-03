@@ -25,6 +25,7 @@ export type EntityType = (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES];
 
 export interface IAuditLog {
     _id: mongoose.Types.ObjectId;
+    orgId: mongoose.Types.ObjectId;
     action: AuditAction;
     entityType: EntityType;
     entityId?: string;
@@ -36,6 +37,7 @@ export interface IAuditLog {
 
 const AuditLogSchema = new Schema<IAuditLog>(
     {
+        orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
         action: { type: String, enum: Object.values(AUDIT_ACTIONS), required: true },
         entityType: { type: String, enum: Object.values(ENTITY_TYPES), required: true },
         entityId: String,
@@ -48,6 +50,7 @@ const AuditLogSchema = new Schema<IAuditLog>(
 
 AuditLogSchema.index({ createdAt: -1 });
 AuditLogSchema.index({ entityType: 1, action: 1 });
+AuditLogSchema.index({ orgId: 1, createdAt: -1 });  // Multi-tenant pagination
 
 const AuditLog: Model<IAuditLog> =
     models.AuditLog || mongoose.model<IAuditLog>("AuditLog", AuditLogSchema);

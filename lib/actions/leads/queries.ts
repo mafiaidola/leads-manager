@@ -12,7 +12,7 @@ import mongoose from "mongoose";
 // ─── Real-time duplicate phone check ────────────────────────────────────────
 export async function checkDuplicatePhone(phone: string, excludeId?: string) {
     const session = await auth();
-    if (!session) return { exists: false };
+    if (!session || !session.user?.orgId) return { exists: false };
 
     // Sanitize: digits only
     const sanitized = phone.replace(/[^0-9]/g, "");
@@ -20,7 +20,7 @@ export async function checkDuplicatePhone(phone: string, excludeId?: string) {
 
     try {
         await dbConnect();
-        const query: any = { phone: sanitized, deletedAt: null };
+        const query: any = { phone: sanitized, deletedAt: null, orgId: session.user.orgId };
         if (excludeId) query._id = { $ne: excludeId };
 
         const existingLead = await Lead.findOne(query)
@@ -43,7 +43,7 @@ export async function checkDuplicatePhone(phone: string, excludeId?: string) {
 // ─── Duplicate lead check (email + phone) ───────────────────────────────────
 export async function checkDuplicateLead(email?: string, phone?: string, excludeId?: string) {
     const session = await auth();
-    if (!session) return { duplicates: [] };
+    if (!session || !session.user?.orgId) return { duplicates: [] };
 
     try {
         await dbConnect();
@@ -53,7 +53,7 @@ export async function checkDuplicateLead(email?: string, phone?: string, exclude
         if (sanitizedPhone.length >= 4) orConditions.push({ phone: sanitizedPhone });
         if (orConditions.length === 0) return { duplicates: [] };
 
-        const query: any = { $or: orConditions, deletedAt: null };
+        const query: any = { $or: orConditions, deletedAt: null, orgId: session.user.orgId };
         if (excludeId) query._id = { $ne: excludeId };
 
         const matches = await Lead.find(query)
@@ -79,12 +79,12 @@ export async function checkDuplicateLead(email?: string, phone?: string, exclude
 // ─── Kanban: Get leads grouped by status ────────────────────────────────────
 export async function getLeadsByStatus() {
     const session = await auth();
-    if (!session) return {};
+    if (!session || !session.user?.orgId) return {};
 
     try {
         await dbConnect();
 
-        const query: any = { deletedAt: null };
+        const query: any = { deletedAt: null, orgId: session.user.orgId };
         if (session.user.role === USER_ROLES.SALES) {
             query.assignedTo = session.user.id;
         }
@@ -191,13 +191,20 @@ export async function getLeadTimeline(leadId: string) {
 // ─── Get leads with pagination, filtering, sorting ──────────────────────────
 export async function getLeads(searchParams: any) {
     const session = await auth();
-    if (!session) return { leads: [], total: 0 };
+    if (!session || !session.user?.orgId) return { leads: [], total: 0 };
 
     try {
         await dbConnect();
 
-        // Build query
+        // Build query — scoped to org (superAdmin can override)
         const query: any = {};
+        if ((session.user as any).isSuperAdmin && searchParams.targetOrgId) {
+            if (searchParams.targetOrgId !== "all") {
+                query.orgId = searchParams.targetOrgId;
+            }
+        } else {
+            query.orgId = session.user.orgId;
+        }
 
         // Exclude soft-deleted leads by default
         if (searchParams.trash === "true") {
@@ -290,33 +297,52 @@ export async function getLeads(searchParams: any) {
         const noteMap = new Map(noteCounts.map((n: any) => [n._id.toString(), n.count]));
         const actionMap = new Map(actionCounts.map((a: any) => [a._id.toString(), a.count]));
 
-        // Serialization
+        // Serialization — explicitly pick fields to avoid raw ObjectIds
+        const serialized = leads.map(l => {
+            const id = l._id.toString();
+            return {
+                _id: id,
+                name: l.name,
+                company: l.company || null,
+                email: l.email || null,
+                phone: l.phone || null,
+                website: l.website || null,
+                position: l.position || null,
+                value: l.value || null,
+                currency: l.currency || "AED",
+                countryCode: l.countryCode || "971",
+                tags: l.tags || [],
+                status: l.status,
+                source: l.source || null,
+                product: l.product || null,
+                description: l.description || null,
+                public: l.public || false,
+                contactedToday: l.contactedToday || false,
+                lastContactAt: l.lastContactAt ? (l.lastContactAt as Date).toISOString() : null,
+                starred: (l.starred || []).map((s: any) => s.toString()),
+                assignedTo: l.assignedTo ? {
+                    _id: (l.assignedTo as any)._id?.toString(),
+                    name: (l.assignedTo as any).name || null,
+                } : null,
+                createdBy: l.createdBy ? {
+                    _id: ((l.createdBy as any)._id || l.createdBy).toString(),
+                    name: (l.createdBy as any).name || null,
+                } : null,
+                serialNumber: l.serialNumber || null,
+                customFields: l.customFields || {},
+                address: l.address || {},
+                defaultLanguage: l.defaultLanguage || null,
+                deletedAt: l.deletedAt ? (l.deletedAt as Date).toISOString() : null,
+                createdAt: (l.createdAt as Date).toISOString(),
+                updatedAt: (l.updatedAt as Date).toISOString(),
+                noteCount: noteMap.get(id) || 0,
+                actionCount: actionMap.get(id) || 0,
+                followUpDate: l.followUpDate ? (l.followUpDate as Date).toISOString() : null,
+            };
+        });
+
         return {
-            leads: leads.map(l => {
-                const id = l._id.toString();
-                return {
-                    ...l,
-                    _id: id,
-                    starred: (l.starred || []).map((s: any) => s.toString()),
-                    assignedTo: l.assignedTo ? {
-                        ...l.assignedTo,
-                        _id: (l.assignedTo as any)._id?.toString()
-                    } : null,
-                    createdBy: l.createdBy ? {
-                        _id: ((l.createdBy as any)._id || l.createdBy).toString(),
-                        name: (l.createdBy as any).name || null,
-                    } : null,
-                    serialNumber: l.serialNumber || null,
-                    countryCode: l.countryCode || "971",
-                    customFields: l.customFields || {},
-                    deletedAt: l.deletedAt ? (l.deletedAt as Date).toISOString() : null,
-                    createdAt: (l.createdAt as Date).toISOString(),
-                    updatedAt: (l.updatedAt as Date).toISOString(),
-                    noteCount: noteMap.get(id) || 0,
-                    actionCount: actionMap.get(id) || 0,
-                    followUpDate: l.followUpDate ? (l.followUpDate as Date).toISOString() : null,
-                };
-            }),
+            leads: serialized,
             total
         };
     } catch (error) {
@@ -326,14 +352,22 @@ export async function getLeads(searchParams: any) {
 }
 
 // ─── Lead Statistics ────────────────────────────────────────────────────────
-export async function getLeadsStats() {
+export async function getLeadsStats(targetOrgId?: string) {
     const session = await auth();
-    if (!session) return [];
+    if (!session || !session.user?.orgId) return [];
 
     try {
         await dbConnect();
 
         const query: any = { deletedAt: null };
+        // SuperAdmin can view all orgs stats
+        if ((session.user as any).isSuperAdmin && targetOrgId) {
+            if (targetOrgId !== "all") {
+                query.orgId = new mongoose.Types.ObjectId(targetOrgId);
+            }
+        } else {
+            query.orgId = new mongoose.Types.ObjectId(session.user.orgId as string);
+        }
         // Sales sees only own stats. Marketing + Admin see all.
         if (session.user.role === USER_ROLES.SALES) {
             query.assignedTo = session.user.id;
@@ -354,7 +388,7 @@ export async function getLeadsStats() {
 // ─── Search leads ───────────────────────────────────────────────────────────
 export async function searchLeads(query: string) {
     const session = await auth();
-    if (!session || !query || query.length < 2) return [];
+    if (!session || !session.user?.orgId || !query || query.length < 2) return [];
 
     try {
         await dbConnect();
@@ -362,6 +396,7 @@ export async function searchLeads(query: string) {
         const searchNoPrefix = query.replace(/^[#]?/i, "");
         const filter: any = {
             deletedAt: null,
+            orgId: session.user.orgId,
             $or: [
                 { name: { $regex: query, $options: "i" } },
                 { company: { $regex: query, $options: "i" } },
@@ -401,11 +436,11 @@ export async function searchLeads(query: string) {
 // ─── Get lead details ───────────────────────────────────────────────────────
 export async function getLeadDetails(id: string) {
     const session = await auth();
-    if (!session) return null;
+    if (!session || !session.user?.orgId) return null;
 
     try {
         await dbConnect();
-        const lead = await Lead.findById(id)
+        const lead = await Lead.findOne({ _id: id, orgId: session.user.orgId })
             .populate("assignedTo", "name")
             .populate("createdBy", "name")
             .lean();

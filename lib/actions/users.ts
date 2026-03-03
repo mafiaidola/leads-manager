@@ -18,10 +18,11 @@ const CreateUserSchema = z.object({
 
 export async function createUser(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+    if (!session || session.user.role !== USER_ROLES.ADMIN || !session.user.orgId) {
         return { message: "Unauthorized" };
     }
 
+    const orgId = session.user.orgId;
     const role = formData.get("role") as string || USER_ROLES.SALES;
 
     const validatedFields = CreateUserSchema.safeParse({
@@ -40,13 +41,15 @@ export async function createUser(prevState: any, formData: FormData) {
 
     try {
         await dbConnect();
-        const existingUser = await User.findOne({ username: username.toLowerCase() });
+        // Check uniqueness within org
+        const existingUser = await User.findOne({ username: username.toLowerCase(), orgId });
         if (existingUser) {
             return { message: "Username already taken" };
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
         await User.create({
+            orgId,
             name,
             username: username.toLowerCase(),
             passwordHash,
@@ -68,18 +71,21 @@ export const createSalesUser = createUser;
 
 export async function updateUser(userId: string, data: { name?: string; username?: string; email?: string; role?: string; active?: boolean }) {
     const session = await auth();
-    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+    if (!session || session.user.role !== USER_ROLES.ADMIN || !session.user.orgId) {
         return { message: "Unauthorized" };
     }
 
+    const orgId = session.user.orgId;
+
     try {
         await dbConnect();
-        const user = await User.findById(userId);
+        // Ensure user belongs to same org
+        const user = await User.findOne({ _id: userId, orgId });
         if (!user) return { message: "User not found" };
 
         if (data.name) user.name = data.name;
         if (data.username) {
-            const existing = await User.findOne({ username: data.username.toLowerCase(), _id: { $ne: userId } });
+            const existing = await User.findOne({ username: data.username.toLowerCase(), orgId, _id: { $ne: userId } });
             if (existing) return { message: "Username already taken" };
             user.username = data.username.toLowerCase();
         }
@@ -99,7 +105,7 @@ export async function updateUser(userId: string, data: { name?: string; username
 
 export async function deleteUser(userId: string) {
     const session = await auth();
-    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+    if (!session || session.user.role !== USER_ROLES.ADMIN || !session.user.orgId) {
         return { message: "Unauthorized" };
     }
 
@@ -110,7 +116,7 @@ export async function deleteUser(userId: string) {
 
     try {
         await dbConnect();
-        const user = await User.findById(userId);
+        const user = await User.findOne({ _id: userId, orgId: session.user.orgId });
         if (!user) return { message: "User not found" };
 
         // Deactivate rather than hard delete
@@ -154,7 +160,7 @@ export async function changePassword(oldPassword: string, newPassword: string) {
 
 export async function adminResetPassword(userId: string, newPassword: string) {
     const session = await auth();
-    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+    if (!session || session.user.role !== USER_ROLES.ADMIN || !session.user.orgId) {
         return { message: "Unauthorized" };
     }
 
@@ -164,7 +170,7 @@ export async function adminResetPassword(userId: string, newPassword: string) {
 
     try {
         await dbConnect();
-        const user = await User.findById(userId);
+        const user = await User.findOne({ _id: userId, orgId: session.user.orgId });
         if (!user) return { message: "User not found" };
 
         user.passwordHash = await bcrypt.hash(newPassword, 10);
@@ -181,15 +187,16 @@ export async function adminResetPassword(userId: string, newPassword: string) {
 
 export async function getUsers() {
     const session = await auth();
-    if (!session || session.user.role !== USER_ROLES.ADMIN) {
+    if (!session || session.user.role !== USER_ROLES.ADMIN || !session.user.orgId) {
         return [];
     }
     try {
         await dbConnect();
-        const users = await User.find({}).sort({ createdAt: -1 }).lean();
+        const users = await User.find({ orgId: session.user.orgId }).sort({ createdAt: -1 }).lean();
         return users.map(user => ({
             ...user,
             _id: user._id.toString(),
+            orgId: user.orgId.toString(),
             username: user.username || "",
             createdAt: user.createdAt.toISOString(),
             updatedAt: user.updatedAt.toISOString(),
@@ -202,7 +209,7 @@ export async function getUsers() {
 
 export async function getSalesUsers() {
     const session = await auth();
-    if (!session) return [];
+    if (!session || !session.user.orgId) return [];
 
     if (session.user.role !== USER_ROLES.ADMIN && session.user.role !== USER_ROLES.MARKETING) {
         return [];
@@ -210,10 +217,11 @@ export async function getSalesUsers() {
 
     try {
         await dbConnect();
-        const users = await User.find({ role: USER_ROLES.SALES, active: true }).sort({ name: 1 }).lean();
+        const users = await User.find({ orgId: session.user.orgId, role: USER_ROLES.SALES, active: true }).sort({ name: 1 }).lean();
         return users.map(user => ({
             ...user,
             _id: user._id.toString(),
+            orgId: user.orgId.toString(),
             username: user.username || "",
             createdAt: user.createdAt.toISOString(),
             updatedAt: user.updatedAt.toISOString(),
@@ -223,4 +231,3 @@ export async function getSalesUsers() {
         return [];
     }
 }
-

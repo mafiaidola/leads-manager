@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { getDashboardStats } from "@/lib/actions/dashboard";
+import { getCrossOrgStats } from "@/lib/actions/organizations";
 import { serialize } from "@/lib/serialize";
 import { getSettings } from "@/lib/actions/settings";
 import { auth } from "@/auth";
@@ -13,12 +14,16 @@ import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { FadeIn, CountUp, Sparkline } from "@/components/dashboard/DashboardAnimations";
 import { GoalProgressRing } from "@/components/dashboard/GoalProgressRing";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { SuperAdminDashboard } from "@/components/dashboard/SuperAdminDashboard";
 
 export default async function DashboardPage() {
-    const [rawStats, session, settings] = await Promise.all([
+    const session = await auth();
+    const isSuperAdmin = !!(session?.user as any)?.isSuperAdmin;
+
+    const [rawStats, settings, crossOrgStats] = await Promise.all([
         getDashboardStats(),
-        auth(),
         getSettings(),
+        isSuperAdmin ? getCrossOrgStats() : Promise.resolve(null),
     ]);
 
     if (!rawStats) return <div>Loading...</div>;
@@ -74,6 +79,13 @@ export default async function DashboardPage() {
                     </div>
                 </div>
             </FadeIn>
+
+            {/* SuperAdmin Cross-Org Overview */}
+            {isSuperAdmin && crossOrgStats && (
+                <FadeIn delay={40}>
+                    <SuperAdminDashboard stats={crossOrgStats} />
+                </FadeIn>
+            )}
 
             {/* Stat Cards */}
             <div className="grid gap-5 grid-cols-2 lg:grid-cols-4">
@@ -224,7 +236,10 @@ export default async function DashboardPage() {
                                     <Card className="rounded-2xl border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-200 cursor-default border-none hover:scale-[1.02]">
                                         <CardHeader className="pb-1 pt-4 px-4">
                                             <CardTitle className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                                                {stat.status.replace(/_/g, " ")}
+                                                {(() => {
+                                                    const settingStatus = settings?.statuses?.find((s: any) => s.key === stat.status || s.label?.toLowerCase() === stat.status?.toLowerCase());
+                                                    return settingStatus?.label || stat.status?.replace(/_/g, " ");
+                                                })()}
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent className="px-4 pb-4">

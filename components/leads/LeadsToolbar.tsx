@@ -62,8 +62,8 @@ export function LeadsToolbar({
     return (
         <>
             {/* View Toggle Buttons */}
-            <div className="flex items-center justify-between">
-                <div className="flex gap-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <Button variant={!isStarredView && !isTrashView ? "default" : "outline"} size="sm"
                         onClick={() => onViewToggle("all")}
                         className="rounded-xl border-white/10">

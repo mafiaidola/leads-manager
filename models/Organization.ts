@@ -1,0 +1,127 @@
+import mongoose, { Schema, Model, models } from "mongoose";
+
+export interface IOrgStatus {
+    key: string;
+    label: string;
+    color: string;
+}
+
+export interface IOrgSource {
+    key: string;
+    label: string;
+}
+
+export interface IOrgProduct {
+    key: string;
+    label: string;
+}
+
+export interface IOrgCustomField {
+    key: string;
+    label: string;
+    type: "text" | "number" | "date" | "select";
+    options?: string[];
+}
+
+export interface IOrgCustomRole {
+    name: string;
+    permissions: string[];
+}
+
+export interface IOrgGoals {
+    monthlyLeadTarget: number;
+    monthlyConversionTarget: number;
+}
+
+export interface IOrgBranding {
+    appName: string;
+    accentColor: string;
+    logoUrl: string;
+}
+
+export interface IOrganization {
+    _id: mongoose.Types.ObjectId;
+    name: string;
+    slug: string;
+    active: boolean;
+    description: string;
+    contactEmail: string;
+    contactPhone: string;
+    branding: IOrgBranding;
+    theme: "violet" | "ocean" | "emerald";
+    settings: {
+        statuses: IOrgStatus[];
+        sources: IOrgSource[];
+        products: IOrgProduct[];
+        customFields: IOrgCustomField[];
+        customRoles: IOrgCustomRole[];
+        goals: IOrgGoals;
+    };
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+const OrganizationSchema = new Schema<IOrganization>(
+    {
+        name: { type: String, required: true },
+        slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+        active: { type: Boolean, default: true },
+        description: { type: String, default: "" },
+        contactEmail: { type: String, default: "" },
+        contactPhone: { type: String, default: "" },
+        branding: {
+            appName: { type: String, default: "Leads Mgr" },
+            accentColor: { type: String, default: "#8b5cf6" },
+            logoUrl: { type: String, default: "" },
+        },
+        theme: { type: String, enum: ["violet", "ocean", "emerald"], default: "violet" },
+        settings: {
+            statuses: [
+                {
+                    key: { type: String, required: true },
+                    label: { type: String, required: true },
+                    color: { type: String, default: "gray" },
+                },
+            ],
+            sources: [
+                {
+                    key: { type: String, required: true },
+                    label: { type: String, required: true },
+                },
+            ],
+            products: [
+                {
+                    key: { type: String, required: true },
+                    label: { type: String, required: true },
+                },
+            ],
+            customFields: [
+                {
+                    key: { type: String, required: true },
+                    label: { type: String, required: true },
+                    type: { type: String, enum: ["text", "number", "date", "select"], default: "text" },
+                    options: [String],
+                },
+            ],
+            customRoles: [
+                {
+                    name: { type: String, required: true },
+                    permissions: [String],
+                },
+            ],
+            goals: {
+                monthlyLeadTarget: { type: Number, default: 50 },
+                monthlyConversionTarget: { type: Number, default: 10 },
+            },
+        },
+    },
+    { timestamps: true }
+);
+
+OrganizationSchema.index({ slug: 1 }, { unique: true });
+OrganizationSchema.index({ active: 1 });
+
+const Organization: Model<IOrganization> =
+    models.Organization || mongoose.model<IOrganization>("Organization", OrganizationSchema);
+
+export default Organization;

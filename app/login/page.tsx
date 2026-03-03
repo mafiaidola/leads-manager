@@ -2,20 +2,44 @@
 
 import { useTransition, useState, useEffect } from "react";
 import { authenticate } from "@/lib/actions/auth";
-import { LayoutDashboard, User, Lock, ArrowRight, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { LayoutDashboard, User, Lock, ArrowRight, ShieldCheck, Eye, EyeOff, Building2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface OrgOption {
+    slug: string;
+    name: string;
+    logo: string;
+    appName: string;
+    accentColor: string;
+}
 
 export default function LoginPage() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
     const [showPassword, setShowPassword] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [organizations, setOrganizations] = useState<OrgOption[]>([]);
+    const [selectedOrg, setSelectedOrg] = useState<OrgOption | null>(null);
+    const [showOrgDropdown, setShowOrgDropdown] = useState(false);
 
     useEffect(() => {
         setMounted(true);
+        // Fetch available organizations
+        fetch("/api/organizations/public")
+            .then((res) => res.json())
+            .then((orgs: OrgOption[]) => {
+                setOrganizations(orgs);
+                if (orgs.length === 1) setSelectedOrg(orgs[0]);
+            })
+            .catch(() => { });
     }, []);
 
     async function handleSubmit(formData: FormData) {
+        if (!selectedOrg) {
+            setErrorMessage("Please select an organization.");
+            return;
+        }
+        formData.set("orgSlug", selectedOrg.slug);
         startTransition(async () => {
             const result = await authenticate(undefined, formData);
             if (result) {
@@ -24,8 +48,13 @@ export default function LoginPage() {
         });
     }
 
+    const displayName = selectedOrg?.appName || "Leads Manager";
+
     return (
-        <div className="relative flex items-center justify-center min-h-screen bg-[#09090b] overflow-hidden selection:bg-primary/30">
+        <div
+            className="relative flex items-center justify-center min-h-screen bg-[#09090b] overflow-hidden selection:bg-primary/30"
+            style={selectedOrg?.accentColor ? { "--login-accent": selectedOrg.accentColor } as React.CSSProperties : undefined}
+        >
             {/* Animated Background Blobs */}
             <div className="absolute top-[-15%] left-[-15%] w-[50%] h-[50%] bg-primary/15 rounded-full blur-[140px] animate-blob-drift" />
             <div className="absolute bottom-[-15%] right-[-15%] w-[50%] h-[50%] bg-violet-600/15 rounded-full blur-[140px] animate-blob-drift animation-delay-5" />
@@ -48,11 +77,15 @@ export default function LoginPage() {
                 >
                     <div className="h-18 w-18 rounded-2xl bg-gradient-to-br from-primary to-primary/70 p-[2px] shadow-2xl shadow-primary/30 group-hover:scale-110 group-hover:shadow-primary/40 transition-all duration-500">
                         <div className="h-full w-full rounded-[14px] bg-[#09090b] flex items-center justify-center">
-                            <LayoutDashboard className="h-9 w-9 text-white" />
+                            {selectedOrg?.logo ? (
+                                <img src={selectedOrg.logo} alt="" className="h-9 w-9 object-contain rounded-lg" />
+                            ) : (
+                                <LayoutDashboard className="h-9 w-9 text-white" />
+                            )}
                         </div>
                     </div>
                     <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-white">
-                        Leads Manager
+                        {displayName}
                         <span className="text-primary block text-center text-sm font-medium tracking-widest uppercase mt-1 opacity-70">
                             Pro Edition
                         </span>
@@ -74,11 +107,66 @@ export default function LoginPage() {
                                 Welcome back
                             </h2>
                             <p className="text-muted-foreground mt-2 text-sm">
-                                Enter your credentials to access your CRM dashboard.
+                                Select your organization and enter your credentials.
                             </p>
                         </div>
 
                         <form action={handleSubmit} className="space-y-6">
+                            {/* Organization Selector */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-300 ml-1">Organization</label>
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowOrgDropdown(!showOrgDropdown)}
+                                        className="flex items-center justify-between w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all duration-300 hover:bg-white/[0.07]"
+                                    >
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <Building2 className="h-5 w-5 text-gray-500" />
+                                        </div>
+                                        <span className={selectedOrg ? "text-white" : "text-gray-500"}>
+                                            {selectedOrg ? selectedOrg.name : "Select organization..."}
+                                        </span>
+                                        <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", showOrgDropdown && "rotate-180")} />
+                                    </button>
+
+                                    {showOrgDropdown && (
+                                        <div className="absolute z-50 w-full mt-2 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                                            {organizations.length === 0 ? (
+                                                <div className="px-4 py-3 text-sm text-gray-500">No organizations available</div>
+                                            ) : (
+                                                organizations.map((org) => (
+                                                    <button
+                                                        key={org.slug}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedOrg(org);
+                                                            setShowOrgDropdown(false);
+                                                        }}
+                                                        className={cn(
+                                                            "flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors hover:bg-white/10",
+                                                            selectedOrg?.slug === org.slug ? "bg-primary/20 text-primary" : "text-white"
+                                                        )}
+                                                    >
+                                                        {org.logo ? (
+                                                            <img src={org.logo} alt="" className="h-6 w-6 rounded object-contain" />
+                                                        ) : (
+                                                            <div className="h-6 w-6 rounded bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-[10px] text-white font-bold">
+                                                                {org.name.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                        <div className="text-left">
+                                                            <p className="font-medium">{org.name}</p>
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Username */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-300 ml-1">Username</label>
                                 <div className="relative group/input">
@@ -97,6 +185,7 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
+                            {/* Password */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between ml-1">
                                     <label className="text-sm font-medium text-gray-300">Password</label>
@@ -190,7 +279,6 @@ function LoginButton({ pending }: { pending: boolean }) {
 }
 
 function FloatingParticles() {
-    // Generate deterministic particle positions
     const particles = [
         { left: "10%", top: "20%", size: 3, duration: 6, delay: 0 },
         { left: "20%", top: "80%", size: 2, duration: 8, delay: 1 },

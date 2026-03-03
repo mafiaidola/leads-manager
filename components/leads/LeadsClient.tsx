@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LeadDetailsSheet } from "@/components/leads/LeadDetailsSheet";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Building2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { deleteLead, toggleStarLead, bulkUpdateStatus, bulkAssign, bulkSoftDelete, transferLead, restoreLead, permanentDeleteLead } from "@/lib/actions/leads";
@@ -31,9 +31,9 @@ function useDebounce(callback: Function, delay: number) {
 }
 
 export function LeadsClient({
-    leads, total, stats, settings, users, currentUserRole, currentUserId, kanbanLeads
+    leads, total, stats, settings, users, currentUserRole, currentUserId, kanbanLeads, isSuperAdmin, organizations
 }: {
-    leads: any[], total: number, stats: any[], settings: any, users: any[], currentUserRole: string, currentUserId?: string, kanbanLeads?: Record<string, any[]>
+    leads: any[], total: number, stats: any[], settings: any, users: any[], currentUserRole: string, currentUserId?: string, kanbanLeads?: Record<string, any[]>, isSuperAdmin?: boolean, organizations?: { _id: string; name: string; slug: string }[]
 }) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -268,8 +268,35 @@ export function LeadsClient({
         router.replace(`/leads?${params.toString()}`);
     }, [router]);
 
+    const handleOrgFilter = useCallback((orgId: string) => {
+        const params = new URLSearchParams(searchParams);
+        if (orgId === "mine") { params.delete("targetOrgId"); } else { params.set("targetOrgId", orgId); }
+        params.delete("page");
+        router.replace(`/leads?${params.toString()}`);
+    }, [searchParams, router]);
+
     return (
         <div className="space-y-4">
+            {/* SuperAdmin Org Filter */}
+            {isSuperAdmin && organizations && organizations.length > 0 && (
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-card/40 backdrop-blur-xl border border-white/10">
+                    <Building2 className="h-4 w-4 text-amber-500" />
+                    <span className="text-xs font-medium text-muted-foreground">Organization:</span>
+                    <Select value={searchParams.get("targetOrgId") || "mine"} onValueChange={handleOrgFilter}>
+                        <SelectTrigger className="w-[220px] bg-white/5 border-white/10 rounded-xl h-9 text-sm">
+                            <SelectValue placeholder="My Organization" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                            <SelectItem value="mine">My Organization</SelectItem>
+                            <SelectItem value="all">All Organizations</SelectItem>
+                            {organizations.map(org => (
+                                <SelectItem key={org._id} value={org._id}>{org.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
+
             {!isTrashView && (
                 <QuickStatsBar
                     stats={stats}

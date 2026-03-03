@@ -20,6 +20,7 @@ import { GeneralTab } from "./GeneralTab";
 import { ProductsTab } from "./ProductsTab";
 import { TeamTab } from "./TeamTab";
 import { BrandingTab } from "./BrandingTab";
+import { OrganizationsTab } from "./OrganizationsTab";
 
 const ALL_PERMISSIONS = [
     { key: "view_leads", label: "View Leads" },
@@ -32,7 +33,7 @@ const ALL_PERMISSIONS = [
     { key: "export_data", label: "Export Data" },
 ];
 
-export function SettingsClient({ settings, users }: { settings: any, users: any[] }) {
+export function SettingsClient({ settings, users, isSuperAdmin, organizations, currentOrgId }: { settings: any, users: any[], isSuperAdmin?: boolean, organizations?: any[], currentOrgId?: string }) {
     const [statuses, setStatuses] = useState<any[]>(settings?.statuses || []);
     const [sources, setSources] = useState<any[]>(settings?.sources || []);
     const [products, setProducts] = useState<any[]>(settings?.products || []);
@@ -53,6 +54,9 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
 
     // Theme state
     const [currentTheme, setCurrentTheme] = useState<"violet" | "ocean" | "emerald">(settings?.theme || "violet");
+
+    // Export format state
+    const [exportFormat, setExportFormat] = useState<"csv" | "excel" | "word">("csv");
     const { setTheme } = useTheme();
 
     // Custom Roles state
@@ -72,10 +76,10 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
             customFields,
             customRoles,
         });
-        if (result?.message === "Settings updated") {
+        if (result?.success) {
             toast({ title: "Settings saved" });
         } else {
-            toast({ title: "Error saving settings", variant: "destructive" });
+            toast({ title: result?.error || "Error saving settings", variant: "destructive" });
         }
     }, [statuses, sources, products, customFields, customRoles, toast]);
 
@@ -156,7 +160,7 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
 
     return (
         <Tabs defaultValue="general" className="space-y-6">
-            <TabsList className="bg-card/40 backdrop-blur-xl border border-white/10 p-1 rounded-2xl h-auto flex-wrap">
+            <TabsList className="bg-card/40 backdrop-blur-xl border border-white/10 p-1 rounded-2xl h-auto flex overflow-x-auto scrollbar-hide gap-1">
                 <TabsTrigger value="general" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">General</TabsTrigger>
                 <TabsTrigger value="products" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Products</TabsTrigger>
                 <TabsTrigger value="users" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Team</TabsTrigger>
@@ -165,6 +169,9 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                 <TabsTrigger value="account" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Account</TabsTrigger>
                 <TabsTrigger value="system" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">System</TabsTrigger>
                 <TabsTrigger value="whatsapp" className="rounded-xl data-[state=active]:bg-green-600 data-[state=active]:text-white transition-all">WhatsApp</TabsTrigger>
+                {isSuperAdmin && (
+                    <TabsTrigger value="organizations" className="rounded-xl data-[state=active]:bg-amber-600 data-[state=active]:text-white transition-all">Organizations</TabsTrigger>
+                )}
             </TabsList>
 
             {/* ── General Tab ─────────────────────────────── */}
@@ -207,7 +214,6 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                     onBrandingChange={setBranding}
                     onSaveBranding={handleSaveBranding}
                     onChangeTheme={handleChangeTheme}
-                    onBackup={handleBackup}
                 />
             </TabsContent>
 
@@ -361,12 +367,12 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                                 Export All Leads
                             </CardTitle>
                             <CardDescription className="text-muted-foreground/80">
-                                Download all active leads as a CSV file (26 fields including contact, deal, and address data).
+                                Download all active leads in your preferred format (22 fields including contact, deal, and address data).
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                                <p className="text-xs text-emerald-400 font-medium mb-1">📊 CSV includes:</p>
+                                <p className="text-xs text-emerald-400 font-medium mb-1">📊 Export includes:</p>
                                 <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
                                     <li>Name, phone, email, company</li>
                                     <li>Status, source, product, value</li>
@@ -374,13 +380,25 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                                     <li>Assigned agent, created date</li>
                                 </ul>
                             </div>
-                            <Button
-                                onClick={() => { window.location.href = "/api/leads/export"; }}
-                                className="rounded-xl bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 gap-2"
-                            >
-                                <Download className="h-4 w-4" />
-                                Export All Leads (CSV)
-                            </Button>
+                            <div className="flex items-center gap-3">
+                                <Select value={exportFormat} onValueChange={(v: "csv" | "excel" | "word") => setExportFormat(v)}>
+                                    <SelectTrigger className="w-36 rounded-xl border-white/10 bg-black/20">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                        <SelectItem value="csv">CSV (.csv)</SelectItem>
+                                        <SelectItem value="excel">Excel (.xlsx)</SelectItem>
+                                        <SelectItem value="word">Word (.docx)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Button
+                                    onClick={() => { window.location.href = `/api/leads/export?format=${exportFormat}`; }}
+                                    className="rounded-xl bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 gap-2"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Export All Leads
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -414,6 +432,13 @@ export function SettingsClient({ settings, users }: { settings: any, users: any[
                     </Card>
                 </div>
             </TabsContent>
+
+            {/* ── Organizations Tab (SuperAdmin only) ──────── */}
+            {isSuperAdmin && (
+                <TabsContent value="organizations">
+                    <OrganizationsTab orgs={organizations || []} currentOrgId={currentOrgId} />
+                </TabsContent>
+            )}
         </Tabs>
     );
 }

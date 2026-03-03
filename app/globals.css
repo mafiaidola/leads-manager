@@ -468,3 +468,13 @@
 .recharts-tooltip-dark .recharts-tooltip-item {
   color: white !important;
 }
+
+/* Scrollbar-hide utility — hides scrollbar while keeping scroll functional */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

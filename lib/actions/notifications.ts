@@ -29,8 +29,11 @@ export async function createNotification({
     leadId?: string;
 }) {
     try {
+        const session = await auth();
+        const orgId = session?.user?.orgId;
         await dbConnect();
         const docs = userIds.map((uid) => ({
+            orgId: orgId ? new mongoose.Types.ObjectId(orgId) : undefined,
             userId: new mongoose.Types.ObjectId(uid),
             type,
             title,
@@ -46,8 +49,11 @@ export async function createNotification({
 
 // ─── Get all admin/marketing user IDs ─────────────────────────────────────────
 export async function getAdminUserIds(): Promise<string[]> {
+    const session = await auth();
     await dbConnect();
-    const admins = await User.find({ role: { $in: ["admin", "marketing"] } }).select("_id").lean();
+    const filter: any = { role: { $in: ["admin", "marketing"] } };
+    if (session?.user?.orgId) filter.orgId = session.user.orgId;
+    const admins = await User.find(filter).select("_id").lean();
     return admins.map((u: any) => u._id.toString());
 }
 
@@ -58,7 +64,7 @@ export async function getUnreadNotifications() {
 
     await dbConnect();
     const userId = (session.user as any).id;
-    const notifications = await Notification.find({ userId, read: false })
+    const notifications = await Notification.find({ userId, read: false, ...(session.user.orgId ? { orgId: session.user.orgId } : {}) })
         .sort({ createdAt: -1 })
         .limit(20)
         .lean();
@@ -84,7 +90,7 @@ export async function getAllNotifications() {
 
     await dbConnect();
     const userId = (session.user as any).id;
-    const notifications = await Notification.find({ userId })
+    const notifications = await Notification.find({ userId, ...(session.user.orgId ? { orgId: session.user.orgId } : {}) })
         .sort({ createdAt: -1 })
         .limit(30)
         .lean();

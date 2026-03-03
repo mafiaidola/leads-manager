@@ -134,7 +134,7 @@ export function LeadsTableView({
             )}
 
             {/* Desktop Table View */}
-            <div className="hidden md:block rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl overflow-hidden shadow-sm">
+            <div className="hidden md:block rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl overflow-x-auto shadow-sm">
                 <Table>
                     <TableHeader className="bg-white/5">
                         <TableRow className="hover:bg-transparent border-white/5">

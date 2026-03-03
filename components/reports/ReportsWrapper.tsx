@@ -59,10 +59,15 @@ class ReportsErrorBoundary extends React.Component<
     }
 }
 
-export default function ReportsWrapper() {
+interface ReportsWrapperProps {
+    isSuperAdmin?: boolean;
+    organizations?: { _id: string; name: string; slug: string }[];
+}
+
+export default function ReportsWrapper({ isSuperAdmin, organizations }: ReportsWrapperProps) {
     return (
         <ReportsErrorBoundary>
-            <ReportsClient />
+            <ReportsClient isSuperAdmin={isSuperAdmin} organizations={organizations} />
         </ReportsErrorBoundary>
     );
 }

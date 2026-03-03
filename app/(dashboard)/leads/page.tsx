@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { getLeads, getLeadsStats, getLeadsByStatus } from "@/lib/actions/leads";
 import { getSettings } from "@/lib/actions/settings";
 import { getSalesUsers } from "@/lib/actions/users";
+import { getOrganizations } from "@/lib/actions/organizations";
 import { LeadsClient } from "@/components/leads/LeadsClient";
 import { redirect } from "next/navigation";
 
@@ -17,13 +18,16 @@ export default async function LeadsPage({
     if (!session) redirect("/login");
 
     const resolvedParams = await searchParams;
+    const isSuperAdmin = !!(session.user as any).isSuperAdmin;
+    const targetOrgId = isSuperAdmin ? (resolvedParams.targetOrgId as string) : undefined;
 
-    const [leadsData, stats, settings, users, kanbanLeads] = await Promise.all([
+    const [leadsData, stats, settings, users, kanbanLeads, organizations] = await Promise.all([
         getLeads(resolvedParams),
-        getLeadsStats(),
+        getLeadsStats(targetOrgId),
         getSettings(),
         getSalesUsers(),
         getLeadsByStatus(),
+        isSuperAdmin ? getOrganizations() : Promise.resolve([]),
     ]);
 
     // Serialize Mongoose docs (ObjectId/Date → primitives) for Client Components
@@ -48,7 +52,10 @@ export default async function LeadsPage({
                 currentUserRole={session.user.role}
                 currentUserId={session.user.id}
                 kanbanLeads={serializedKanban}
+                isSuperAdmin={isSuperAdmin}
+                organizations={organizations.map((o: any) => ({ _id: o._id, name: o.name, slug: o.slug }))}
             />
         </div>
     );
 }
+

@@ -6,6 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, Target, Save } from "lucide-react";
 
+const COLOR_NAME_MAP: Record<string, string> = {
+    red: "#ef4444", blue: "#3b82f6", green: "#22c55e", emerald: "#10b981",
+    violet: "#8b5cf6", purple: "#a855f7", amber: "#f59e0b", orange: "#f97316",
+    yellow: "#eab308", cyan: "#06b6d4", pink: "#ec4899", rose: "#f43f5e",
+    teal: "#14b8a6", indigo: "#6366f1", lime: "#84cc16", sky: "#0ea5e9",
+};
+function toHex(c: string | undefined): string {
+    if (!c) return "#8b5cf6";
+    if (c.startsWith("#")) return c;
+    return COLOR_NAME_MAP[c.toLowerCase()] || "#8b5cf6";
+}
+
 interface GeneralTabProps {
     statuses: any[];
     sources: any[];
@@ -50,10 +62,10 @@ export function GeneralTab({
                                 </div>
                                 <div className="w-20 space-y-1">
                                     <Label className="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">Color</Label>
-                                    <div className="relative h-9 rounded-xl border border-white/10 overflow-hidden" style={{ backgroundColor: status.color || '#8b5cf6' }}>
+                                    <div className="relative h-9 rounded-xl border border-white/10 overflow-hidden" style={{ backgroundColor: toHex(status.color) || '#8b5cf6' }}>
                                         <Input
                                             type="color"
-                                            value={status.color}
+                                            value={toHex(status.color)}
                                             onChange={(e) => onStatusChange(index, 'color', e.target.value)}
                                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                         />

@@ -14,12 +14,12 @@ export function QuickStatsBar({ stats, settings, currentStatus, onStatusClick }:
     const totalLeads = stats.reduce((acc, curr) => acc + curr.count, 0);
 
     return (
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-2 sm:gap-3 mb-6">
             {/* Total Card */}
             <div
                 onClick={() => onStatusClick("")}
                 className={cn(
-                    "cursor-pointer group relative overflow-hidden flex flex-col p-4 min-w-[120px] rounded-2xl border transition-all duration-300",
+                    "cursor-pointer group relative overflow-hidden flex flex-col p-3 sm:p-4 rounded-2xl border transition-all duration-300 lg:min-w-[120px]",
                     !currentStatus
                         ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105"
                         : "bg-card/40 border-white/10 hover:border-primary/50 backdrop-blur-xl"
@@ -40,7 +40,7 @@ export function QuickStatsBar({ stats, settings, currentStatus, onStatusClick }:
                         key={s.key}
                         onClick={() => onStatusClick(s.key)}
                         className={cn(
-                            "cursor-pointer group relative overflow-hidden flex flex-col p-4 min-w-[120px] rounded-2xl border transition-all duration-300",
+                            "cursor-pointer group relative overflow-hidden flex flex-col p-3 sm:p-4 rounded-2xl border transition-all duration-300 lg:min-w-[120px]",
                             `[--status-color:${s.color}] [--status-shadow:${s.color}33]`,
                             isActive
                                 ? "shadow-[0_10px_15px_-3px_var(--status-shadow)] scale-105 bg-[var(--status-color)] border-[var(--status-color)] text-white"

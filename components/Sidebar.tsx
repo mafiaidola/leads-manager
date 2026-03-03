@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut, Shield } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut, Shield, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { handleSignOut } from "@/lib/actions/auth";
 
@@ -44,7 +44,7 @@ const allRoutes = [
     },
 ];
 
-export function Sidebar({ className, userRole }: { className?: string; userRole?: string }) {
+export function Sidebar({ className, userRole, orgBranding, isSuperAdmin }: { className?: string; userRole?: string; orgBranding?: { appName?: string; logoUrl?: string; accentColor?: string }; isSuperAdmin?: boolean }) {
     const pathname = usePathname();
     const routes = allRoutes.filter((r) => !userRole || r.roles.includes(userRole));
 
@@ -55,11 +55,15 @@ export function Sidebar({ className, userRole }: { className?: string; userRole?
 
             <div className="px-4 py-6 flex-1 relative z-10 flex flex-col">
                 <Link href="/" className="flex items-center pl-2 mb-10 group">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 mr-3 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                        <LayoutDashboard className="h-5 w-5 text-white" />
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 mr-3 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform overflow-hidden">
+                        {orgBranding?.logoUrl ? (
+                            <img src={orgBranding.logoUrl} alt="" className="h-7 w-7 object-contain" />
+                        ) : (
+                            <LayoutDashboard className="h-5 w-5 text-white" />
+                        )}
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-white/70">Leads Mgr</h1>
+                        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-white/70">{orgBranding?.appName || "Leads Mgr"}</h1>
                         <p className="text-xs text-muted-foreground font-medium">Pro Edition</p>
                     </div>
                 </Link>
@@ -89,6 +93,17 @@ export function Sidebar({ className, userRole }: { className?: string; userRole?
                         );
                     })}
                 </div>
+
+                {/* SuperAdmin: Switch Organization */}
+                {isSuperAdmin && (
+                    <Link
+                        href="/settings?tab=organizations"
+                        className="flex items-center gap-3 p-3 text-sm font-medium text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-colors mb-2"
+                    >
+                        <Building2 className="h-5 w-5" />
+                        Manage Orgs
+                    </Link>
+                )}
 
                 {/* Logout Area */}
                 <div className="mt-auto pt-4 border-t border-white/10">

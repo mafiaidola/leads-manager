@@ -26,6 +26,7 @@ interface LeadEditDialogProps {
     editForm: EditFormState;
     setEditForm: React.Dispatch<React.SetStateAction<EditFormState>>;
     sources: string[];
+    products?: { key: string; label: string }[];
     onSave: () => void;
     isPending: boolean;
 }
@@ -36,6 +37,7 @@ export const LeadEditDialog = React.memo(function LeadEditDialog({
     editForm,
     setEditForm,
     sources,
+    products,
     onSave,
     isPending,
 }: LeadEditDialogProps) {
@@ -79,7 +81,13 @@ export const LeadEditDialog = React.memo(function LeadEditDialog({
                         </div>
                         <div className="space-y-1.5">
                             <Label className="text-xs">Product</Label>
-                            <Input value={editForm.product} onChange={e => setEditForm(prev => ({ ...prev, product: e.target.value }))} className="rounded-xl border-white/10 bg-black/20" />
+                            <Select value={editForm.product || "__none"} onValueChange={v => setEditForm(prev => ({ ...prev, product: v === "__none" ? "" : v }))}>
+                                <SelectTrigger className="rounded-xl border-white/10 bg-black/20"><SelectValue placeholder="Select" /></SelectTrigger>
+                                <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                    <SelectItem value="__none">None</SelectItem>
+                                    {products?.map(p => <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">

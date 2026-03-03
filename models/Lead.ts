@@ -3,6 +3,7 @@ import { getNextSequence } from "./Counter";
 
 export interface ILead {
     _id: mongoose.Types.ObjectId;
+    orgId: mongoose.Types.ObjectId;
     serialNumber: number;
     name: string;
     company?: string;
@@ -42,7 +43,8 @@ export interface ILead {
 
 const LeadSchema = new Schema<ILead>(
     {
-        serialNumber: { type: Number, unique: true, index: true },
+        orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
+        serialNumber: { type: Number, index: true },
         name: { type: String, required: true, index: true },
         company: { type: String, index: true },
         countryCode: { type: String, default: "971" },
@@ -88,15 +90,26 @@ LeadSchema.index(
 // Index for recycle bin queries
 LeadSchema.index({ deletedAt: 1 });
 
-// Unique sparse index on phone — enforces uniqueness for non-empty, non-deleted leads
+// Unique sparse index on phone — enforces uniqueness per org for non-empty, non-deleted leads
 LeadSchema.index(
-    { phone: 1 },
+    { phone: 1, orgId: 1 },
     {
         unique: true,
         sparse: true,
         partialFilterExpression: { phone: { $exists: true, $ne: "" }, deletedAt: null },
     }
 );
+
+// Unique serial per org
+LeadSchema.index({ serialNumber: 1, orgId: 1 }, { unique: true });
+
+// ─── Compound indexes for multi-tenant queries ─────────────────────
+LeadSchema.index({ orgId: 1, deletedAt: 1, status: 1 });         // Main list + Kanban
+LeadSchema.index({ orgId: 1, assignedTo: 1, deletedAt: 1 });     // Sales user filtering
+LeadSchema.index({ orgId: 1, deletedAt: 1, createdAt: -1 });     // Default sort order
+LeadSchema.index({ orgId: 1, followUpDate: 1 });                 // Overdue follow-ups
+LeadSchema.index({ orgId: 1, source: 1, deletedAt: 1 });         // Reports: leads by source
+LeadSchema.index({ orgId: 1, deletedAt: 1, updatedAt: -1 });     // Recently updated sort
 
 // Pre-save hook: sanitize phone to digits-only
 LeadSchema.pre("save", function () {
@@ -105,10 +118,10 @@ LeadSchema.pre("save", function () {
     }
 });
 
-// Pre-validate hook: auto-assign serial number
+// Pre-validate hook: auto-assign serial number (per-organization)
 LeadSchema.pre("validate", async function () {
-    if (this.isNew && !this.serialNumber) {
-        this.serialNumber = await getNextSequence("lead_serial");
+    if (this.isNew && !this.serialNumber && this.orgId) {
+        this.serialNumber = await getNextSequence(`lead_serial_${this.orgId}`);
     }
 });
 

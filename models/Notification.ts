@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface INotification extends Document {
+    orgId: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
     type: "new_lead" | "lead_assigned" | "status_changed" | "follow_up_due" | "lead_restored" | "lead_deleted";
     title: string;
@@ -12,6 +13,7 @@ export interface INotification extends Document {
 
 const NotificationSchema = new Schema<INotification>(
     {
+        orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
         userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
         type: {
             type: String,
@@ -28,6 +30,7 @@ const NotificationSchema = new Schema<INotification>(
 
 // Auto-delete notifications older than 30 days
 NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+NotificationSchema.index({ userId: 1, orgId: 1, read: 1 });  // Unread notifications
 
 export default mongoose.models.Notification ||
     mongoose.model<INotification>("Notification", NotificationSchema);

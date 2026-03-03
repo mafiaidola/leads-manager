@@ -12,6 +12,7 @@ export async function authenticate(
         await signIn("credentials", {
             username: formData.get("username") as string,
             password: formData.get("password") as string,
+            orgSlug: formData.get("orgSlug") as string,
             redirect: false,
         });
     } catch (error) {

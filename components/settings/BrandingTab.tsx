@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Palette, Sparkles, Download, Save, Check, HardDrive, FileDown } from "lucide-react";
+import { Palette, Sparkles, Save, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BrandingTabProps {
@@ -13,13 +13,12 @@ interface BrandingTabProps {
     onBrandingChange: (branding: { appName: string; accentColor: string; logoUrl: string }) => void;
     onSaveBranding: () => void;
     onChangeTheme: (theme: "violet" | "ocean" | "emerald") => void;
-    onBackup: () => void;
 }
 
 export function BrandingTab({
     branding, currentTheme,
     onBrandingChange, onSaveBranding,
-    onChangeTheme, onBackup,
+    onChangeTheme,
 }: BrandingTabProps) {
     return (
         <>
@@ -174,27 +173,7 @@ export function BrandingTab({
                 </Card>
             </div>
 
-            {/* Data Management - separated as full width */}
-            <div className="mt-6">
-                <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold flex items-center gap-2">
-                            <Download className="h-5 w-5 text-green-500" />
-                            Data Management
-                        </CardTitle>
-                        <CardDescription className="text-muted-foreground/80">Export and backup your data.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="p-6 rounded-2xl bg-green-500/5 border border-green-500/10">
-                            <h3 className="font-bold text-sm mb-2">Full Backup</h3>
-                            <p className="text-xs text-muted-foreground mb-4">Download all leads, users, settings, notes, and actions as a JSON file.</p>
-                            <Button onClick={onBackup} className="rounded-xl bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/20">
-                                <Download className="h-4 w-4 mr-2" />Download Backup (.json)
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+
         </>
     );
 }

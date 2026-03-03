@@ -18,6 +18,7 @@ export async function GET() {
     }
 
     const userId = (session.user as any).id;
+    const orgId = (session.user as any).orgId;
 
     const encoder = new TextEncoder();
     let isClosed = false;
@@ -42,7 +43,9 @@ export async function GET() {
                 if (isClosed) return;
                 try {
                     await dbConnect();
-                    const unread = await Notification.find({ userId, read: false })
+                    const filter: any = { userId, read: false };
+                    if (orgId) filter.orgId = orgId;
+                    const unread = await Notification.find(filter)
                         .sort({ createdAt: -1 })
                         .limit(20)
                         .lean();

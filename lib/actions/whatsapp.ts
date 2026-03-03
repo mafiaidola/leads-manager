@@ -18,7 +18,7 @@ export async function getWhatsAppConfig() {
 
     try {
         await dbConnect();
-        const config = await WhatsAppConfig.findOne({ userId: session.user.id }).lean();
+        const config = await WhatsAppConfig.findOne({ userId: session.user.id, ...(session.user.orgId ? { orgId: session.user.orgId } : {}) }).lean();
         if (!config) return null;
         return {
             connected: config.connected,
@@ -41,7 +41,7 @@ export async function disconnectWhatsApp() {
 
     try {
         await dbConnect();
-        await WhatsAppConfig.deleteOne({ userId: session.user.id });
+        await WhatsAppConfig.deleteOne({ userId: session.user.id, ...(session.user.orgId ? { orgId: session.user.orgId } : {}) });
         return { success: true };
     } catch (error) {
         console.error("disconnectWhatsApp error:", error);
@@ -61,13 +61,13 @@ export async function sendWhatsAppMessage(leadId: string, message: string) {
         await dbConnect();
 
         // Get user's WA config
-        const config = await WhatsAppConfig.findOne({ userId: session.user.id });
+        const config = await WhatsAppConfig.findOne({ userId: session.user.id, ...(session.user.orgId ? { orgId: session.user.orgId } : {}) });
         if (!config || !config.connected) {
             return { error: "WhatsApp not connected. Go to Settings → WhatsApp to connect." };
         }
 
         // Get lead phone number
-        const lead = await Lead.findById(leadId);
+        const lead = await Lead.findOne({ _id: leadId, ...(session.user.orgId ? { orgId: session.user.orgId } : {}) });
         if (!lead) return { error: "Lead not found" };
         if (!lead.phone) return { error: "Lead has no phone number" };
 
@@ -102,6 +102,7 @@ export async function sendWhatsAppMessage(leadId: string, message: string) {
 
         // Log as LeadNote
         await LeadNote.create({
+            orgId: session.user.orgId,
             leadId: lead._id,
             authorId: session.user.id,
             type: NOTE_TYPES.SYSTEM,
@@ -135,12 +136,12 @@ export async function sendWhatsAppTemplate(
     try {
         await dbConnect();
 
-        const config = await WhatsAppConfig.findOne({ userId: session.user.id });
+        const config = await WhatsAppConfig.findOne({ userId: session.user.id, ...(session.user.orgId ? { orgId: session.user.orgId } : {}) });
         if (!config || !config.connected) {
             return { error: "WhatsApp not connected. Go to Settings → WhatsApp to connect." };
         }
 
-        const lead = await Lead.findById(leadId);
+        const lead = await Lead.findOne({ _id: leadId, ...(session.user.orgId ? { orgId: session.user.orgId } : {}) });
         if (!lead) return { error: "Lead not found" };
         if (!lead.phone) return { error: "Lead has no phone number" };
 
@@ -188,6 +189,7 @@ export async function sendWhatsAppTemplate(
         }
 
         await LeadNote.create({
+            orgId: session.user.orgId,
             leadId: lead._id,
             authorId: session.user.id,
             type: NOTE_TYPES.SYSTEM,

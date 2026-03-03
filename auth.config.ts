@@ -10,6 +10,11 @@ export const authConfig = {
             const isLoggedIn = !!auth?.user;
             const isOnLogin = nextUrl.pathname.startsWith("/login");
 
+            // API routes for public org listing
+            if (nextUrl.pathname === "/api/organizations/public") {
+                return true;
+            }
+
             // Login page is always accessible
             if (isOnLogin) {
                 // Redirect logged-in users away from login to dashboard
@@ -24,7 +29,11 @@ export const authConfig = {
         async jwt({ token, user }: { token: any; user: any }) {
             if (user) {
                 token.role = user.role;
-                token.id = user.id || user._id; // Ensure ID is available
+                token.id = user.id || user._id;
+                token.orgId = user.orgId;
+                token.orgSlug = user.orgSlug;
+                token.orgName = user.orgName;
+                token.isSuperAdmin = user.isSuperAdmin || false;
             }
             return token;
         },
@@ -32,6 +41,10 @@ export const authConfig = {
             if (token) {
                 session.user.role = token.role;
                 session.user.id = token.id;
+                session.user.orgId = token.orgId;
+                session.user.orgSlug = token.orgSlug;
+                session.user.orgName = token.orgName;
+                session.user.isSuperAdmin = token.isSuperAdmin || false;
             }
             return session;
         },

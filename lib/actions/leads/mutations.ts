@@ -42,9 +42,11 @@ const LeadSchema = z.object({
 export async function createLead(prevState: any, formData: FormData) {
     const session = await auth();
     // Allow ADMIN and MARKETING to create leads
-    if (!session || (session.user.role !== USER_ROLES.ADMIN && session.user.role !== USER_ROLES.MARKETING)) {
+    if (!session || !session.user.orgId || (session.user.role !== USER_ROLES.ADMIN && session.user.role !== USER_ROLES.MARKETING)) {
         return { message: "Unauthorized" };
     }
+
+    const orgId = session.user.orgId;
 
     const rawFormData = Object.fromEntries(formData.entries());
     const validatedFields = LeadSchema.safeParse(rawFormData);
@@ -61,7 +63,7 @@ export async function createLead(prevState: any, formData: FormData) {
         const sanitizedPhone = rest.phone.replace(/[^0-9]/g, "");
         rest.phone = sanitizedPhone; // Store sanitized
         await dbConnect();
-        const existingLead = await Lead.findOne({ phone: sanitizedPhone, deletedAt: null });
+        const existingLead = await Lead.findOne({ phone: sanitizedPhone, deletedAt: null, orgId });
         if (existingLead) {
             return { message: `Lead with this phone number already exists (${existingLead.name}).`, duplicate: true };
         }
@@ -70,6 +72,7 @@ export async function createLead(prevState: any, formData: FormData) {
     try {
         await dbConnect();
         const newLead = await Lead.create({
+            orgId,
             ...rest,
             countryCode: rest.countryCode || "971",
             followUpDate: rest.followUpDate ? new Date(rest.followUpDate) : undefined,
@@ -95,6 +98,7 @@ export async function createLead(prevState: any, formData: FormData) {
 
         // Create SYSTEM note
         await LeadNote.create({
+            orgId,
             leadId: newLead._id,
             type: NOTE_TYPES.SYSTEM,
             message: "Lead created",
@@ -105,6 +109,7 @@ export async function createLead(prevState: any, formData: FormData) {
         // If assigned, create assignment note
         if (assignedTo) {
             await LeadNote.create({
+                orgId,
                 leadId: newLead._id,
                 authorId: new mongoose.Types.ObjectId(session.user.id),
                 authorRole: session.user.role,
@@ -138,7 +143,7 @@ export async function createLead(prevState: any, formData: FormData) {
 
 export async function updateLead(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized" };
 
     const rawFormData = Object.fromEntries(formData.entries());
     const id = rawFormData.id as string;
@@ -154,7 +159,7 @@ export async function updateLead(prevState: any, formData: FormData) {
 
     try {
         await dbConnect();
-        const lead = await Lead.findById(id);
+        const lead = await Lead.findOne({ _id: id, orgId: session.user.orgId });
         if (!lead) return { message: "Lead not found" };
 
         // RBAC: Admin or assigned Sales can update. Marketing cannot edit.
@@ -169,7 +174,7 @@ export async function updateLead(prevState: any, formData: FormData) {
         if (rest.phone) {
             const sanitizedPhone = rest.phone.replace(/[^0-9]/g, "");
             rest.phone = sanitizedPhone;
-            const existingLead = await Lead.findOne({ phone: sanitizedPhone, deletedAt: null, _id: { $ne: id } });
+            const existingLead = await Lead.findOne({ phone: sanitizedPhone, deletedAt: null, orgId: session.user.orgId, _id: { $ne: id } });
             if (existingLead) {
                 return { message: `Phone number already belongs to "${existingLead.name}". Duplicates not allowed.`, duplicate: true };
             }
@@ -254,7 +259,7 @@ export async function updateLead(prevState: any, formData: FormData) {
 
 export async function updateLeadStatus(id: string, newStatus: string) {
     const session = await auth();
-    if (!session) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized" };
 
     // Marketing cannot change status
     if (session.user.role === USER_ROLES.MARKETING) {
@@ -263,7 +268,7 @@ export async function updateLeadStatus(id: string, newStatus: string) {
 
     try {
         await dbConnect();
-        const lead = await Lead.findById(id);
+        const lead = await Lead.findOne({ _id: id, orgId: session.user.orgId });
         if (!lead) return { message: "Lead not found" };
 
         if (session.user.role !== USER_ROLES.ADMIN && lead.assignedTo?.toString() !== session.user.id) {
@@ -276,6 +281,7 @@ export async function updateLeadStatus(id: string, newStatus: string) {
         await lead.save();
 
         await LeadNote.create({
+            orgId: session.user.orgId,
             leadId: new mongoose.Types.ObjectId(id),
             authorId: new mongoose.Types.ObjectId(session.user.id),
             authorRole: session.user.role,
@@ -314,7 +320,7 @@ export async function deleteLead(id: string) {
     try {
         await dbConnect();
         // Soft delete — move to recycle bin
-        const lead = await Lead.findByIdAndUpdate(id, { deletedAt: new Date() });
+        const lead = await Lead.findOneAndUpdate({ _id: id, orgId: session.user.orgId }, { deletedAt: new Date() });
         if (!lead) return { message: "Lead not found" };
 
         logAudit(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.LEAD, id, `Soft deleted lead: ${lead.name}`);
@@ -331,12 +337,12 @@ export async function deleteLead(id: string) {
 
 export async function toggleStarLead(leadId: string) {
     const session = await auth();
-    if (!session) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized" };
 
     try {
         await dbConnect();
         const userId = new mongoose.Types.ObjectId(session.user.id);
-        const lead = await Lead.findById(leadId);
+        const lead = await Lead.findOne({ _id: leadId, orgId: session.user.orgId });
         if (!lead) return { message: "Lead not found" };
 
         const isStarred = lead.starred.some((s: any) => s.toString() === session.user.id);
@@ -364,7 +370,7 @@ export async function transferLead(leadId: string, toUserId: string) {
 
     try {
         await dbConnect();
-        const lead = await Lead.findById(leadId);
+        const lead = await Lead.findOne({ _id: leadId, orgId: session.user.orgId });
         if (!lead) return { message: "Lead not found" };
 
         const previousAssignedTo = lead.assignedTo?.toString() || "Unassigned";
@@ -374,6 +380,7 @@ export async function transferLead(leadId: string, toUserId: string) {
 
         // Log transfer as a system note
         await LeadNote.create({
+            orgId: session.user.orgId,
             leadId,
             authorId: new mongoose.Types.ObjectId(session.user.id),
             authorRole: "SYSTEM",

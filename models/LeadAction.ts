@@ -13,6 +13,7 @@ export type ActionType = (typeof ACTION_TYPES)[keyof typeof ACTION_TYPES];
 
 export interface ILeadAction {
     _id: mongoose.Types.ObjectId;
+    orgId: mongoose.Types.ObjectId;
     leadId: mongoose.Types.ObjectId;
     authorId: mongoose.Types.ObjectId;
     type: ActionType;
@@ -26,6 +27,7 @@ export interface ILeadAction {
 
 const LeadActionSchema = new Schema<ILeadAction>(
     {
+        orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
         leadId: { type: Schema.Types.ObjectId, ref: "Lead", required: true, index: true },
         authorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
         type: {
@@ -40,6 +42,9 @@ const LeadActionSchema = new Schema<ILeadAction>(
     },
     { timestamps: true }
 );
+
+// ─── Compound indexes ──────────────────────────────────────────────
+LeadActionSchema.index({ leadId: 1, createdAt: -1 });  // Timeline queries
 
 const LeadAction: Model<ILeadAction> =
     models.LeadAction || mongoose.model<ILeadAction>("LeadAction", LeadActionSchema);
