@@ -46,11 +46,14 @@ export async function GET() {
             },
         };
 
-        return new NextResponse(JSON.stringify(backup, null, 2), {
+        const jsonStr = JSON.stringify(backup, null, 2);
+        // UTF-8 BOM ensures Arabic + English names render correctly in editors
+        const bom = '\uFEFF';
+        return new NextResponse(bom + jsonStr, {
             status: 200,
             headers: {
-                "Content-Type": "application/json",
-                "Content-Disposition": `attachment; filename="leads-backup-${new Date().toISOString().slice(0, 10)}.json"`,
+                "Content-Type": "application/json; charset=utf-8",
+                "Content-Disposition": `attachment; filename*=UTF-8''leads-backup-${new Date().toISOString().slice(0, 10)}.json`,
             },
         });
     } catch (error) {

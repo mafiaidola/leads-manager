@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut, Shield, Building2 } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { handleSignOut } from "@/lib/actions/auth";
 
@@ -64,7 +64,7 @@ export function Sidebar({ className, userRole, orgBranding, isSuperAdmin }: { cl
                     </div>
                     <div>
                         <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-white/70">{orgBranding?.appName || "Leads Mgr"}</h1>
-                        <p className="text-xs text-muted-foreground font-medium">Pro Edition</p>
+                        <p className="text-xs text-muted-foreground font-medium">Exclusive Edition</p>
                     </div>
                 </Link>
 
@@ -94,16 +94,6 @@ export function Sidebar({ className, userRole, orgBranding, isSuperAdmin }: { cl
                     })}
                 </div>
 
-                {/* SuperAdmin: Switch Organization */}
-                {isSuperAdmin && (
-                    <Link
-                        href="/settings?tab=organizations"
-                        className="flex items-center gap-3 p-3 text-sm font-medium text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-colors mb-2"
-                    >
-                        <Building2 className="h-5 w-5" />
-                        Manage Orgs
-                    </Link>
-                )}
 
                 {/* Logout Area */}
                 <div className="mt-auto pt-4 border-t border-white/10">

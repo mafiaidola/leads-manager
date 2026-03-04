@@ -71,7 +71,7 @@ export function TeamTab({ users, allRoles }: TeamTabProps) {
     return (
         <>
             <div className="grid gap-6 md:grid-cols-5">
-                <Card className="md:col-span-2 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden self-start">
+                <Card className="md:col-span-2 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl self-start">
                     <CardHeader>
                         <CardTitle className="text-lg font-bold flex items-center gap-2">
                             <UserPlus className="h-5 w-5 text-violet-500" />

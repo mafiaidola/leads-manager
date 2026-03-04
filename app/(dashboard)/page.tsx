@@ -32,7 +32,7 @@ export default async function DashboardPage() {
     const stats = serialize(rawStats);
     const conversionRate = stats.totalLeads > 0 ? parseFloat(((stats.customers / stats.totalLeads) * 100).toFixed(1)) : 0;
 
-    const greeting = "مرحبا";
+    const greeting = "Welcome back";
     const firstName = session?.user?.name?.split(" ")[0] || "";
 
     // Sparkline data from monthly trends

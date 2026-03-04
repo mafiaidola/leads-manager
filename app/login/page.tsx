@@ -87,7 +87,7 @@ export default function LoginPage() {
                     <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-white">
                         {displayName}
                         <span className="text-primary block text-center text-sm font-medium tracking-widest uppercase mt-1 opacity-70">
-                            Pro Edition
+                            Exclusive Edition
                         </span>
                     </h1>
                 </div>

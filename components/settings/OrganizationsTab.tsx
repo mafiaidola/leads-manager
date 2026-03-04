@@ -736,7 +736,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                         </div>
                                                         <div>
                                                             <p className="font-semibold">{brandForm.appName || org.name}</p>
-                                                            <p className="text-xs text-muted-foreground">Pro Edition</p>
+                                                            <p className="text-xs text-muted-foreground">Exclusive Edition</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1093,8 +1093,8 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                 onClick={confirmAction.onConfirm}
                                 disabled={loading}
                                 className={`rounded-xl text-white ${confirmAction.variant === "danger"
-                                        ? "bg-red-600 hover:bg-red-700"
-                                        : "bg-amber-600 hover:bg-amber-700"
+                                    ? "bg-red-600 hover:bg-red-700"
+                                    : "bg-amber-600 hover:bg-amber-700"
                                     }`}
                             >
                                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}

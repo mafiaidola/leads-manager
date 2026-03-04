@@ -32,7 +32,6 @@ const UserSchema = new Schema<IUser>(
         passwordHash: { type: String, required: true },
         role: {
             type: String,
-            enum: Object.values(USER_ROLES),
             default: USER_ROLES.SALES,
         },
         isSuperAdmin: { type: Boolean, default: false },
