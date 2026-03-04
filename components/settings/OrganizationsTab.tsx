@@ -119,6 +119,14 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
     const [showClone, setShowClone] = useState<string | null>(null);
     const [cloneForm, setCloneForm] = useState({ name: "", slug: "", adminName: "", adminUsername: "", adminPassword: "" });
 
+    // Confirmation dialog state (replaces window.confirm)
+    const [confirmAction, setConfirmAction] = useState<{
+        title: string;
+        message: string;
+        variant: "danger" | "warning";
+        onConfirm: () => void;
+    } | null>(null);
+
     // Helper: is this the main org?
     const isMainOrg = (orgId: string) => orgId === currentOrgId;
 
@@ -274,22 +282,38 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
         setLoading(false);
     };
 
-    const handleDeactivate = async (orgId: string) => {
-        if (!confirm("Deactivate this organization? Users will no longer be able to log in.")) return;
-        setLoading(true);
-        const res = await deleteOrganization(orgId);
-        toast({ title: res.error || "Organization deactivated" });
-        if (!res.error) window.location.reload();
-        setLoading(false);
+    const handleDeactivate = (orgId: string) => {
+        setConfirmAction({
+            title: "Deactivate Organization",
+            message: "Are you sure? Users will no longer be able to log in to this organization.",
+            variant: "danger",
+            onConfirm: async () => {
+                setConfirmAction(null);
+                setLoading(true);
+                const res = await deleteOrganization(orgId);
+                toast({ title: res.error || "✅ Organization deactivated" });
+                if (!res.error) window.location.reload();
+                setLoading(false);
+            },
+        });
     };
 
-    const handleSuspend = async (orgId: string, suspend: boolean) => {
-        if (!confirm(suspend ? "Suspend this organization? All users will be blocked from login." : "Resume this organization? All users will be reactivated.")) return;
-        setLoading(true);
-        const res = await suspendOrganization(orgId, suspend);
-        toast({ title: res.error || res.message || "Done" });
-        if (!res.error) window.location.reload();
-        setLoading(false);
+    const handleSuspend = (orgId: string, suspend: boolean) => {
+        setConfirmAction({
+            title: suspend ? "Suspend Organization" : "Resume Organization",
+            message: suspend
+                ? "Suspend this organization? All users will be blocked from logging in."
+                : "Resume this organization? All users will be reactivated.",
+            variant: suspend ? "warning" : "warning",
+            onConfirm: async () => {
+                setConfirmAction(null);
+                setLoading(true);
+                const res = await suspendOrganization(orgId, suspend);
+                toast({ title: res.error || res.message || "✅ Done" });
+                if (!res.error) window.location.reload();
+                setLoading(false);
+            },
+        });
     };
 
     const handleClone = async (sourceOrgId: string) => {
@@ -321,17 +345,24 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
         setLoading(false);
     };
 
-    const handleRemoveUser = async (orgId: string, userId: string, userName: string) => {
-        if (!confirm(`Remove user "${userName}" from this organization? This action cannot be undone.`)) return;
-        setLoading(true);
-        const res = await removeOrgUser(orgId, userId);
-        if (res.error) {
-            toast({ title: res.error, variant: "destructive" });
-        } else {
-            toast({ title: "✅ User removed!" });
-            loadUsers(orgId);
-        }
-        setLoading(false);
+    const handleRemoveUser = (orgId: string, userId: string, userName: string) => {
+        setConfirmAction({
+            title: "Remove User",
+            message: `Remove user "${userName}" from this organization? This action cannot be undone.`,
+            variant: "danger",
+            onConfirm: async () => {
+                setConfirmAction(null);
+                setLoading(true);
+                const res = await removeOrgUser(orgId, userId);
+                if (res.error) {
+                    toast({ title: res.error, variant: "destructive" });
+                } else {
+                    toast({ title: "✅ User removed!" });
+                    loadUsers(orgId);
+                }
+                setLoading(false);
+            },
+        });
     };
 
     const handleExport = async (orgId: string, orgName: string, format: "excel" | "pdf" | "word", lang: "en" | "ar") => {
@@ -1045,6 +1076,34 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                     </Card>
                 )}
             </div>
+
+            {/* ── Confirmation Dialog (replaces window.confirm) ── */}
+            {confirmAction && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setConfirmAction(null)}>
+                    <div className="bg-card border border-white/10 rounded-2xl shadow-2xl p-6 max-w-md w-[90vw] space-y-4" onClick={(e) => e.stopPropagation()}>
+                        <h3 className={`text-lg font-bold ${confirmAction.variant === "danger" ? "text-red-400" : "text-amber-400"}`}>
+                            {confirmAction.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{confirmAction.message}</p>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <Button variant="ghost" onClick={() => setConfirmAction(null)} className="rounded-xl">
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={confirmAction.onConfirm}
+                                disabled={loading}
+                                className={`rounded-xl text-white ${confirmAction.variant === "danger"
+                                        ? "bg-red-600 hover:bg-red-700"
+                                        : "bg-amber-600 hover:bg-amber-700"
+                                    }`}
+                            >
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                                Confirm
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

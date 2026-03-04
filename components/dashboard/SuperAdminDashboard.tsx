@@ -119,9 +119,9 @@ export function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
                             {(stats.recentActivity || []).map((item, idx) => (
                                 <div key={idx} className="flex items-center gap-3 py-2 px-3 rounded-xl hover:bg-white/[0.03] transition-all">
                                     <div className={`h-2 w-2 rounded-full flex-shrink-0 ${item.action === "CREATE" ? "bg-green-400" :
-                                            item.action === "UPDATE" ? "bg-blue-400" :
-                                                item.action === "DELETE" ? "bg-red-400" :
-                                                    "bg-gray-400"
+                                        item.action === "UPDATE" ? "bg-blue-400" :
+                                            item.action === "DELETE" ? "bg-red-400" :
+                                                "bg-gray-400"
                                         }`} />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs truncate">
@@ -158,7 +158,7 @@ export function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
                         {stats.orgStats.map((org, idx) => (
                             <div
                                 key={org.orgId}
-                                className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.02] transition-all group"
+                                className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4 hover:bg-white/[0.02] transition-all group flex-wrap"
                             >
                                 {/* Rank */}
                                 <span className="text-xs font-bold text-muted-foreground w-6 text-center">
@@ -178,8 +178,8 @@ export function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
                                 </div>
 
                                 {/* Name */}
-                                <div className="min-w-[120px]">
-                                    <p className="text-sm font-semibold">{org.orgName}</p>
+                                <div className="min-w-0 flex-1 sm:min-w-[120px]">
+                                    <p className="text-sm font-semibold truncate">{org.orgName}</p>
                                     <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                                         <Globe className="h-2.5 w-2.5" /> {org.orgSlug}
                                     </p>
@@ -199,7 +199,7 @@ export function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
                                 </div>
 
                                 {/* Stats */}
-                                <div className="flex items-center gap-4 text-xs">
+                                <div className="flex items-center gap-3 sm:gap-4 text-xs ml-auto">
                                     <div className="text-center">
                                         <p className="font-bold text-foreground">{org.totalLeads}</p>
                                         <p className="text-muted-foreground">Leads</p>
