@@ -3,7 +3,7 @@
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Notification from "@/models/Notification";
-import User from "@/models/User";
+import User, { USER_ROLES } from "@/models/User";
 import mongoose from "mongoose";
 
 export type NotificationType =
@@ -51,7 +51,7 @@ export async function createNotification({
 export async function getAdminUserIds(): Promise<string[]> {
     const session = await auth();
     await dbConnect();
-    const filter: any = { role: { $in: ["admin", "marketing"] } };
+    const filter: any = { role: { $in: [USER_ROLES.ADMIN, USER_ROLES.MARKETING] } };
     if (session?.user?.orgId) filter.orgId = session.user.orgId;
     const admins = await User.find(filter).select("_id").lean();
     return admins.map((u: any) => u._id.toString());
