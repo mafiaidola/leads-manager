@@ -68,10 +68,12 @@ export async function GET(req: NextRequest) {
         // ─── CSV ───
         if (format === "csv") {
             const csvString = Papa.unparse(rows);
-            return new NextResponse(csvString, {
+            // UTF-8 BOM ensures Arabic + English names render correctly in Excel/editors
+            const bom = '\uFEFF';
+            return new NextResponse(bom + csvString, {
                 headers: {
-                    "Content-Type": "text/csv",
-                    "Content-Disposition": `attachment; filename="leads-export-${dateStr}.csv"`,
+                    "Content-Type": "text/csv; charset=utf-8",
+                    "Content-Disposition": `attachment; filename*=UTF-8''leads-export-${dateStr}.csv`,
                 },
             });
         }
