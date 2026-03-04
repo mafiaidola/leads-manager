@@ -73,8 +73,8 @@ export function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
                             </div>
                             <div className="flex items-center gap-3 mb-4">
                                 <div
-                                    className="h-12 w-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
-                                    style={{ background: `linear-gradient(135deg, ${stats.topPerformer.accentColor}, ${stats.topPerformer.accentColor}99)` }}
+                                    className="h-12 w-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg accent-gradient-logo"
+                                    style={{ '--accent': stats.topPerformer.accentColor } as React.CSSProperties}
                                 >
                                     {stats.topPerformer.orgLogo ? (
                                         <img src={stats.topPerformer.orgLogo} alt="" className="h-7 w-7 object-contain" />
@@ -167,8 +167,8 @@ export function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
 
                                 {/* Logo */}
                                 <div
-                                    className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md"
-                                    style={{ background: `linear-gradient(135deg, ${org.accentColor}, ${org.accentColor}99)` }}
+                                    className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md accent-gradient-logo"
+                                    style={{ '--accent': org.accentColor } as React.CSSProperties}
                                 >
                                     {org.orgLogo ? (
                                         <img src={org.orgLogo} alt="" className="h-6 w-6 object-contain" />
@@ -189,11 +189,11 @@ export function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
                                 <div className="flex-1 hidden md:block">
                                     <div className="h-4 bg-white/5 rounded-full overflow-hidden">
                                         <div
-                                            className="h-full rounded-full transition-all duration-500"
+                                            className="h-full rounded-full transition-all duration-500 accent-gradient-bar"
                                             style={{
                                                 width: `${Math.max((org.totalLeads / maxLeads) * 100, 3)}%`,
-                                                background: `linear-gradient(90deg, ${org.accentColor}, ${org.accentColor}88)`,
-                                            }}
+                                                '--accent': org.accentColor,
+                                            } as React.CSSProperties}
                                         />
                                     </div>
                                 </div>
@@ -250,11 +250,11 @@ export function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
                                         <div className="w-[100px] text-xs font-medium truncate">{org.orgName}</div>
                                         <div className="flex-1 h-8 bg-white/5 rounded-xl overflow-hidden relative">
                                             <div
-                                                className="h-full rounded-xl flex items-center px-3 transition-all duration-700"
+                                                className="h-full rounded-xl flex items-center px-3 transition-all duration-700 accent-gradient-bar-soft"
                                                 style={{
                                                     width: `${Math.max(pct, 5)}%`,
-                                                    background: `linear-gradient(90deg, ${org.accentColor}cc, ${org.accentColor}55)`,
-                                                }}
+                                                    '--accent': org.accentColor,
+                                                } as React.CSSProperties}
                                             >
                                                 <span className="text-[11px] font-bold text-white whitespace-nowrap">{org.totalLeads} leads</span>
                                             </div>

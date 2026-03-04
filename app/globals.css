@@ -478,3 +478,16 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Dynamic accent gradient utilities (set --accent via style prop) */
+.accent-gradient-logo {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, transparent));
+}
+
+.accent-gradient-bar {
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 53%, transparent));
+}
+
+.accent-gradient-bar-soft {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 80%, transparent), color-mix(in srgb, var(--accent) 33%, transparent));
+}
