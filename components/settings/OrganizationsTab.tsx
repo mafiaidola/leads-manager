@@ -14,7 +14,7 @@ import {
     FileSpreadsheet, FileText, FileDown
 } from "lucide-react";
 import {
-    createOrganization, updateOrganization, deleteOrganization,
+    createOrganization, updateOrganization, deleteOrganization, hardDeleteOrganization,
     updateOrganizationSettings, getOrganizationUsers, addUserToOrganization,
     updateOrgUser, removeOrgUser, suspendOrganization, cloneOrganization
 } from "@/lib/actions/organizations";
@@ -311,6 +311,27 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                 const res = await suspendOrganization(orgId, suspend);
                 toast({ title: res.error || res.message || "✅ Done" });
                 if (!res.error) window.location.reload();
+                setLoading(false);
+            },
+        });
+    };
+
+    const handleHardDelete = (orgId: string, orgName: string) => {
+        setConfirmAction({
+            title: "⚠️ Permanently Delete Organization",
+            message: `This will PERMANENTLY delete "${orgName}" and ALL its data (users, leads, notes, audit logs, notifications). This action CANNOT be undone.`,
+            variant: "danger",
+            onConfirm: async () => {
+                setConfirmAction(null);
+                setLoading(true);
+                const res = await hardDeleteOrganization(orgId);
+                if (res.error) {
+                    toast({ title: res.error, variant: "destructive" });
+                } else {
+                    const s = res.summary;
+                    toast({ title: `✅ "${orgName}" permanently deleted — ${s?.users || 0} users, ${s?.leads || 0} leads, ${s?.notes || 0} notes removed` });
+                    window.location.reload();
+                }
                 setLoading(false);
             },
         });
@@ -636,6 +657,12 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                         {/* Delete */}
                                         {!isMainOrg(org._id) && org.active && (
                                             <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleDeactivate(org._id); }} className="rounded-xl hover:bg-red-500/10 text-red-400">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        {/* Hard delete — only for suspended orgs */}
+                                        {!isMainOrg(org._id) && !org.active && (
+                                            <Button variant="ghost" size="sm" title="Permanently Delete" onClick={(e) => { e.stopPropagation(); handleHardDelete(org._id, org.name); }} className="rounded-xl hover:bg-red-600/20 text-red-500 font-bold">
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         )}

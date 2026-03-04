@@ -14,13 +14,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
 import WhatsAppConnectCard from "@/components/whatsapp/WhatsAppConnectCard";
+import dynamic from "next/dynamic";
 
-// Extracted tab components
+// Static imports for default-visible tabs
 import { GeneralTab } from "./GeneralTab";
 import { ProductsTab } from "./ProductsTab";
-import { TeamTab } from "./TeamTab";
-import { BrandingTab } from "./BrandingTab";
-import { OrganizationsTab } from "./OrganizationsTab";
+
+// Dynamic imports for heavy tabs (loaded on demand)
+const TeamTab = dynamic(() => import("./TeamTab").then(m => ({ default: m.TeamTab })), { ssr: false });
+const BrandingTab = dynamic(() => import("./BrandingTab").then(m => ({ default: m.BrandingTab })), { ssr: false });
+const OrganizationsTab = dynamic(() => import("./OrganizationsTab").then(m => ({ default: m.OrganizationsTab })), { ssr: false });
 
 const ALL_PERMISSIONS = [
     { key: "view_leads", label: "View Leads" },

@@ -408,6 +408,64 @@ export async function deleteOrganization(orgId: string) {
     }
 }
 
+// ─── HARD delete organization + all associated data ─────────────────────────
+export async function hardDeleteOrganization(orgId: string) {
+    const session = await auth();
+    if (!session?.user?.isSuperAdmin) {
+        return { error: "Only super admins can permanently delete organizations." };
+    }
+
+    try {
+        await dbConnect();
+
+        // Safety: prevent deleting the caller's own org
+        if (session.user.orgId === orgId) {
+            return { error: "Cannot delete your own organization." };
+        }
+
+        const org = await Organization.findById(orgId);
+        if (!org) return { error: "Organization not found." };
+
+        const orgFilter = { orgId: new mongoose.Types.ObjectId(orgId) };
+        const db = mongoose.connection.db!;
+
+        // Cascade delete all associated data
+        const [users, leads, notes, actions, logs, notifications] = await Promise.all([
+            User.deleteMany(orgFilter),
+            Lead.deleteMany(orgFilter),
+            db.collection("leadnotes").deleteMany(orgFilter),
+            db.collection("leadactions").deleteMany(orgFilter),
+            db.collection("auditlogs").deleteMany(orgFilter),
+            db.collection("notifications").deleteMany(orgFilter),
+        ]);
+
+        // Delete settings & whatsapp config (may use orgId as string)
+        await Promise.all([
+            db.collection("settings").deleteMany({ orgId }),
+            db.collection("whatsappconfigs").deleteMany({ orgId }),
+        ]);
+
+        // Finally delete the organization itself
+        await Organization.findByIdAndDelete(orgId);
+
+        revalidatePath("/settings");
+        return {
+            success: true,
+            summary: {
+                users: users.deletedCount,
+                leads: leads.deletedCount,
+                notes: notes.deletedCount,
+                actions: actions.deletedCount,
+                logs: logs.deletedCount,
+                notifications: notifications.deletedCount,
+            },
+        };
+    } catch (error: any) {
+        console.error("hardDeleteOrganization error:", error);
+        return { error: error.message || "Failed to permanently delete organization." };
+    }
+}
+
 // ─── Update a user in an organization ───────────────────────────────────────
 export async function updateOrgUser(
     orgId: string,
