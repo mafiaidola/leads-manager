@@ -86,7 +86,7 @@ export function KanbanBoard({ leads, statuses, currentUserId, onLeadClick }: Kan
                     <div
                         key={status.key}
                         className={cn(
-                            "flex-shrink-0 w-[300px] rounded-2xl border border-white/10 bg-card/30 backdrop-blur-xl transition-all",
+                            "flex-shrink-0 w-[260px] sm:w-[300px] rounded-2xl border border-white/10 bg-card/30 backdrop-blur-xl transition-all",
                             isDragOver && "border-primary/50 bg-primary/5 scale-[1.01] shadow-lg shadow-primary/10"
                         )}
                         onDragEnter={(e) => handleDragEnter(e, status.key)}
