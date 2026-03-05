@@ -1,3 +1,16 @@
+/**
+ * @component LeadsToolbar
+ * @description Primary toolbar for the Leads page — manages view toggles,
+ * bulk actions, status/source/assignee filters, tag chips, search, and export.
+ *
+ * Features:
+ * - View toggles: All / Starred / Overdue / Recycle Bin + Table / Board
+ * - Bulk action bar: status change, assignment, delete (appears when items selected)
+ * - Filters: status chips, source dropdown, assignee, value range, created-by role, tags
+ * - Actions: export (CSV/Excel/Word), import, add lead
+ *
+ * Wrapped in `React.memo` — 30+ props, skips re-render unless props change.
+ */
 "use client";
 
 import React from "react";

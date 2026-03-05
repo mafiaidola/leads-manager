@@ -1,3 +1,14 @@
+/**
+ * @component AddLeadDialog
+ * @description Dialog form for creating a new lead.
+ *
+ * Features:
+ * - Zod-validated form fields: name, email, phone (with country code), company,
+ *   status, source, product, value, currency, follow-up date, notes, tags
+ * - Real-time phone duplicate detection
+ * - Admin-only: assignee selection dropdown
+ * - Custom field rendering from org settings
+ */
 "use client";
 
 import { useState, useCallback } from "react";

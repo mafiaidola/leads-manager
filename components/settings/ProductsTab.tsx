@@ -1,3 +1,8 @@
+/**
+ * @component ProductsTab
+ * @description Settings tab for managing products/services and custom lead fields.
+ * Supports field types: text, number, select, date, checkbox, url, email.
+ */
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

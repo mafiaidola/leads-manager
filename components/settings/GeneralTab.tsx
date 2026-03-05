@@ -1,3 +1,8 @@
+/**
+ * @component GeneralTab
+ * @description Settings tab for managing lead statuses, sources, and monthly goals.
+ * Includes inline colour pickers for status/source customisation.
+ */
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

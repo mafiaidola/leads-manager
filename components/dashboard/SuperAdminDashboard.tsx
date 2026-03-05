@@ -1,3 +1,15 @@
+/**
+ * @component SuperAdminDashboard
+ * @description Cross-organisation analytics dashboard for SuperAdmin users.
+ *
+ * Features:
+ * - Global stat cards: total orgs, users, leads, conversion rate
+ * - Organisation leaderboard: bar chart with leads/users per org
+ * - Top performer highlight card
+ * - Recent activity timeline across all orgs
+ *
+ * Wrapped in `React.memo` — single `stats` prop with nested `CrossOrgStats` object.
+ */
 "use client";
 
 import React from "react";

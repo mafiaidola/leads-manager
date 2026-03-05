@@ -1,3 +1,15 @@
+/**
+ * @component KanbanBoard
+ * @description Drag-and-drop Kanban board for visual lead pipeline management.
+ *
+ * Features:
+ * - Columns auto-generated from org statuses with colour-coded headers
+ * - HTML5 drag-and-drop: drag leads between columns to update status
+ * - Cards show serial#, name, company, contact info, value, star toggle
+ * - Calls `updateLeadStatus` server action on drop
+ *
+ * Wrapped in `React.memo` — skips re-render unless leads/statuses change.
+ */
 "use client";
 
 import React, { useState, useRef } from "react";

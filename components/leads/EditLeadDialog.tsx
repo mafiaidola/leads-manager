@@ -1,3 +1,11 @@
+/**
+ * @component EditLeadDialog
+ * @description Dialog form for editing an existing lead (React.memo wrapped).
+ *
+ * Pre-populates form fields from existing lead data.
+ * Validates via Zod schema and calls `updateLead` server action.
+ * Shows loading state during submission.
+ */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

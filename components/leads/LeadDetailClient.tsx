@@ -1,3 +1,14 @@
+/**
+ * @component LeadDetailClient
+ * @description Full-page lead detail view at `/leads/[id]`.
+ *
+ * Features:
+ * - Header with name, serial#, status badge, back navigation
+ * - Tabbed layout: Contact (LeadContactCard), Deal (LeadDealCard), Timeline (LeadTimeline)
+ * - Edit dialog (LeadEditDialog) with React.memo sub-components
+ * - Note/action creation forms with Zod validation
+ * - Status change, star toggle, and delete actions
+ */
 "use client";
 
 import React, { useState, useTransition, useCallback, useMemo } from "react";

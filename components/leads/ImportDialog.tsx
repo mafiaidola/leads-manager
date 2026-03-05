@@ -1,3 +1,14 @@
+/**
+ * @component ImportDialog
+ * @description Multi-step CSV/Excel import wizard for bulk lead creation.
+ *
+ * Features:
+ * - Step 1: File upload (drag-drop or click) — accepts .csv, .xlsx
+ * - Step 2: Column mapping with fuzzy auto-match suggestions
+ * - Step 3: Preview parsed rows with validation indicators
+ * - Step 4: Import execution with progress, success/error summary
+ * - Failed-row CSV download for correction cycles
+ */
 "use client";
 
 import { useState, useRef } from "react";

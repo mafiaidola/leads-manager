@@ -1,3 +1,8 @@
+/**
+ * @component OrganizationsTab
+ * @description SuperAdmin settings tab for multi-tenant org management.
+ * Features: create, suspend, reactivate, clone, hard-delete, switch orgs.
+ */
 "use client";
 
 import { useState, useRef } from "react";

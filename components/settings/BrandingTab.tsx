@@ -1,3 +1,8 @@
+/**
+ * @component BrandingTab
+ * @description Settings tab for organisation branding: app name, logo upload
+ * (via Vercel Blob), and accent colour picker. Live preview of changes.
+ */
 "use client";
 
 import { useState, useRef, useCallback } from "react";

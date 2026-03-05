@@ -1,3 +1,16 @@
+/**
+ * @component LeadDetailsSheet
+ * @description Slide-out sheet for viewing/editing a single lead's details.
+ *
+ * Features:
+ * - Contact card, deal card, and timeline sub-components (via React.memo)
+ * - Edit dialog trigger for quick inline editing
+ * - Status badge with dynamic colour from org settings
+ * - Timeline with notes, actions, and audit log entries
+ *
+ * @prop {string} leadId — ID of the lead to display
+ * @prop {Function} onClose — callback when sheet is dismissed
+ */
 "use client";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";

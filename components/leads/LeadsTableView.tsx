@@ -1,3 +1,16 @@
+/**
+ * @component LeadsTableView
+ * @description Responsive lead data table with mobile card view fallback.
+ *
+ * Features:
+ * - Desktop: sortable columns (name, status, serial#, added, follow-up, value)
+ * - Mobile: card layout with status badges, WhatsApp link, star toggle
+ * - Multi-select checkboxes for bulk operations
+ * - Per-row action menu: edit, delete, transfer, restore
+ * - Empty states for trash / starred / overdue / no-results
+ *
+ * Wrapped in `React.memo` — heaviest component at ~380 lines.
+ */
 "use client";
 
 import React from "react";

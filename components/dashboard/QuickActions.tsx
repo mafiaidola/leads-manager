@@ -1,3 +1,10 @@
+/**
+ * @component QuickActions
+ * @description Dashboard shortcut links — Add Lead, Reports, Export, View All.
+ *
+ * Static component with no props.
+ * Wrapped in `React.memo` — never re-renders once mounted.
+ */
 "use client";
 
 import React from "react";

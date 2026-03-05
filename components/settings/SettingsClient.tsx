@@ -1,3 +1,11 @@
+/**
+ * @component SettingsClient
+ * @description Main settings page client component with 9 tabbed sections:
+ * General, Products, Team, Branding, Roles, Account, System, WhatsApp, Organizations.
+ *
+ * Receives serialised settings, users, and orgs from the server page component.
+ * Renders each tab as a lazy-loaded child component.
+ */
 "use client";
 
 import { useState, useCallback, useMemo } from "react";

@@ -1,3 +1,8 @@
+/**
+ * @component TeamTab
+ * @description Settings tab for team member management (admin-only).
+ * Features: add/edit users, role assignment, enable/disable accounts, password reset.
+ */
 "use client";
 
 import { useState } from "react";

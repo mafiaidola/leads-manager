@@ -1,3 +1,15 @@
+/**
+ * @component QuickStatsBar
+ * @description Horizontal stat cards showing lead counts grouped by status.
+ *
+ * Highlights the active filter with scale-up + coloured background.
+ * Wrapped in `React.memo` — skips re-render unless stats/settings/currentStatus change.
+ *
+ * @prop {Array} stats — `{ status, count }` per status
+ * @prop {object} settings — org settings (provides `.statuses` labels/colours)
+ * @prop {string|null} currentStatus — currently selected status filter
+ * @prop {Function} onStatusClick — callback when a stat card is clicked
+ */
 "use client";
 
 import React from "react";

@@ -1,4 +1,15 @@
-﻿"use client";
+﻿/**
+ * @component LeadsClient
+ * @description Main client orchestrator for the Leads page.
+ *
+ * Manages state for: view mode (table/kanban), search, filters (status, source,
+ * assignee, value range, tags, overdue), sorting, selection, starred/trash views.
+ * Coordinates `LeadsToolbar`, `QuickStatsBar`, `LeadsTableView`/`KanbanBoard`,
+ * `ImportDialog`, `EditLeadDialog`, and `LeadDetailsSheet`.
+ *
+ * Fetches data via server actions and debounces search with 300ms delay.
+ */
+"use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
