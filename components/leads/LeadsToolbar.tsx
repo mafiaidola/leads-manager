@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { ReadonlyURLSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ export interface LeadsToolbarProps {
     onClearSelection: () => void;
 }
 
-export function LeadsToolbar({
+export const LeadsToolbar = React.memo(function LeadsToolbar({
     settings, users, searchParams,
     isAdmin, isMarketing, canAddLead, canSeeAssignment,
     isStarredView, isTrashView, isOverdueView, activeTag, allTags,
@@ -293,4 +294,4 @@ export function LeadsToolbar({
             )}
         </>
     );
-}
+});

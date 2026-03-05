@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, User, GripVertical, Building, Mail, Phone } from "lucide-react";
@@ -17,7 +17,7 @@ interface KanbanBoardProps {
     onLeadClick: (leadId: string) => void;
 }
 
-export function KanbanBoard({ leads, statuses, currentUserId, onLeadClick }: KanbanBoardProps) {
+export const KanbanBoard = React.memo(function KanbanBoard({ leads, statuses, currentUserId, onLeadClick }: KanbanBoardProps) {
     const { toast } = useToast();
     const router = useRouter();
     const [draggedLead, setDraggedLead] = useState<any>(null);
@@ -189,4 +189,4 @@ export function KanbanBoard({ leads, statuses, currentUserId, onLeadClick }: Kan
             })}
         </div>
     );
-}
+});

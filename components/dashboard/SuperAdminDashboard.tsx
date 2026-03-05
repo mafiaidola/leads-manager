@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
     Building2, Users, BarChart3, TrendingUp, ArrowUpRight, Globe,
     Activity, Trophy, Clock, Zap
@@ -38,7 +39,7 @@ interface CrossOrgStats {
     topPerformer?: OrgStat | null;
 }
 
-export function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
+export const SuperAdminDashboard = React.memo(function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
     const maxLeads = Math.max(...stats.orgStats.map(o => o.totalLeads), 1);
 
     return (
@@ -269,7 +270,7 @@ export function SuperAdminDashboard({ stats }: { stats: CrossOrgStats }) {
             )}
         </div>
     );
-}
+});
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
 function GlobalStatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color: string }) {

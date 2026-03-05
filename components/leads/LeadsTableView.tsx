@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -47,7 +48,7 @@ function SortIcon({ field, currentSort, currentDir }: { field: string; currentSo
         : <ChevronDown className="h-3 w-3 ml-1 inline text-primary" />;
 }
 
-export function LeadsTableView({
+export const LeadsTableView = React.memo(function LeadsTableView({
     leads, settings, currentUserId, currentSort, currentDir,
     selectedIds, isAdmin, isMarketing, isSales, canSeeAssignment,
     isTrashView, isStarredView, isOverdueView, now,
@@ -377,4 +378,4 @@ export function LeadsTableView({
             </div>
         </>
     );
-}
+});

@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +11,7 @@ interface QuickStatsBarProps {
     onStatusClick: (status: string) => void;
 }
 
-export function QuickStatsBar({ stats, settings, currentStatus, onStatusClick }: QuickStatsBarProps) {
+export const QuickStatsBar = React.memo(function QuickStatsBar({ stats, settings, currentStatus, onStatusClick }: QuickStatsBarProps) {
     const totalLeads = stats.reduce((acc, curr) => acc + curr.count, 0);
 
     return (
@@ -61,4 +62,4 @@ export function QuickStatsBar({ stats, settings, currentStatus, onStatusClick }:
             })}
         </div>
     );
-}
+});

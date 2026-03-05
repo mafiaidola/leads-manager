@@ -1,9 +1,10 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { Plus, BarChart3, Download, Users } from "lucide-react";
 
-export function QuickActions() {
+export const QuickActions = React.memo(function QuickActions() {
     return (
         <div className="flex flex-wrap gap-3">
             <Link
@@ -36,4 +37,4 @@ export function QuickActions() {
             </Link>
         </div>
     );
-}
+});
