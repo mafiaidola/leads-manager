@@ -1007,7 +1007,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                             <p className="text-xs text-muted-foreground">Merges backup data into this org. Existing data is preserved.</p>
                                                         </div>
                                                     </div>
-                                                    <input ref={backupInputRef} type="file" accept=".json" className="block w-full text-xs text-muted-foreground file:mr-3 file:py-2 file:px-4 file:border-0 file:text-xs file:font-semibold file:bg-amber-500/10 file:text-amber-400 file:rounded-lg hover:file:bg-amber-500/20 file:cursor-pointer cursor-pointer" />
+                                                    <input ref={backupInputRef} type="file" accept=".json" title="Select backup file" aria-label="Select backup file" className="block w-full text-xs text-muted-foreground file:mr-3 file:py-2 file:px-4 file:border-0 file:text-xs file:font-semibold file:bg-amber-500/10 file:text-amber-400 file:rounded-lg hover:file:bg-amber-500/20 file:cursor-pointer cursor-pointer" />
                                                     <Button onClick={() => handleBackupRestore(org._id)} disabled={backupLoading} variant="outline" className="rounded-xl border-amber-500/30 text-amber-400 hover:bg-amber-500/10 w-full">
                                                         {backupLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
                                                         Restore Backup

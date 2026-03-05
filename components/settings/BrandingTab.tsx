@@ -174,6 +174,8 @@ export function BrandingTab({
                                 accept="image/png,image/jpeg,image/webp,image/svg+xml"
                                 className="hidden"
                                 onChange={handleFileSelect}
+                                title="Upload organization logo"
+                                aria-label="Upload organization logo"
                             />
                             {/* Manual URL fallback */}
                             <div className="pt-2 border-t border-white/5">
