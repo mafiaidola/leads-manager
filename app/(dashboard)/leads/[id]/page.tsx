@@ -1,3 +1,9 @@
+/**
+ * @page /leads/[id]
+ * @description Server component for the single lead detail page.
+ * Fetches lead details, timeline, settings, and users.
+ * Renders LeadDetailClient with serialised data.
+ */
 import { auth } from "@/auth";
 import { serialize } from "@/lib/serialize";
 import { getLeadDetails } from "@/lib/actions/leads";

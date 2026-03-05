@@ -1,3 +1,8 @@
+/**
+ * @component HeaderBreadcrumb
+ * @description Top header bar with dynamic breadcrumbs based on pathname,
+ * global search, and notification bell (with SSE-powered real-time count).
+ */
 "use client";
 
 import { usePathname } from "next/navigation";

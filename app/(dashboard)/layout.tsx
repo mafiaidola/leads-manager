@@ -1,3 +1,9 @@
+/**
+ * @layout (dashboard)
+ * @description Root layout for authenticated dashboard pages.
+ * Renders Sidebar, MobileSidebar, HeaderBreadcrumb, NotificationBell.
+ * Enforces auth redirect and applies org branding CSS variables.
+ */
 import { Suspense } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileSidebar } from "@/components/MobileSidebar";

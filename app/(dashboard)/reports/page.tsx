@@ -1,4 +1,9 @@
 export const dynamic = "force-dynamic";
+/**
+ * @page /reports
+ * @description Server component for the reports/analytics page.
+ * Fetches report data and org list for SuperAdmin. Admin-only access.
+ */
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getOrganizations } from "@/lib/actions/organizations";

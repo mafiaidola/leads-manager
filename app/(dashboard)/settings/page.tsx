@@ -1,3 +1,11 @@
+/**
+ * @page /settings
+ * @description Server component for the settings page.
+ * Fetches org settings, users, and org list. Admin-only access.
+ * Renders SettingsClient with 9 tabbed sections.
+ */
+export const dynamic = "force-dynamic";
+
 import { auth } from "@/auth";
 
 import { getSettings } from "@/lib/actions/settings";

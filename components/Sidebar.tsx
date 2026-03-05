@@ -1,3 +1,9 @@
+/**
+ * @component Sidebar
+ * @description Desktop navigation sidebar with org branding, nav links,
+ * role-based menu items, and user profile section.
+ * Collapses to icons-only on hover/toggle.
+ */
 "use client";
 
 import Link from "next/link";

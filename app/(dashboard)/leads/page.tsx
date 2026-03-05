@@ -1,3 +1,9 @@
+/**
+ * @page /leads
+ * @description Server component for the leads list page.
+ * Fetches leads, stats, kanban data, settings, and users in parallel.
+ * Renders LeadsClient with serialised data for table/board views.
+ */
 export const dynamic = "force-dynamic";
 import { serialize } from "@/lib/serialize";
 import { auth } from "@/auth";

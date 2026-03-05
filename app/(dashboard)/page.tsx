@@ -1,3 +1,9 @@
+/**
+ * @page / (Dashboard)
+ * @description Server component for the main dashboard page.
+ * Fetches dashboard stats, cross-org stats (SuperAdmin), and org settings.
+ * Renders KPI cards, charts, recent leads, activity feed, and quick actions.
+ */
 export const dynamic = "force-dynamic";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { getCrossOrgStats } from "@/lib/actions/organizations";

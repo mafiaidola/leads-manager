@@ -1,3 +1,8 @@
+/**
+ * @component MobileSidebar
+ * @description Mobile/tablet hamburger-triggered sidebar (Sheet overlay).
+ * Shows same nav links as desktop Sidebar with org branding.
+ */
 "use client";
 
 import { useState } from "react";

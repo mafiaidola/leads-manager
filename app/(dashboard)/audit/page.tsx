@@ -1,3 +1,9 @@
+/**
+ * @page /audit
+ * @description Server component for the audit log page.
+ * Fetches paginated audit entries with filters. Admin-only access.
+ */
+export const dynamic = "force-dynamic";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { AuditClient } from "@/components/audit/AuditClient";
