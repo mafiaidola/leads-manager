@@ -14,6 +14,10 @@ export const authConfig = {
             if (nextUrl.pathname === "/api/organizations/public") {
                 return true;
             }
+            // Password reset (secured by SEED_SECRET, not session)
+            if (nextUrl.pathname === "/api/auth/reset-password") {
+                return true;
+            }
 
             // Login page is always accessible
             if (isOnLogin) {
