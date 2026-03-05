@@ -1,3 +1,9 @@
+/**
+ * @module components/skeletons/PageSkeletons
+ * @description Skeleton loading components for page transitions.
+ * Exports: DashboardSkeleton, LeadsSkeleton, ReportsSkeleton,
+ * SettingsSkeleton, AuditSkeleton, LeadDetailSkeleton.
+ */
 import { cn } from "@/lib/utils";
 
 function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

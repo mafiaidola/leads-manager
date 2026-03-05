@@ -1,3 +1,8 @@
+/**
+ * @component DashboardAnimations
+ * @description Framer Motion wrapper providing fade-in and stagger animations
+ * for dashboard cards and sections. Exports AnimatedCard and AnimatedSection.
+ */
 "use client";
 
 import { useEffect, useRef, useState, ReactNode } from "react";

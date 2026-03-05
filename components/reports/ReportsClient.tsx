@@ -1,3 +1,9 @@
+/**
+ * @component ReportsClient
+ * @description Interactive reports page client component — charts grid
+ * with lead growth, status breakdown, source analysis, and conversion rate.
+ * Supports date range filters and SuperAdmin cross-org comparison.
+ */
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

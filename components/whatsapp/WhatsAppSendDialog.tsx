@@ -1,3 +1,8 @@
+/**
+ * @component WhatsAppSendDialog
+ * @description Dialog for sending WhatsApp messages to a lead.
+ * Pre-fills recipient phone from lead data and sends via Business API.
+ */
 "use client";
 
 import { useState } from "react";

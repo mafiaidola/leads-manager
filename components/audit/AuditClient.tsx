@@ -1,3 +1,8 @@
+/**
+ * @component AuditClient
+ * @description Client component for the audit log page — paginated table
+ * with action/entity type/user filters, date range, and export.
+ */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

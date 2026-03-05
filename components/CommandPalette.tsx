@@ -1,3 +1,8 @@
+/**
+ * @component CommandPalette
+ * @description Cmd+K global command palette for quick navigation and search.
+ * Keyboard-navigable with fuzzy matching across routes and actions.
+ */
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";

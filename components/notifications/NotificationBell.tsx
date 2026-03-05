@@ -1,3 +1,8 @@
+/**
+ * @component NotificationBell
+ * @description Header notification bell with SSE-powered real-time unread count.
+ * Opens dropdown panel with notification list and mark-as-read actions.
+ */
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";

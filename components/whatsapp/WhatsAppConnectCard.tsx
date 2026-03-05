@@ -1,3 +1,8 @@
+/**
+ * @component WhatsAppConnectCard
+ * @description Settings card for WhatsApp Business connection.
+ * Shows connect/disconnect buttons and current connection status.
+ */
 "use client";
 
 import { useEffect, useState } from "react";

@@ -1,5 +1,11 @@
 "use server";
 
+/**
+ * @module lib/org-scope
+ * @description Helper to extract the current user's orgId from the session.
+ * Returns `{ orgId, userId, role, isSuperAdmin }` or throws if unauthenticated.
+ * Used by server actions to enforce multi-tenant scoping.
+ */
 import { auth } from "@/auth";
 
 /**
