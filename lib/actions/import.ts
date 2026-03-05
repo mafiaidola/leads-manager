@@ -1,3 +1,14 @@
+/**
+ * @module lib/actions/import
+ * @description Server actions for CSV/Excel lead import.
+ *
+ * Exports:
+ * - `importLeadsFromCSV` — parses CSV rows, validates, deduplicates, assigns serials, creates leads
+ * - `importLeadsFromExcel` — parses .xlsx buffer via `xlsx` library, then delegates to shared logic
+ *
+ * Supports duplicate detection by email/phone, auto-assignment by email match,
+ * and batch serial number reservation via Counter model.
+ */
 "use server";
 
 import { auth } from "@/auth";

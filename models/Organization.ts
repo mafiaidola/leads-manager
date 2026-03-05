@@ -1,3 +1,15 @@
+/**
+ * @module models/Organization
+ * @description Mongoose schema for tenants (organisations).
+ *
+ * Features:
+ * - Unique `slug` index for URL-safe identification
+ * - Nested `settings` sub-schema: statuses, sources, products, custom fields, goals
+ * - Nested `branding` sub-schema: appName, logoUrl, accentColor
+ * - Nested `theme` sub-schema: mode (light/dark/system), colours
+ * - `active` boolean for suspend/resume functionality
+ * - Timestamps for creation and modification tracking
+ */
 import mongoose, { Schema, Model, models } from "mongoose";
 
 export interface IOrgStatus {

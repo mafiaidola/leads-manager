@@ -1,3 +1,14 @@
+/**
+ * @module lib/actions/dashboard
+ * @description Server actions for dashboard KPIs and analytics.
+ *
+ * Exports:
+ * - `getDashboardStats` — aggregated stats (total, by-status, conversion rate,
+ *   recent leads, recent activity, monthly trends, goal progress)
+ *
+ * Uses `Promise.all` for parallel fetching.
+ * SuperAdmin gets cross-org analytics via `getCrossOrgStats`.
+ */
 "use server";
 
 import { auth } from "@/auth";

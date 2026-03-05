@@ -1,3 +1,15 @@
+/**
+ * @module lib/constants/countryCodes
+ * @description Country code data for phone input components.
+ *
+ * Exports:
+ * - `countryCodes` — full list with GCC countries prioritised at top
+ * - `DEFAULT_COUNTRY_CODE` — default dial code ("+966" Saudi Arabia)
+ * - `formatPhoneDisplay(countryCode, phone)` — formats for display
+ * - `getFlagForDialCode(dialCode)` — returns emoji flag for a dial code
+ *
+ * Used by `PhoneInputWithCountry` component.
+ */
 export interface CountryCode {
     code: string;   // ISO 3166-1 alpha-2
     dial: string;   // International dialing code (digits only)

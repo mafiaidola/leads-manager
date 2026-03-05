@@ -1,3 +1,14 @@
+/**
+ * @module models/LeadAction
+ * @description Mongoose schema for scheduled lead actions (follow-ups, calls, etc.).
+ *
+ * Features:
+ * - Types: call, whatsapp, email, meeting, follow_up, other
+ * - Org-scoped via `orgId`, linked to lead via `leadId`
+ * - `scheduledAt` for future scheduling, `completedAt` for resolution tracking
+ * - `createdBy` references the authoring user
+ * - Compound index on `{ leadId, createdAt: -1 }` for timeline queries
+ */
 import mongoose, { Schema, Model, models } from "mongoose";
 
 export const ACTION_TYPES = {

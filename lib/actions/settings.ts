@@ -1,3 +1,16 @@
+/**
+ * @module lib/actions/settings
+ * @description Server actions for organisation settings management.
+ *
+ * Exports:
+ * - `getSettings` — retrieves org settings for current user's org
+ * - `updateSettings` — updates statuses, sources, products, custom fields, goals
+ * - `updateBranding` — updates appName, logoUrl, accentColor
+ * - `resetPassword` — admin-initiated password reset for a user
+ * - `changeMyPassword` — self-service password change with old-password verification
+ *
+ * All mutations log audit entries and validate admin privileges.
+ */
 "use server";
 
 import { auth } from "@/auth";

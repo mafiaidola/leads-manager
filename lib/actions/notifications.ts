@@ -1,3 +1,14 @@
+/**
+ * @module lib/actions/notifications
+ * @description Server actions for in-app notification management.
+ *
+ * Exports:
+ * - `createNotification` — creates and broadcasts notification (to admins or specific user)
+ * - `getUnreadNotifications` — returns unread notifications for the current user
+ * - `getAllNotifications` — paginated list of all notifications
+ * - `markNotificationRead` — marks a single notification as read
+ * - `markAllNotificationsRead` — bulk mark-all-read
+ */
 "use server";
 
 import { auth } from "@/auth";

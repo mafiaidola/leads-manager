@@ -1,3 +1,16 @@
+/**
+ * @module models/Lead
+ * @description Mongoose schema for the Lead entity — the core data model.
+ *
+ * Features:
+ * - Multi-tenant isolation via `orgId` (indexed)
+ * - Auto-incrementing `serialNumber` per org (via Counter model)
+ * - Phone uniqueness enforced per org (compound sparse index)
+ * - Text-search index on `name`, `company`, `email`, `phone`, `notes`
+ * - Pre-save hook: trims strings, normalises phone format, generates serial
+ * - Soft-delete via `deletedAt` timestamp
+ * - Starred array tracks per-user starred leads
+ */
 import mongoose, { Schema, Model, models } from "mongoose";
 import { getNextSequence } from "./Counter";
 

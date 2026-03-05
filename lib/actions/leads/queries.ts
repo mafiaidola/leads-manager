@@ -1,3 +1,20 @@
+/**
+ * @module lib/actions/leads/queries
+ * @description Read-only server actions for lead data retrieval.
+ *
+ * Exports:
+ * - `checkDuplicatePhone` — real-time phone duplicate detection
+ * - `getLeadDetails` — single lead with populated assignedTo
+ * - `getLeadTimeline` — notes + actions + audit logs in parallel
+ * - `getLeads` — paginated, filtered, sorted lead list with text search
+ * - `getLeadStats` — status-grouped counts for dashboard stats
+ * - `getKanbanLeads` — leads grouped by status for board view
+ * - `getLeadTimelineById` — notes + actions for lead detail timeline
+ * - `getReportData` — aggregated analytics data for reports page
+ *
+ * All queries are org-scoped via session.user.orgId.
+ * SuperAdmin can filter across organisations.
+ */
 "use server";
 
 import { auth } from "@/auth";

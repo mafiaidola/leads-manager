@@ -1,3 +1,13 @@
+/**
+ * @module lib/actions/leads/notes
+ * @description Server actions for lead timeline entries (notes and actions).
+ *
+ * Exports:
+ * - `addNote` — creates a LeadNote and a corresponding AuditLog entry
+ * - `addLeadAction` — creates a LeadAction (call, meeting, etc.) with dual logging
+ *
+ * Both functions validate via Zod and record the user's role for permission tracking.
+ */
 "use server";
 
 import { auth } from "@/auth";

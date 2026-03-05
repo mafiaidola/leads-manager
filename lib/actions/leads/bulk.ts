@@ -1,3 +1,16 @@
+/**
+ * @module lib/actions/leads/bulk
+ * @description Server actions for bulk lead operations (admin-only).
+ *
+ * Exports:
+ * - `bulkUpdateStatus` — change status of multiple leads at once
+ * - `bulkAssignLeads` — reassign multiple leads to a user
+ * - `bulkDeleteLeads` — soft-delete multiple leads
+ * - `restoreLead` — restore a soft-deleted lead (clears `deletedAt`)
+ * - `permanentDeleteLead` — hard-delete a lead and its notes/actions
+ *
+ * All operations require ADMIN role and log audit entries.
+ */
 "use server";
 
 import { auth } from "@/auth";

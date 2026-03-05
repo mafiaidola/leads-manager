@@ -1,4 +1,18 @@
 /**
+ * @module lib/serialize
+ * @description Converts Mongoose documents to JSON-safe primitives.
+ *
+ * Recursively converts `ObjectId` → `string` and `Date` → ISO string.
+ * Required when passing server-fetched data to React client components
+ * (Next.js does not automatically serialize ObjectId/Date).
+ *
+ * @example
+ * ```ts
+ * const leads = await Lead.find(query).lean();
+ * return serialize(leads); // safe for client components
+ * ```
+ */
+/**
  * Recursively serializes Mongoose lean documents into plain JSON-safe objects.
  * Converts ObjectIds to strings and Dates to ISO strings so they can be
  * safely passed from Server Components to Client Components without

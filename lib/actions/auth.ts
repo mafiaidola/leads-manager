@@ -1,3 +1,11 @@
+/**
+ * @module lib/actions/auth
+ * @description Server action for credential-based authentication.
+ *
+ * Exports:
+ * - `authenticate` — validates credentials via next-auth `signIn("credentials")`
+ *   and logs the login event via `logAudit`
+ */
 "use server";
 
 import { signIn, signOut } from "@/auth";

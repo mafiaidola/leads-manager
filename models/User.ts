@@ -1,3 +1,15 @@
+/**
+ * @module models/User
+ * @description Mongoose schema for application users.
+ *
+ * Features:
+ * - Three roles: ADMIN, MARKETING, SALES (via `USER_ROLES` const enum)
+ * - `isSuperAdmin` flag for cross-organisation access
+ * - bcrypt password hash storage (`passwordHash`)
+ * - Unique `username` per system, unique `email` per org (compound index)
+ * - Soft-disable via `active` boolean
+ * - `orgId` for multi-tenant isolation
+ */
 import mongoose, { Schema, Model, models } from "mongoose";
 
 export const USER_ROLES = {

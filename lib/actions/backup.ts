@@ -1,3 +1,13 @@
+/**
+ * @module lib/actions/backup
+ * @description Server actions for organisation data backup and restore.
+ *
+ * Exports:
+ * - `getBackupData` — fetches all org data (users, leads, notes, actions, audit, notifications)
+ * - `restoreBackup` — restores from a JSON backup with conflict resolution
+ *
+ * Backup format includes UTF-8 BOM for correct Excel/Notepad encoding.
+ */
 "use server";
 
 import { auth } from "@/auth";

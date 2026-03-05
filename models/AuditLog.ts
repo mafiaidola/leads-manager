@@ -1,3 +1,16 @@
+/**
+ * @module models/AuditLog
+ * @description Mongoose schema for compliance audit logging.
+ *
+ * Features:
+ * - Tracks all system actions: CREATE, UPDATE, DELETE, LOGIN, IMPORT,
+ *   EXPORT, TRANSFER, RESTORE, BULK_UPDATE, BULK_DELETE, PASSWORD_RESET
+ * - Entity types: lead, user, organization, settings
+ * - Stores `userName`, `userId`, `entityId`, `details` for full traceability
+ * - Org-scoped via `orgId`
+ * - Compound index on `orgId + createdAt` for efficient pagination
+ * - Non-breaking: logAudit never throws to prevent side-effects
+ */
 import mongoose, { Schema, Model, models } from "mongoose";
 
 export const AUDIT_ACTIONS = {

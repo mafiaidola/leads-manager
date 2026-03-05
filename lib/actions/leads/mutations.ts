@@ -1,3 +1,15 @@
+/**
+ * @module lib/actions/leads/mutations
+ * @description Write server actions for lead CRUD operations.
+ *
+ * Exports:
+ * - `createLead` — Zod-validated creation with duplicate detection & audit trail
+ * - `updateLead` — partial update with Zod validation & change tracking
+ * - `updateLeadStatus` — quick status change with audit logging
+ * - `deleteLead` — soft-delete (sets `deletedAt`)
+ * - `toggleStarLead` — per-user star/unstar toggle
+ * - `transferLead` — reassign lead to a different user with notification
+ */
 "use server";
 
 import { auth } from "@/auth";

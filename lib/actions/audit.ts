@@ -1,3 +1,11 @@
+/**
+ * @module lib/actions/audit
+ * @description Server actions for audit log management.
+ *
+ * Exports:
+ * - `logAudit` — non-throwing audit logger (catches internally to prevent side-effects)
+ * - `getAuditLogs` — paginated, filtered audit log retrieval with user/org/action filters
+ */
 "use server";
 
 import { auth } from "@/auth";

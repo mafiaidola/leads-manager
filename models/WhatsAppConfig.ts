@@ -1,3 +1,14 @@
+/**
+ * @module models/WhatsAppConfig
+ * @description Mongoose schema for WhatsApp Business API configuration per org.
+ *
+ * Features:
+ * - Stores Meta API credentials: `accessToken`, `phoneNumberId`, `wabaId`
+ * - `displayPhone` for human-readable phone display
+ * - `connected` boolean + `connectedAt` timestamp
+ * - Org-scoped via `orgId` (indexed), user-scoped via `userId`
+ * - Created during the OAuth callback flow (/api/whatsapp/callback)
+ */
 import mongoose, { Schema, Model, models } from "mongoose";
 
 export interface IWhatsAppConfig {

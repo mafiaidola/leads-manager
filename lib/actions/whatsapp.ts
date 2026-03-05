@@ -1,3 +1,11 @@
+/**
+ * @module lib/actions/whatsapp
+ * @description Server actions for WhatsApp Business API integration.
+ *
+ * Exports:
+ * - `getWhatsAppConfig` — retrieves the current user's WhatsApp connection status
+ * - `disconnectWhatsApp` — removes the WhatsApp configuration for the current user
+ */
 "use server";
 
 import { auth } from "@/auth";

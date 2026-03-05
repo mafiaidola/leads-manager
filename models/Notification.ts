@@ -1,3 +1,16 @@
+/**
+ * @module models/Notification
+ * @description Mongoose schema for in-app user notifications.
+ *
+ * Features:
+ * - Org-scoped via `orgId`
+ * - User-targeted via `userId`
+ * - Six notification types: new_lead, lead_assigned, status_changed,
+ *   follow_up_due, lead_restored, lead_deleted
+ * - Optional `leadId` reference for deep-linking
+ * - `read` boolean for unread badge count
+ * - Feeds the real-time SSE notification stream
+ */
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface INotification extends Document {

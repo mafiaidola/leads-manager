@@ -1,3 +1,14 @@
+/**
+ * @module models/LeadNote
+ * @description Mongoose schema for lead timeline notes.
+ *
+ * Features:
+ * - Types: note, call_log, email_log, meeting_log, system
+ * - Org-scoped via `orgId`, linked to lead via `leadId`
+ * - `createdBy` references the authoring user
+ * - Compound index on `{ leadId, createdAt: -1 }` for efficient timeline queries
+ * - Timestamps auto-track creation and modification
+ */
 import mongoose, { Schema, Model, models } from "mongoose";
 import { UserRole } from "./User";
 

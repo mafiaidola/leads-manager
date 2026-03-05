@@ -1,3 +1,10 @@
+/**
+ * @module lib/actions/export
+ * @description Server action for SuperAdmin org data export.
+ *
+ * Exports:
+ * - `exportOrgData` — exports all leads for a specific org (SuperAdmin only)
+ */
 "use server";
 
 import { auth } from "@/auth";

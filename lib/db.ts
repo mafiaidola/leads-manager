@@ -1,3 +1,16 @@
+/**
+ * @module lib/db
+ * @description Cached Mongoose connection utility.
+ *
+ * Uses a global `mongoose.connection` cache to prevent connection growth during
+ * Next.js development hot-reloads. Reads `DATABASE_URL` or `MONGODB_URI` from env.
+ *
+ * @example
+ * ```ts
+ * import { connectDB } from "@/lib/db";
+ * await connectDB();
+ * ```
+ */
 import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;

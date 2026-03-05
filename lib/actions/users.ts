@@ -1,3 +1,17 @@
+/**
+ * @module lib/actions/users
+ * @description Server actions for user management (admin-only).
+ *
+ * Exports:
+ * - `createUser` — creates user with hashed password, unique username/email validation
+ * - `updateUser` — updates name, email, role, active status
+ * - `deleteUser` — hard-deletes a user record
+ * - `toggleUserActive` — enables/disables user account
+ * - `getUsers` — lists all users in the current org
+ * - `getSalesUsers` — lists active SALES users for lead assignment dropdowns
+ *
+ * All mutations require ADMIN role and log audit entries.
+ */
 "use server";
 
 import { auth } from "@/auth";

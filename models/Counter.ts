@@ -1,3 +1,14 @@
+/**
+ * @module models/Counter
+ * @description Atomic counter for generating sequential IDs (e.g. lead serial numbers).
+ *
+ * Exports:
+ * - `getNextSequence(name)` — atomically increments and returns the next value
+ * - `getNextSequenceBatch(name, count)` — reserves a batch of sequential values
+ *
+ * Uses MongoDB `findOneAndUpdate` with `$inc` and `upsert` for atomicity.
+ * Counter names are typically formatted as `lead_serial_{orgId}` for per-org isolation.
+ */
 import mongoose, { Schema, Model, models } from "mongoose";
 
 export interface ICounter {

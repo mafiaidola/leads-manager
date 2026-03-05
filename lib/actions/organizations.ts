@@ -1,3 +1,17 @@
+/**
+ * @module lib/actions/organizations
+ * @description Server actions for multi-tenant organisation management (SuperAdmin).
+ *
+ * Exports (15 functions):
+ * - CRUD: `createOrganization`, `getOrganizations`, `getOrgById`, `updateOrg`, `deleteOrganization`
+ * - Lifecycle: `suspendOrganization`, `reactivateOrganization`, `cloneOrganization`
+ * - Analytics: `getCrossOrgStats`, `getActiveOrganizations`
+ * - Hard delete: `hardDeleteOrganization` — cascading 9-collection cleanup
+ * - Settings: `getOrgSettings`, `updateOrgSettings`, `updateOrgBranding`
+ * - Export: `exportOrganization`
+ *
+ * All mutations require SuperAdmin privileges.
+ */
 "use server";
 
 import { auth } from "@/auth";
