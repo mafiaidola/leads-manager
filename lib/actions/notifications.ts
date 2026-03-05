@@ -117,10 +117,9 @@ export async function markNotificationRead(id: string) {
     if (!session) return;
     await dbConnect();
     const userId = (session.user as any).id;
-    await Notification.updateOne(
-        { _id: id, userId },
-        { $set: { read: true } }
-    );
+    const filter: any = { _id: id, userId };
+    if (session.user.orgId) filter.orgId = session.user.orgId;
+    await Notification.updateOne(filter, { $set: { read: true } });
 }
 
 // ─── Mark all notifications as read ───────────────────────────────────────────
@@ -129,5 +128,7 @@ export async function markAllNotificationsRead() {
     if (!session) return;
     await dbConnect();
     const userId = (session.user as any).id;
-    await Notification.updateMany({ userId, read: false }, { $set: { read: true } });
+    const filter: any = { userId, read: false };
+    if (session.user.orgId) filter.orgId = session.user.orgId;
+    await Notification.updateMany(filter, { $set: { read: true } });
 }
