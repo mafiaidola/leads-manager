@@ -56,8 +56,8 @@ export function Sidebar({ className, userRole, orgBranding, isSuperAdmin }: { cl
             <div className="px-4 py-6 flex-1 relative z-10 flex flex-col">
                 <Link href="/" className="flex items-center pl-2 mb-10 group">
                     <div
-                        className="h-10 w-10 rounded-xl mr-3 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform overflow-hidden"
-                        style={orgBranding?.accentColor ? { background: `linear-gradient(135deg, ${orgBranding.accentColor}, ${orgBranding.accentColor}99)` } : undefined}
+                        className="h-10 w-10 rounded-xl mr-3 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform overflow-hidden accent-gradient-logo"
+                        style={orgBranding?.accentColor ? { '--accent': orgBranding.accentColor } as React.CSSProperties : undefined}
                     >
                         {orgBranding?.logoUrl ? (
                             <img src={orgBranding.logoUrl} alt="" className="h-7 w-7 object-contain" />
