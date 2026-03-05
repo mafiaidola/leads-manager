@@ -75,7 +75,13 @@ export default function LoginPage() {
                         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                     )}
                 >
-                    <div className="h-18 w-18 rounded-2xl bg-gradient-to-br from-primary to-primary/70 p-[2px] shadow-2xl shadow-primary/30 group-hover:scale-110 group-hover:shadow-primary/40 transition-all duration-500">
+                    <div
+                        className="h-18 w-18 rounded-2xl bg-gradient-to-br from-primary to-primary/70 p-[2px] shadow-2xl shadow-primary/30 group-hover:scale-110 group-hover:shadow-primary/40 transition-all duration-500"
+                        style={selectedOrg?.accentColor ? {
+                            background: `linear-gradient(to bottom right, ${selectedOrg.accentColor}, ${selectedOrg.accentColor}b3)`,
+                            boxShadow: `0 25px 50px -12px ${selectedOrg.accentColor}4d`,
+                        } : undefined}
+                    >
                         <div className="h-full w-full rounded-[14px] bg-[#09090b] flex items-center justify-center">
                             {selectedOrg?.logo ? (
                                 <img src={selectedOrg.logo} alt="" className="h-9 w-9 object-contain rounded-lg" />
@@ -217,7 +223,7 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
-                            <LoginButton pending={isPending} />
+                            <LoginButton pending={isPending} accentColor={selectedOrg?.accentColor} />
 
                             <div
                                 className="flex h-6 items-end space-x-1"
@@ -250,7 +256,7 @@ export default function LoginPage() {
     );
 }
 
-function LoginButton({ pending }: { pending: boolean }) {
+function LoginButton({ pending, accentColor }: { pending: boolean; accentColor?: string }) {
     return (
         <button
             type="submit"
@@ -258,8 +264,13 @@ function LoginButton({ pending }: { pending: boolean }) {
                 "group relative w-full flex justify-center items-center gap-2 py-4 px-4 rounded-2xl shadow-xl text-base font-bold text-white transition-all duration-300 overflow-hidden",
                 pending
                     ? "bg-primary/50 cursor-not-allowed"
-                    : "bg-gradient-to-r from-primary to-primary/80 hover:shadow-primary/30 hover:shadow-2xl active:scale-[0.98] shadow-lg shadow-primary/20"
+                    : "hover:shadow-2xl active:scale-[0.98] shadow-lg",
+                !accentColor && !pending && "bg-gradient-to-r from-primary to-primary/80 hover:shadow-primary/30 shadow-primary/20"
             )}
+            style={accentColor && !pending ? {
+                background: `linear-gradient(to right, ${accentColor}, ${accentColor}cc)`,
+                boxShadow: `0 10px 25px -5px ${accentColor}33`,
+            } : undefined}
             disabled={pending}
         >
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
