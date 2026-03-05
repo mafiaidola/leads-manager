@@ -218,13 +218,13 @@ export function BrandingTab({
                                             key={preset.color}
                                             onClick={() => onBrandingChange({ ...branding, accentColor: preset.color })}
                                             title={preset.name}
+                                            style={{ '--accent-color': preset.color } as React.CSSProperties}
                                             className={cn(
-                                                "h-9 w-9 rounded-xl transition-all duration-200 hover:scale-110 border-2",
+                                                "h-9 w-9 rounded-xl transition-all duration-200 hover:scale-110 border-2 branding-preview",
                                                 branding.accentColor === preset.color
                                                     ? "border-white shadow-lg scale-110"
                                                     : "border-transparent hover:border-white/30"
                                             )}
-                                            style={{ backgroundColor: preset.color }}
                                         />
                                     ))}
                                 </div>
@@ -268,8 +268,8 @@ export function BrandingTab({
                                 <div className="bg-[#0a0a0a] rounded-2xl p-5 border border-white/10">
                                     <div className="flex items-center gap-3 mb-4">
                                         <div
-                                            className="h-11 w-11 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
-                                            style={{ background: `linear-gradient(135deg, ${branding.accentColor}, ${branding.accentColor}99)` }}
+                                            className="h-11 w-11 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg accent-gradient-logo"
+                                            style={{ '--accent': branding.accentColor } as React.CSSProperties}
                                         >
                                             {branding.logoUrl ? (
                                                 <img src={branding.logoUrl} alt="" className="h-7 w-7 object-contain" />
@@ -298,8 +298,8 @@ export function BrandingTab({
                                 <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Login Page</p>
                                 <div className="bg-gradient-to-br from-[#0a0a0a] to-[#1a1a2e] rounded-2xl p-5 border border-white/10 text-center">
                                     <div
-                                        className="h-14 w-14 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-xl shadow-xl mb-3"
-                                        style={{ background: `linear-gradient(135deg, ${branding.accentColor}, ${branding.accentColor}88)` }}
+                                        className="h-14 w-14 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-xl shadow-xl mb-3 accent-gradient-logo"
+                                        style={{ '--accent': branding.accentColor } as React.CSSProperties}
                                     >
                                         {branding.logoUrl ? (
                                             <img src={branding.logoUrl} alt="" className="h-9 w-9 object-contain" />
@@ -313,8 +313,8 @@ export function BrandingTab({
                                         <div className="h-7 bg-white/5 rounded-lg border border-white/10" />
                                         <div className="h-7 bg-white/5 rounded-lg border border-white/10" />
                                         <div
-                                            className="h-7 rounded-lg text-[10px] font-bold text-white flex items-center justify-center"
-                                            style={{ backgroundColor: branding.accentColor }}
+                                            className="h-7 rounded-lg text-[10px] font-bold text-white flex items-center justify-center branding-preview"
+                                            style={{ '--accent-color': branding.accentColor } as React.CSSProperties}
                                         >
                                             Sign In
                                         </div>

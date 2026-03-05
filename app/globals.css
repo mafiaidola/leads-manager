@@ -491,3 +491,8 @@
 .accent-gradient-bar-soft {
   background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 80%, transparent), color-mix(in srgb, var(--accent) 33%, transparent));
 }
+
+/* Solid accent color preview (set --accent-color via style prop) */
+.branding-preview {
+  background-color: var(--accent-color);
+}

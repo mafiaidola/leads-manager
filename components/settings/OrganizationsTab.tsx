@@ -602,8 +602,8 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                             >
                                 <div className="flex items-center gap-4">
                                     <div
-                                        className="org-logo-swatch h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg text-white font-bold text-xl flex-shrink-0"
-                                        style={{ background: `linear-gradient(135deg, ${org.branding?.accentColor || "#8b5cf6"}, ${org.branding?.accentColor || "#8b5cf6"}99)` }}
+                                        className="org-logo-swatch h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg text-white font-bold text-xl flex-shrink-0 accent-gradient-logo"
+                                        style={{ '--accent': org.branding?.accentColor || '#8b5cf6' } as React.CSSProperties}
                                     >
                                         {org.branding?.logoUrl ? (
                                             <img src={org.branding.logoUrl} alt="" className="h-9 w-9 object-contain" />
@@ -746,7 +746,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                     <div className="space-y-2">
                                                         <Label className="text-sm">Accent Color</Label>
                                                         <div className="flex gap-2 items-center">
-                                                            <div className="org-color-preview h-10 w-10 rounded-xl border border-white/20 shadow-inner flex-shrink-0" style={{ backgroundColor: brandForm.accentColor }} />
+                                                            <div className="org-color-preview h-10 w-10 rounded-xl border border-white/20 shadow-inner flex-shrink-0 branding-preview" style={{ '--accent-color': brandForm.accentColor } as React.CSSProperties} />
                                                             <Input type="color" value={brandForm.accentColor} onChange={e => setBrandForm(f => ({ ...f, accentColor: e.target.value }))} className="h-10 w-16 p-0 border-0 cursor-pointer bg-transparent" />
                                                             <Input value={brandForm.accentColor} onChange={e => setBrandForm(f => ({ ...f, accentColor: e.target.value }))} className="bg-white/5 border-white/10 rounded-xl font-mono text-sm flex-1" maxLength={7} />
                                                         </div>
@@ -758,7 +758,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                 <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/10">
                                                     <p className="text-xs text-muted-foreground mb-3">Preview</p>
                                                     <div className="flex items-center gap-3">
-                                                        <div className="org-preview-logo h-12 w-12 rounded-xl flex items-center justify-center text-white font-bold text-lg" style={{ background: `linear-gradient(135deg, ${brandForm.accentColor}, ${brandForm.accentColor}99)` }}>
+                                                        <div className="org-preview-logo h-12 w-12 rounded-xl flex items-center justify-center text-white font-bold text-lg accent-gradient-logo" style={{ '--accent': brandForm.accentColor } as React.CSSProperties}>
                                                             {brandForm.logoUrl ? <img src={brandForm.logoUrl} alt="" className="h-8 w-8 object-contain" /> : (brandForm.appName || "A").charAt(0).toUpperCase()}
                                                         </div>
                                                         <div>
@@ -784,7 +784,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                         >
                                                             <div className="flex gap-2 mb-3">
                                                                 {t.colors.map((c, i) => (
-                                                                    <div key={i} className="h-8 w-8 rounded-lg" style={{ backgroundColor: c }} />
+                                                                    <div key={i} className="h-8 w-8 rounded-lg branding-preview" style={{ '--accent-color': c } as React.CSSProperties} />
                                                                 ))}
                                                             </div>
                                                             <p className="text-sm font-medium">{t.label}</p>
