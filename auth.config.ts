@@ -10,12 +10,14 @@ export const authConfig = {
             const isLoggedIn = !!auth?.user;
             const isOnLogin = nextUrl.pathname.startsWith("/login");
 
-            // API routes for public org listing
-            if (nextUrl.pathname === "/api/organizations/public") {
-                return true;
-            }
-            // Password reset (secured by SEED_SECRET, not session)
-            if (nextUrl.pathname === "/api/reset-password") {
+            // Public API routes (each has its own internal auth via SEED_SECRET)
+            const publicApiPaths = [
+                "/api/organizations/public",
+                "/api/seed",
+                "/api/promote-super",
+                "/api/reset-password",
+            ];
+            if (publicApiPaths.some(p => nextUrl.pathname.startsWith(p))) {
                 return true;
             }
 
