@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
+/**
+ * @route POST /api/reset-password
+ * @description Admin-only: resets a user's password via bcrypt hash replacement.
+ */
+import { auth } from "@/auth";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 

@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+/**
+ * @route GET /api/migrate-usernames
+ * @description One-time migration: backfills usernames for existing users without one.
+ */
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 

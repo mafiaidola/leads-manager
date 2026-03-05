@@ -1,3 +1,11 @@
+/**
+ * @route GET /api/notifications/stream
+ * @description Server-Sent Events (SSE) endpoint for real-time notifications.
+ *
+ * Polls MongoDB every 10s for unread notifications. Auto-closes after 55s
+ * (under Vercel's 60s limit) — client EventSource auto-reconnects.
+ * Org-scoped and user-scoped via session.
+ */
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Notification from "@/models/Notification";

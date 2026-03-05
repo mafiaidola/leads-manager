@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+/**
+ * @route GET /api/seed
+ * @description Development-only: seeds the database with a default admin user.
+ * Creates org "Default Organization" if it doesn't exist.
+ */
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import Organization from "@/models/Organization";

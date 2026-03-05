@@ -1,3 +1,8 @@
+/**
+ * @route GET /api/backup
+ * @description Downloads org data as JSON attachment (admin-only).
+ * Includes leads, users, notes, actions, audit logs, notifications.
+ */
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Lead from "@/models/Lead";

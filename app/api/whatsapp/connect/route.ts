@@ -1,3 +1,8 @@
+/**
+ * @route GET /api/whatsapp/connect
+ * @description Generates the Meta OAuth authorization URL for WhatsApp Business setup.
+ * Returns the redirect URL for the client to open in a new window.
+ */
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 

@@ -1,3 +1,9 @@
+/**
+ * @route GET /api/whatsapp/callback
+ * @description Meta OAuth callback handler. Exchanges auth code for long-lived token,
+ * discovers WABA ID + phone number, and saves WhatsAppConfig to DB.
+ * Redirects to /settings with wa_success or wa_error query param.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import WhatsAppConfig from "@/models/WhatsAppConfig";

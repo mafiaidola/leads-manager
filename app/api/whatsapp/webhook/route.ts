@@ -1,3 +1,8 @@
+/**
+ * @route GET /api/whatsapp/webhook — Meta webhook verification (hub.challenge)
+ * @route POST /api/whatsapp/webhook — Receives incoming WhatsApp messages
+ * @description Webhook endpoint for WhatsApp Business API message delivery.
+ */
 import { NextRequest, NextResponse } from "next/server";
 
 /**

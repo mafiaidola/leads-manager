@@ -1,3 +1,11 @@
+/**
+ * @route GET /api/leads/export
+ * @description Multi-format lead export endpoint (admin-only).
+ *
+ * Formats: CSV (with UTF-8 BOM), Excel (.xlsx with auto-sized columns),
+ * Word (.docx with styled table).
+ * Supports query filters: status, source, assignedTo, search.
+ */
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Lead from "@/models/Lead";

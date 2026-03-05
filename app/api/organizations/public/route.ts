@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+/**
+ * @route GET /api/organizations/public
+ * @description Public endpoint returning active org list (name, slug, branding).
+ * Used by the login page org selector — no authentication required.
+ */
 import dbConnect from "@/lib/db";
 import Organization from "@/models/Organization";
 

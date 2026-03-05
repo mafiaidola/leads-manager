@@ -1,3 +1,8 @@
+/**
+ * @route POST /api/upload — upload image to Vercel Blob (max 2MB, PNG/JPG/WebP/SVG)
+ * @route DELETE /api/upload — delete a blob by URL
+ * @description File upload endpoint for org branding logos.
+ */
 "use server";
 
 import { NextRequest, NextResponse } from "next/server";

@@ -1,6 +1,11 @@
 
-
 import dbConnect from "@/lib/db";
+/**
+ * @route POST /api/promote-super
+ * @description One-time setup: promotes the current user to SuperAdmin.
+ * Protected by SECRET_KEY environment variable.
+ */
+import { auth } from "@/auth";
 import User from "@/models/User";
 import { NextRequest, NextResponse } from "next/server";
 
