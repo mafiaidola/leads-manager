@@ -105,6 +105,11 @@ export async function updateBranding(data: {
         const org = await Organization.findById(session.user.orgId);
         if (!org) return { error: "Organization not found" };
 
+        // Ensure branding subdocument exists (for orgs created before this field was added)
+        if (!org.branding) {
+            org.branding = { appName: "Leads Mgr", accentColor: "#8b5cf6", logoUrl: "" };
+        }
+
         if (data.appName !== undefined) org.branding.appName = data.appName;
         if (data.accentColor !== undefined) org.branding.accentColor = data.accentColor;
         if (data.logoUrl !== undefined) org.branding.logoUrl = data.logoUrl;

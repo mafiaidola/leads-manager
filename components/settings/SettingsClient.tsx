@@ -127,9 +127,9 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
     const handleSaveBranding = useCallback(async () => {
         const result = await updateBranding(branding);
         if (result?.success) {
-            toast({ title: "Branding updated" });
+            toast({ title: result?.message || "Branding updated" });
         } else {
-            toast({ title: result?.message || "Error", variant: "destructive" });
+            toast({ title: result?.error || result?.message || "Error saving branding", variant: "destructive" });
         }
     }, [branding, toast]);
 
