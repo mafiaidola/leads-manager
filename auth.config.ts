@@ -15,7 +15,7 @@ export const authConfig = {
                 return true;
             }
             // Password reset (secured by SEED_SECRET, not session)
-            if (nextUrl.pathname === "/api/auth/reset-password") {
+            if (nextUrl.pathname === "/api/reset-password") {
                 return true;
             }
 
