@@ -73,7 +73,7 @@ export function Sidebar({ className, userRole, orgBranding, isSuperAdmin }: { cl
                     </div>
                     <div>
                         <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-white/70">{orgBranding?.appName || "Leads Mgr"}</h1>
-                        <p className="text-xs text-muted-foreground font-medium">Exclusive Edition</p>
+                        <p className="text-xs text-muted-foreground font-medium">Premium Dashboard</p>
                     </div>
                 </Link>
 
