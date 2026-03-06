@@ -198,9 +198,8 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
     const expandOrg = async (org: Org) => {
         if (expandedId === org._id) { setExpandedId(null); setEditSection(null); return; }
         setExpandedId(org._id);
-        const defaultSection = isMainOrg(org._id) ? "users" : "info";
+        const defaultSection = isMainOrg(org._id) ? "branding" : "info";
         setEditSection(defaultSection);
-        if (defaultSection === "users") loadUsers(org._id);
         setInfoForm({ name: org.name, slug: org.slug, description: org.description || "", contactEmail: org.contactEmail || "", contactPhone: org.contactPhone || "", active: org.active });
         setBrandForm({ appName: org.branding?.appName || "", accentColor: org.branding?.accentColor || "#8b5cf6", logoUrl: org.branding?.logoUrl || "" });
         setThemeForm(org.theme || "violet");
