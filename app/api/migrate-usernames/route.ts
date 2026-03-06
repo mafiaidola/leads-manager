@@ -1,14 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 /**
  * @route GET /api/migrate-usernames
  * @description One-time migration: backfills usernames for existing users without one.
+ * Protected by SEED_SECRET environment variable.
  */
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 
 // One-time migration: generate usernames from existing email addresses
 // DELETE this route after running it once
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const isDev = process.env.NODE_ENV === "development";
+    const seedSecret = process.env.SEED_SECRET?.trim();
+    const providedSecret = request.nextUrl.searchParams.get("secret")?.trim();
+    if (!isDev && (!seedSecret || providedSecret !== seedSecret)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     try {
         await dbConnect();
         const users = await User.find({ $or: [{ username: { $exists: false } }, { username: "" }, { username: null }] });
