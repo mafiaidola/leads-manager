@@ -1,3 +1,8 @@
+/**
+ * @component RecentLeads
+ * @description Dashboard card showing recently added leads with status badges,
+ * source labels, and relative timestamps. Links to individual lead details.
+ */
 "use client";
 
 import React from "react";

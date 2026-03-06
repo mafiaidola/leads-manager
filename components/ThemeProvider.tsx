@@ -1,3 +1,8 @@
+/**
+ * @component ThemeProvider
+ * @description React context provider for dark/light/system theme management.
+ * Persists preference to localStorage and syncs with CSS `data-theme` attribute.
+ */
 "use client";
 
 import { useEffect, useState, createContext, useContext, ReactNode } from "react";

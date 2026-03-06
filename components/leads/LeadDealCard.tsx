@@ -1,3 +1,8 @@
+/**
+ * @component LeadDealCard
+ * @description Lead detail card showing deal/interest info — product,
+ * expected value, assigned user, and status with inline edit support.
+ */
 "use client";
 
 import React from "react";

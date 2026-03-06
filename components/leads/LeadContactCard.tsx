@@ -1,3 +1,8 @@
+/**
+ * @component LeadContactCard
+ * @description Lead detail sidebar card showing contact info (phone, email,
+ * WhatsApp link) with copy-to-clipboard and direct action buttons.
+ */
 "use client";
 
 import React from "react";

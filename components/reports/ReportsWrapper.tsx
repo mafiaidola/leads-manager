@@ -1,3 +1,8 @@
+/**
+ * @component ReportsWrapper
+ * @description Wrapper that renders ReportsClient with DashboardAnimations.
+ * Accepts serialized dashboard data and passes it to the client component.
+ */
 "use client";
 import dynamic from "next/dynamic";
 import React from "react";

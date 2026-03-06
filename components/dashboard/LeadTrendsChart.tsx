@@ -1,3 +1,8 @@
+/**
+ * @component LeadTrendsChart
+ * @description Recharts area chart showing monthly lead acquisition trends.
+ * React.memo-wrapped with empty state. Uses purple gradient fill.
+ */
 "use client";
 
 import React from "react";

@@ -1,3 +1,8 @@
+/**
+ * @component GoalProgressRing
+ * @description Animated SVG circular progress ring for the monthly lead goal.
+ * Shows current vs target with percentage label and smooth stroke animation.
+ */
 "use client";
 
 import React from "react";

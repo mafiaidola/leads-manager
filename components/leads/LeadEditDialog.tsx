@@ -1,3 +1,8 @@
+/**
+ * @component LeadEditDialog
+ * @description Dialog for editing a lead's core fields inline from the detail page.
+ * Pre-fills form with current values and submits via updateLead server action.
+ */
 "use client";
 
 import React from "react";

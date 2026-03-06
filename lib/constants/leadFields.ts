@@ -1,3 +1,8 @@
+/**
+ * @module lib/constants/leadFields
+ * @description Canonical field definitions for CSV import column mapping.
+ * Each option has value, label, and required flag for validation.
+ */
 // Lead fields available for CSV import column mapping
 export const LEAD_FIELD_OPTIONS = [
     { value: "name", label: "Name", required: true },

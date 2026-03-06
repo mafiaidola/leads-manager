@@ -1,3 +1,8 @@
+/**
+ * @page /login
+ * @description Ultra-modern login page with animated mesh gradient aurora,
+ * glassmorphism card, floating orbs, org selector, show/hide password.
+ */
 "use client";
 
 import { useTransition, useState, useEffect, useCallback } from "react";

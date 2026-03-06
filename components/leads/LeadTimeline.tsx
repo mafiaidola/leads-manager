@@ -1,3 +1,8 @@
+/**
+ * @component LeadTimeline
+ * @description Lead detail timeline showing notes and actions in chronological
+ * order with comment input, action type icons, and relative timestamps.
+ */
 "use client";
 
 import React, { useState, useMemo } from "react";

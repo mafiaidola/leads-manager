@@ -1,3 +1,8 @@
+/**
+ * @component RecentActivity
+ * @description Dashboard card showing recent lead actions (status changes,
+ * comments, updates) in a scrollable timeline with avatars and timestamps.
+ */
 "use client";
 
 import React from "react";

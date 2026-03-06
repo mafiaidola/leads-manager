@@ -1,3 +1,8 @@
+/**
+ * @component LeadsBySourceChart
+ * @description Recharts donut pie chart showing lead distribution by source.
+ * React.memo-wrapped with empty state and gradient fills.
+ */
 "use client";
 
 import React from "react";
