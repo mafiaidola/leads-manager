@@ -209,6 +209,9 @@ export async function createOrganization(data: {
     adminName: string;
     adminUsername: string;
     adminPassword: string;
+    appName?: string;
+    accentColor?: string;
+    logoUrl?: string;
 }) {
     const session = await auth();
     if (!session?.user?.isSuperAdmin) {
@@ -227,7 +230,11 @@ export async function createOrganization(data: {
             description: data.description || "",
             contactEmail: data.contactEmail || "",
             contactPhone: data.contactPhone || "",
-            branding: { appName: data.name, accentColor: "#8b5cf6", logoUrl: "" },
+            branding: {
+                appName: data.appName || data.name,
+                accentColor: data.accentColor || "#8b5cf6",
+                logoUrl: data.logoUrl || "",
+            },
             theme: "violet",
             settings: {
                 statuses: DEFAULT_STATUSES,

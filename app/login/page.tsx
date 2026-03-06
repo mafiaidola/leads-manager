@@ -37,7 +37,9 @@ export default function LoginPage() {
             .then((res) => res.json())
             .then((orgs: OrgOption[]) => {
                 setOrganizations(orgs);
-                if (orgs.length === 1) setSelectedOrg(orgs[0]);
+                // Auto-select: prefer slug "default", otherwise first org
+                const defaultOrg = orgs.find(o => o.slug === "default") || orgs[0];
+                if (defaultOrg) setSelectedOrg(defaultOrg);
             })
             .catch(() => { });
     }, []);

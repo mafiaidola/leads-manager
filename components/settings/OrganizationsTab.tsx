@@ -16,7 +16,7 @@ import {
     Mail, Phone, Info, Palette, UserPlus, Target, BarChart3, Calendar,
     ChevronDown, ChevronUp, Shield, Eye, Package, Download, Upload, Database,
     Copy, Ban, Power, Crown, UserX, ToggleLeft, ToggleRight,
-    FileSpreadsheet, FileText, FileDown
+    FileSpreadsheet, FileText, FileDown, ImagePlus, Trash
 } from "lucide-react";
 import {
     createOrganization, updateOrganization, deleteOrganization, hardDeleteOrganization,
@@ -94,7 +94,13 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
     const [createForm, setCreateForm] = useState({
         name: "", slug: "", description: "", contactEmail: "", contactPhone: "",
         adminName: "", adminUsername: "", adminPassword: "",
+        appName: "", accentColor: "#8b5cf6", logoUrl: "",
     });
+
+    // Logo upload
+    const logoInputRef = useRef<HTMLInputElement>(null);
+    const createLogoInputRef = useRef<HTMLInputElement>(null);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
 
     // Edit forms
     const [infoForm, setInfoForm] = useState({ name: "", slug: "", description: "", contactEmail: "", contactPhone: "", active: true });
@@ -136,9 +142,28 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
     const isMainOrg = (orgId: string) => orgId === currentOrgId;
 
     /* ─── Handlers ─────────────────────────────────────────────────────────── */
+    /* ── Logo Upload Handler ──────────────────────────────────────────── */
+    const handleLogoUpload = async (file: File, target: "brand" | "create") => {
+        setUploadingLogo(true);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const res = await fetch("/api/upload", { method: "POST", body: fd });
+            const json = await res.json();
+            if (json.error) { toast({ title: json.error, variant: "destructive" }); }
+            else if (target === "brand") setBrandForm(f => ({ ...f, logoUrl: json.url }));
+            else setCreateForm(f => ({ ...f, logoUrl: json.url }));
+        } catch { toast({ title: "Upload failed", variant: "destructive" }); }
+        setUploadingLogo(false);
+    };
+
     const handleCreate = async () => {
         if (!createForm.name || !createForm.slug || !createForm.adminUsername || !createForm.adminPassword) {
             toast({ title: "Name, slug, admin username & password are required", variant: "destructive" });
+            return;
+        }
+        if (createForm.adminUsername.toLowerCase() === "admin") {
+            toast({ title: "Admin username cannot be 'admin' to avoid conflicts with the main admin", variant: "destructive" });
             return;
         }
         setLoading(true);
@@ -152,13 +177,16 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                 adminName: createForm.adminName || "Admin",
                 adminUsername: createForm.adminUsername,
                 adminPassword: createForm.adminPassword,
+                appName: createForm.appName || createForm.name,
+                accentColor: createForm.accentColor,
+                logoUrl: createForm.logoUrl,
             });
             if (result.error) {
                 toast({ title: result.error, variant: "destructive" });
             } else {
                 toast({ title: "✅ Organization created successfully!" });
                 setShowCreate(false);
-                setCreateForm({ name: "", slug: "", description: "", contactEmail: "", contactPhone: "", adminName: "", adminUsername: "", adminPassword: "" });
+                setCreateForm({ name: "", slug: "", description: "", contactEmail: "", contactPhone: "", adminName: "", adminUsername: "", adminPassword: "", appName: "", accentColor: "#8b5cf6", logoUrl: "" });
                 window.location.reload();
             }
         } catch {
@@ -579,6 +607,44 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                             </div>
                         </div>
 
+                        {/* Branding */}
+                        <div className="border-t border-white/10 pt-4">
+                            <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2"><Palette className="h-4 w-4" /> Branding</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>App Display Name</Label>
+                                    <Input placeholder="e.g. SMTC Group" value={createForm.appName} onChange={e => setCreateForm(f => ({ ...f, appName: e.target.value }))} className="bg-white/5 border-white/10 rounded-xl" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Accent Color</Label>
+                                    <div className="flex gap-2 items-center">
+                                        <div className="h-10 w-10 rounded-xl border border-white/20 shadow-inner flex-shrink-0 branding-preview" style={{ '--accent-color': createForm.accentColor } as React.CSSProperties} />
+                                        <Input type="color" value={createForm.accentColor} onChange={e => setCreateForm(f => ({ ...f, accentColor: e.target.value }))} className="h-10 w-16 p-0 border-0 cursor-pointer bg-transparent" />
+                                        <Input value={createForm.accentColor} onChange={e => setCreateForm(f => ({ ...f, accentColor: e.target.value }))} className="bg-white/5 border-white/10 rounded-xl font-mono text-sm flex-1" maxLength={7} />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="mt-3 space-y-2">
+                                <Label>Organization Logo</Label>
+                                <div className="flex items-center gap-4">
+                                    {createForm.logoUrl ? (
+                                        <div className="relative">
+                                            <img src={createForm.logoUrl} alt="" className="h-16 w-16 rounded-xl object-contain bg-white/5 border border-white/10 p-1" />
+                                            <button title="Remove logo" onClick={() => setCreateForm(f => ({ ...f, logoUrl: "" }))} className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center">
+                                                <X className="h-3 w-3 text-white" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button type="button" onClick={() => createLogoInputRef.current?.click()} disabled={uploadingLogo} className="h-16 w-16 rounded-xl border-2 border-dashed border-white/15 hover:border-primary/40 flex items-center justify-center transition-colors">
+                                            {uploadingLogo ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <ImagePlus className="h-5 w-5 text-muted-foreground" />}
+                                        </button>
+                                    )}
+                                    <input ref={createLogoInputRef} type="file" accept="image/*" title="Upload organization logo" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f, "create"); }} />
+                                    <p className="text-xs text-muted-foreground">PNG, JPG, WebP, SVG • Max 2MB</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="flex gap-3 pt-2">
                             <Button onClick={handleCreate} disabled={loading} className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white">
                                 {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
@@ -709,7 +775,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                     {/* Section tabs */}
                                     <div className="flex flex-wrap gap-2 px-6 py-3 bg-white/[0.02] border-b border-white/5">
                                         {!isMainOrg(org._id) && <SectionBtn section="info" icon={Info} label="Info" orgId={org._id} />}
-                                        {!isMainOrg(org._id) && <SectionBtn section="branding" icon={Palette} label="Branding" orgId={org._id} />}
+                                        <SectionBtn section="branding" icon={Palette} label="Branding" orgId={org._id} />
                                         {!isMainOrg(org._id) && <SectionBtn section="theme" icon={Eye} label="Theme" orgId={org._id} />}
                                         <SectionBtn section="users" icon={Users} label="Users" orgId={org._id} />
                                         {!isMainOrg(org._id) && <SectionBtn section="goals" icon={Target} label="Goals" orgId={org._id} />}
@@ -757,18 +823,68 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <InputField label="Logo URL (optional)" value={brandForm.logoUrl} onChange={v => setBrandForm(f => ({ ...f, logoUrl: v }))} placeholder="https://..." />
+
+                                                {/* Logo Upload */}
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm">Organization Logo</Label>
+                                                    <div className="flex items-center gap-4">
+                                                        {brandForm.logoUrl ? (
+                                                            <div className="relative group">
+                                                                <img src={brandForm.logoUrl} alt="" className="h-20 w-20 rounded-2xl object-contain bg-white/5 border border-white/10 p-2" />
+                                                                <button
+                                                                    onClick={() => setBrandForm(f => ({ ...f, logoUrl: "" }))}
+                                                                    className="absolute -top-2 -right-2 h-6 w-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg transition-colors"
+                                                                    title="Remove logo"
+                                                                >
+                                                                    <Trash className="h-3 w-3 text-white" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => logoInputRef.current?.click()}
+                                                                disabled={uploadingLogo}
+                                                                className="h-20 w-20 rounded-2xl border-2 border-dashed border-white/15 hover:border-primary/40 hover:bg-primary/5 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
+                                                            >
+                                                                {uploadingLogo ? (
+                                                                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                                                ) : (
+                                                                    <>
+                                                                        <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                                                                        <span className="text-[10px] text-muted-foreground">Upload</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                        <input
+                                                            ref={logoInputRef}
+                                                            type="file"
+                                                            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                                            className="hidden"
+                                                            onChange={e => {
+                                                                const f = e.target.files?.[0];
+                                                                if (f) handleLogoUpload(f, "brand");
+                                                                if (logoInputRef.current) logoInputRef.current.value = "";
+                                                            }}
+                                                        />
+                                                        <div className="text-xs text-muted-foreground space-y-1">
+                                                            <p>Upload your organization logo</p>
+                                                            <p className="text-muted-foreground/60">PNG, JPG, WebP, SVG • Max 2MB</p>
+                                                            <p className="text-muted-foreground/60">Appears on the login page when this org is selected</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
 
                                                 {/* Live Preview */}
                                                 <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/10">
-                                                    <p className="text-xs text-muted-foreground mb-3">Preview</p>
+                                                    <p className="text-xs text-muted-foreground mb-3">Login Page Preview</p>
                                                     <div className="flex items-center gap-3">
-                                                        <div className="org-preview-logo h-12 w-12 rounded-xl flex items-center justify-center text-white font-bold text-lg accent-gradient-logo" style={{ '--accent': brandForm.accentColor } as React.CSSProperties}>
-                                                            {brandForm.logoUrl ? <img src={brandForm.logoUrl} alt="" className="h-8 w-8 object-contain" /> : (brandForm.appName || "A").charAt(0).toUpperCase()}
+                                                        <div className="org-preview-logo h-14 w-14 rounded-xl flex items-center justify-center text-white font-bold text-lg accent-gradient-logo" style={{ '--accent': brandForm.accentColor } as React.CSSProperties}>
+                                                            {brandForm.logoUrl ? <img src={brandForm.logoUrl} alt="" className="h-9 w-9 object-contain" /> : (brandForm.appName || "A").charAt(0).toUpperCase()}
                                                         </div>
                                                         <div>
                                                             <p className="font-semibold">{brandForm.appName || org.name}</p>
-                                                            <p className="text-xs text-muted-foreground">Exclusive Edition</p>
+                                                            <p className="text-xs text-muted-foreground">Premium Dashboard</p>
                                                         </div>
                                                     </div>
                                                 </div>

@@ -64,7 +64,40 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                     if (!org) return null;
 
                     const user = await getUser(username, org._id.toString());
-                    if (!user) return null;
+                    // Fallback: SuperAdmin can log into any org
+                    if (!user) {
+                        const superAdmin = await User.findOne({
+                            username: username.toLowerCase(),
+                            isSuperAdmin: true,
+                            active: true,
+                        });
+                        if (!superAdmin) return null;
+                        // SuperAdmin found — allow login with target org context
+                        const passwordsMatch = await bcrypt.compare(password, superAdmin.passwordHash);
+                        if (!passwordsMatch) return null;
+                        // Track login
+                        try {
+                            await User.updateOne({ _id: superAdmin._id }, { $set: { lastLogin: new Date() } });
+                            const AuditLog = (await import("@/models/AuditLog")).default;
+                            await AuditLog.create({
+                                action: "LOGIN", entityType: "user",
+                                entityId: superAdmin._id.toString(),
+                                userId: superAdmin._id, userName: superAdmin.name,
+                                orgId: org._id,
+                                details: `${superAdmin.name} (SuperAdmin) logged into ${org.name}`,
+                            });
+                        } catch { /* silent */ }
+                        return {
+                            id: superAdmin._id.toString(),
+                            name: superAdmin.name,
+                            email: superAdmin.email || superAdmin.username,
+                            role: superAdmin.role,
+                            orgId: org._id.toString(),
+                            orgSlug: org.slug,
+                            orgName: org.name,
+                            isSuperAdmin: true,
+                        };
+                    }
 
                     // Check if user is active
                     if (user.active === false) return null;
