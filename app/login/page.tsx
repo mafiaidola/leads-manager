@@ -79,7 +79,16 @@ export default function LoginPage() {
             <FloatingOrbs />
 
             {/* ── Main Content ─────────────────────────────────────────── */}
-            <div className="login-container" style={accent ? { '--login-accent': accent, '--login-ring-bg': `linear-gradient(135deg, ${accent}, ${accent}88)`, '--login-ring-shadow': `0 0 60px ${accent}33, 0 0 120px ${accent}11`, '--login-glow-bg': `linear-gradient(135deg, ${accent}66, transparent 50%, ${accent}33)`, '--login-btn-bg': `linear-gradient(135deg, ${accent}, ${accent}cc)`, '--login-btn-shadow': `0 8px 32px ${accent}33, 0 0 0 1px ${accent}22` } as React.CSSProperties : undefined}>
+            <div className="login-container" ref={el => {
+                if (el && accent) {
+                    el.style.setProperty('--login-accent', accent);
+                    el.style.setProperty('--login-ring-bg', `linear-gradient(135deg, ${accent}, ${accent}88)`);
+                    el.style.setProperty('--login-ring-shadow', `0 0 60px ${accent}33, 0 0 120px ${accent}11`);
+                    el.style.setProperty('--login-glow-bg', `linear-gradient(135deg, ${accent}66, transparent 50%, ${accent}33)`);
+                    el.style.setProperty('--login-btn-bg', `linear-gradient(135deg, ${accent}, ${accent}cc)`);
+                    el.style.setProperty('--login-btn-shadow', `0 8px 32px ${accent}33, 0 0 0 1px ${accent}22`);
+                }
+            }}>
 
                 {/* Branding */}
                 <div className={cn("login-branding", mounted && "login-branding--visible")}>
@@ -290,13 +299,15 @@ function FloatingOrbs() {
                 <div
                     key={i}
                     className="login-orb"
-                    style={{
-                        "--orb-x": o.x,
-                        "--orb-y": o.y,
-                        "--orb-size": `${o.size}px`,
-                        "--orb-dur": `${o.dur}s`,
-                        "--orb-delay": `${o.delay}s`,
-                    } as React.CSSProperties}
+                    ref={el => {
+                        if (el) {
+                            el.style.setProperty('--orb-x', o.x);
+                            el.style.setProperty('--orb-y', o.y);
+                            el.style.setProperty('--orb-size', `${o.size}px`);
+                            el.style.setProperty('--orb-dur', `${o.dur}s`);
+                            el.style.setProperty('--orb-delay', `${o.delay}s`);
+                        }
+                    }}
                 />
             ))}
         </div>

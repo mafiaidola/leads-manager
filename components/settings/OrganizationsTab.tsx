@@ -795,7 +795,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                     <InputField label="Contact Phone" value={infoForm.contactPhone} onChange={v => setInfoForm(f => ({ ...f, contactPhone: v }))} icon={Phone} />
                                                     <div className="flex items-end gap-3">
                                                         <label className="flex items-center gap-2 text-sm cursor-pointer bg-white/5 px-4 py-2.5 rounded-xl border border-white/10">
-                                                            <input type="checkbox" checked={infoForm.active} onChange={e => setInfoForm(f => ({ ...f, active: e.target.checked }))} className="rounded" />
+                                                            <input type="checkbox" title="Toggle active status" checked={infoForm.active} onChange={e => setInfoForm(f => ({ ...f, active: e.target.checked }))} className="rounded" />
                                                             Active
                                                         </label>
                                                     </div>
@@ -858,6 +858,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                         <input
                                                             ref={logoInputRef}
                                                             type="file"
+                                                            title="Upload organization logo"
                                                             accept="image/png,image/jpeg,image/webp,image/svg+xml"
                                                             className="hidden"
                                                             onChange={e => {
