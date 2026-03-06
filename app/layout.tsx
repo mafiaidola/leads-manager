@@ -16,8 +16,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Leads Manager Pro",
-  description: "Professional CRM for managing leads, sales pipeline, and team collaboration.",
+  title: "SMTC Group | Leads Manager",
+  description: "Premium CRM dashboard for managing leads, sales pipeline, and team collaboration across multiple organizations.",
+  icons: {
+    icon: "/smtc-logo-icon.png",
+    apple: "/smtc-logo-icon.png",
+  },
+  openGraph: {
+    title: "SMTC Group | Leads Manager",
+    description: "Premium CRM dashboard for managing leads, sales pipeline, and team collaboration.",
+    type: "website",
+  },
 };
 
 export default async function RootLayout({
