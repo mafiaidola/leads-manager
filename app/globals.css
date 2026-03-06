@@ -469,10 +469,11 @@
   color: white !important;
 }
 
-/* Scrollbar-hide utility — hides scrollbar while keeping scroll functional */
+/* Scrollbar-hide utility — hides scrollbar while keeping scroll functional
+   scrollbar-width: supported by Firefox & Chrome 121+; -webkit fallback below */
 .scrollbar-hide {
   -ms-overflow-style: none;
-  scrollbar-width: none;
+  scrollbar-width: none; /* stylelint-disable-line plugin/no-unsupported-browser-features */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -770,8 +771,8 @@
   position: relative;
   z-index: 1;
   background: rgba(10, 10, 14, 0.65);
-  backdrop-filter: blur(40px) saturate(150%);
   -webkit-backdrop-filter: blur(40px) saturate(150%);
+  backdrop-filter: blur(40px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 24px;
   padding: 2.5rem;
@@ -959,8 +960,8 @@
   width: 100%;
   margin-top: 8px;
   background: rgba(10, 10, 14, 0.92);
-  backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
@@ -1197,4 +1198,19 @@
     width: 68px;
     height: 68px;
   }
+}
+
+/* ── Login Accent Overrides (driven by --login-accent CSS variable) ───────── */
+.login-logo-ring[style] {
+  background: var(--login-ring-bg, linear-gradient(135deg, var(--primary), var(--primary)));
+  box-shadow: var(--login-ring-shadow, none);
+}
+
+.login-card-glow[style] {
+  background: var(--login-glow-bg, transparent);
+}
+
+.login-submit[style] {
+  background: var(--login-btn-bg, linear-gradient(135deg, var(--primary), var(--primary)));
+  box-shadow: var(--login-btn-shadow, none);
 }

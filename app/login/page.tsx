@@ -79,16 +79,12 @@ export default function LoginPage() {
             <FloatingOrbs />
 
             {/* ── Main Content ─────────────────────────────────────────── */}
-            <div className="login-container">
+            <div className="login-container" style={accent ? { '--login-accent': accent, '--login-ring-bg': `linear-gradient(135deg, ${accent}, ${accent}88)`, '--login-ring-shadow': `0 0 60px ${accent}33, 0 0 120px ${accent}11`, '--login-glow-bg': `linear-gradient(135deg, ${accent}66, transparent 50%, ${accent}33)`, '--login-btn-bg': `linear-gradient(135deg, ${accent}, ${accent}cc)`, '--login-btn-shadow': `0 8px 32px ${accent}33, 0 0 0 1px ${accent}22` } as React.CSSProperties : undefined}>
 
                 {/* Branding */}
                 <div className={cn("login-branding", mounted && "login-branding--visible")}>
                     <div
                         className="login-logo-ring"
-                        style={accent ? {
-                            background: `linear-gradient(135deg, ${accent}, ${accent}88)`,
-                            boxShadow: `0 0 60px ${accent}33, 0 0 120px ${accent}11`,
-                        } : undefined}
                     >
                         <div className="login-logo-inner">
                             {selectedOrg?.logo ? (
@@ -110,9 +106,6 @@ export default function LoginPage() {
                     {/* Glow border */}
                     <div
                         className="login-card-glow"
-                        style={accent ? {
-                            background: `linear-gradient(135deg, ${accent}66, transparent 50%, ${accent}33)`,
-                        } : undefined}
                     />
 
                     <div className="login-card">
@@ -233,10 +226,6 @@ export default function LoginPage() {
                             <button
                                 type="submit"
                                 className={cn("login-submit", isPending && "login-submit--pending")}
-                                style={accent && !isPending ? {
-                                    background: `linear-gradient(135deg, ${accent}, ${accent}cc)`,
-                                    boxShadow: `0 8px 32px ${accent}33, 0 0 0 1px ${accent}22`,
-                                } : undefined}
                                 disabled={isPending}
                             >
                                 <div className="login-submit-shine" />

@@ -618,7 +618,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                     <Label>Accent Color</Label>
                                     <div className="flex gap-2 items-center">
                                         <div className="h-10 w-10 rounded-xl border border-white/20 shadow-inner flex-shrink-0 branding-preview" style={{ '--accent-color': createForm.accentColor } as React.CSSProperties} />
-                                        <Input type="color" value={createForm.accentColor} onChange={e => setCreateForm(f => ({ ...f, accentColor: e.target.value }))} className="h-10 w-16 p-0 border-0 cursor-pointer bg-transparent" />
+                                        <Input type="color" title="Pick accent color" value={createForm.accentColor} onChange={e => setCreateForm(f => ({ ...f, accentColor: e.target.value }))} className="h-10 w-16 p-0 border-0 cursor-pointer bg-transparent" />
                                         <Input value={createForm.accentColor} onChange={e => setCreateForm(f => ({ ...f, accentColor: e.target.value }))} className="bg-white/5 border-white/10 rounded-xl font-mono text-sm flex-1" maxLength={7} />
                                     </div>
                                 </div>
@@ -817,7 +817,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                         <Label className="text-sm">Accent Color</Label>
                                                         <div className="flex gap-2 items-center">
                                                             <div className="org-color-preview h-10 w-10 rounded-xl border border-white/20 shadow-inner flex-shrink-0 branding-preview" style={{ '--accent-color': brandForm.accentColor } as React.CSSProperties} />
-                                                            <Input type="color" value={brandForm.accentColor} onChange={e => setBrandForm(f => ({ ...f, accentColor: e.target.value }))} className="h-10 w-16 p-0 border-0 cursor-pointer bg-transparent" />
+                                                            <Input type="color" title="Pick accent color" value={brandForm.accentColor} onChange={e => setBrandForm(f => ({ ...f, accentColor: e.target.value }))} className="h-10 w-16 p-0 border-0 cursor-pointer bg-transparent" />
                                                             <Input value={brandForm.accentColor} onChange={e => setBrandForm(f => ({ ...f, accentColor: e.target.value }))} className="bg-white/5 border-white/10 rounded-xl font-mono text-sm flex-1" maxLength={7} />
                                                         </div>
                                                     </div>
