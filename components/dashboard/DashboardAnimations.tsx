@@ -27,9 +27,8 @@ export function FadeIn({
 
     return (
         <div
-            ref={ref}
+            ref={(node) => { ref.current = node; if (node) node.style.setProperty('--fade-delay', `${delay}ms`); }}
             className={`fade-in-up${visible ? ' visible' : ''} ${className}`}
-            style={{ '--fade-delay': `${delay}ms` } as React.CSSProperties}
         >
             {children}
         </div>

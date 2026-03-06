@@ -112,7 +112,7 @@ export const KanbanBoard = React.memo(function KanbanBoard({ leads, statuses, cu
                                 <div className="flex items-center gap-2">
                                     <span
                                         className="w-3 h-3 rounded-full status-dot"
-                                        style={{ '--status-color': status.color } as React.CSSProperties}
+                                        ref={el => { if (el) el.style.setProperty('--status-color', status.color); }}
                                     />
                                     <h3 className="font-semibold text-sm">{status.label}</h3>
                                 </div>

@@ -417,7 +417,7 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                             </div>
                             <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden">
                                 <div className={`h-full rounded-full transition-all duration-700 progress-bar ${leadGoalPercent >= 100 ? 'bg-emerald-500' : leadGoalPercent >= 70 ? 'bg-amber-500' : 'bg-red-400'}`}
-                                    style={{ '--progress': `${Math.min(100, leadGoalPercent)}%` } as React.CSSProperties} />
+                                    ref={el => { if (el) el.style.setProperty('--progress', `${Math.min(100, leadGoalPercent)}%`); }} />
                             </div>
                         </div>
                     </CardContent>
@@ -442,7 +442,7 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                             </div>
                             <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden">
                                 <div className={`h-full rounded-full transition-all duration-700 progress-bar ${convGoalPercent >= 100 ? 'bg-emerald-500' : convGoalPercent >= 70 ? 'bg-amber-500' : 'bg-red-400'}`}
-                                    style={{ '--progress': `${Math.min(100, convGoalPercent)}%` } as React.CSSProperties} />
+                                    ref={el => { if (el) el.style.setProperty('--progress', `${Math.min(100, convGoalPercent)}%`); }} />
                             </div>
                         </div>
                     </CardContent>
@@ -521,7 +521,7 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                                             <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                                                 <div
                                                     className={`h-full rounded-full transition-all duration-700 dist-bar ${pct >= 50 ? 'bg-emerald-400' : pct >= 25 ? 'bg-amber-400' : 'bg-blue-400'}`}
-                                                    style={{ '--bar-width': `${Math.max(4, pct)}%` } as React.CSSProperties}
+                                                    ref={el => { if (el) el.style.setProperty('--bar-width', `${Math.max(4, pct)}%`); }}
                                                 />
                                             </div>
                                         </div>

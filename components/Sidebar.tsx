@@ -63,7 +63,7 @@ export function Sidebar({ className, userRole, orgBranding, isSuperAdmin }: { cl
                 <Link href="/" className="flex items-center pl-2 mb-10 group">
                     <div
                         className="h-10 w-10 rounded-xl mr-3 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform overflow-hidden accent-gradient-logo"
-                        style={orgBranding?.accentColor ? { '--accent': orgBranding.accentColor } as React.CSSProperties : undefined}
+                        ref={el => { if (el && orgBranding?.accentColor) el.style.setProperty('--accent', orgBranding.accentColor); }}
                     >
                         {orgBranding?.logoUrl ? (
                             <img src={orgBranding.logoUrl} alt="" className="h-7 w-7 object-contain" />
