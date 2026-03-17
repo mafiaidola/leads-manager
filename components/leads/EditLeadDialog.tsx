@@ -272,7 +272,7 @@ export function EditLeadDialog({
                                         name="value"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Lead Value</FormLabel>
+                                                <FormLabel>Lead Value ({settings?.defaultCurrency || "AED"})</FormLabel>
                                                 <FormControl>
                                                     <Input type="number" placeholder="5000" className="rounded-xl border-white/10 bg-white/5" {...field} />
                                                 </FormControl>

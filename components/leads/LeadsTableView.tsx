@@ -90,6 +90,13 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                         </div>
                                         {lead.company && <div className="text-xs text-muted-foreground truncate">{lead.company}</div>}
                                     </div>
+                                    {lead.leadGrade && (
+                                        <span
+                                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0"
+                                            style={{ backgroundColor: lead.leadScoreColor + '20', color: lead.leadScoreColor }}
+                                            title={`Score: ${lead.leadScore}/100`}
+                                        >{lead.leadGrade}</span>
+                                    )}
                                     <div className="flex items-center gap-1.5 shrink-0">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onStar(lead._id); }}
@@ -176,6 +183,7 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                             >
                                 Status<SortIcon field="status" currentSort={currentSort} currentDir={currentDir} />
                             </TableHead>
+                            <TableHead className="hidden lg:table-cell font-semibold text-primary w-[60px] text-center">Score</TableHead>
                             <TableHead className="hidden md:table-cell font-semibold text-primary">Source</TableHead>
                             <TableHead className="font-semibold text-primary w-[50px]">WA</TableHead>
                             {canSeeAssignment && (
@@ -261,6 +269,17 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                                     </Badge>
                                                 )}
                                             </div>
+                                        </TableCell>
+                                        <TableCell className="hidden lg:table-cell text-center">
+                                            {lead.leadGrade ? (
+                                                <span
+                                                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold"
+                                                    style={{ backgroundColor: lead.leadScoreColor + '20', color: lead.leadScoreColor }}
+                                                    title={`Score: ${lead.leadScore}/100`}
+                                                >{lead.leadGrade}</span>
+                                            ) : (
+                                                <span className="text-muted-foreground/30 text-xs">—</span>
+                                            )}
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell text-muted-foreground">{lead.source}</TableCell>
                                         <TableCell>
