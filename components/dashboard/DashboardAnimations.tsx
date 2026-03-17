@@ -35,7 +35,7 @@ export function FadeIn({
     );
 }
 
-// ─── Animated counter ─────────────────────────────────────────────────────────
+// ─── Animated counter with viewport trigger ──────────────────────────────────
 export function CountUp({
     end,
     duration = 1200,
@@ -49,30 +49,37 @@ export function CountUp({
 }) {
     const [count, setCount] = useState(0);
     const ref = useRef<HTMLSpanElement>(null);
+    const hasAnimated = useRef(false);
 
     useEffect(() => {
-        const startTime = Date.now();
-        const startVal = 0;
+        if (hasAnimated.current) { setCount(end); return; }
 
-        function tick() {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            // Ease-out curve
-            const easedProgress = 1 - Math.pow(1 - progress, 3);
-            const current = Math.round(startVal + (end - startVal) * easedProgress);
-            setCount(current);
-
-            if (progress < 1) {
-                requestAnimationFrame(tick);
-            }
-        }
-
-        requestAnimationFrame(tick);
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && !hasAnimated.current) {
+                    hasAnimated.current = true;
+                    const startTime = performance.now();
+                    function tick(now: number) {
+                        const elapsed = now - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        // easeOutExpo — premium feel
+                        const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                        setCount(Math.round(eased * end));
+                        if (progress < 1) requestAnimationFrame(tick);
+                    }
+                    requestAnimationFrame(tick);
+                    observer.disconnect();
+                }
+            },
+            { threshold: 0.1 }
+        );
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
     }, [end, duration]);
 
     return (
         <span ref={ref} className={className}>
-            {count}{suffix}
+            {count.toLocaleString()}{suffix}
         </span>
     );
 }

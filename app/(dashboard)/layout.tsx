@@ -17,6 +17,8 @@ import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
 import { CommandPalette } from "@/components/CommandPalette";
 import dbConnect from "@/lib/db";
 import Organization from "@/models/Organization";
+import { ToastHistoryPanel } from "@/components/ui/ToastHistoryPanel";
+import { PresenceIndicator } from "@/components/ui/PresenceIndicator";
 
 export default async function DashboardLayout({
     children,
@@ -76,6 +78,13 @@ export default async function DashboardLayout({
                             {/* Notifications */}
                             <NotificationBell />
 
+                            {/* Presence */}
+                            <PresenceIndicator
+                                currentUserId={(session.user as any)?.id || ""}
+                                currentUserName={session.user?.name || ""}
+                                currentPage="/"
+                            />
+
                             <div className="h-8 w-[1px] bg-border mx-1" />
 
                             <div className="flex items-center gap-3 pl-2">
@@ -125,6 +134,7 @@ export default async function DashboardLayout({
                     </Suspense>
                 </div>
                 <CommandPalette />
+                <ToastHistoryPanel />
             </main>
         </div>
     );

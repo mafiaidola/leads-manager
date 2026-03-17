@@ -163,6 +163,17 @@ function toast({ ...props }: Toast) {
         },
     })
 
+    // Dispatch custom event for ToastHistoryPanel
+    if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("toast-logged", {
+            detail: {
+                title: typeof props.title === "string" ? props.title : "Action",
+                description: typeof props.description === "string" ? props.description : undefined,
+                variant: props.variant,
+            },
+        }));
+    }
+
     return {
         id: id,
         dismiss,
