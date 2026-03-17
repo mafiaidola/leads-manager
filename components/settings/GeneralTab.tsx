@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Target, Save, GripVertical, Users } from "lucide-react";
+import { X, Target, Save, GripVertical, Users, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const COLOR_NAME_MAP: Record<string, string> = {
@@ -42,6 +42,9 @@ interface GeneralTabProps {
     // Auto-assignment strategy
     autoAssignStrategy?: string;
     onAutoAssignStrategyChange?: (strategy: string) => void;
+    // Currency
+    defaultCurrency?: string;
+    onCurrencyChange?: (currency: string) => void;
 }
 
 export function GeneralTab({
@@ -52,6 +55,8 @@ export function GeneralTab({
     onReorderStatuses,
     autoAssignStrategy = "none",
     onAutoAssignStrategyChange,
+    defaultCurrency = "AED",
+    onCurrencyChange,
 }: GeneralTabProps) {
 
     // ── Drag-to-reorder state
@@ -268,6 +273,37 @@ export function GeneralTab({
                         <Button onClick={onSaveGoals} className="rounded-xl bg-amber-500 hover:bg-amber-600 px-8 shadow-lg shadow-amber-500/20">
                             <Save className="h-4 w-4 mr-2" /> Save Goals
                         </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* ── Default Currency ──────────────────────────────── */}
+            <Card className="md:col-span-1 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                <CardHeader>
+                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-emerald-500" />
+                        Default Currency
+                    </CardTitle>
+                    <CardDescription className="text-muted-foreground/80">
+                        Used for lead values and reports.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-4 gap-2">
+                        {["AED", "USD", "EUR", "GBP", "SAR", "EGP", "INR", "BHD"].map(c => (
+                            <button
+                                key={c}
+                                onClick={() => onCurrencyChange?.(c)}
+                                className={cn(
+                                    "p-2.5 rounded-xl border text-center text-sm font-semibold transition-all",
+                                    defaultCurrency === c
+                                        ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/30"
+                                        : "border-white/10 bg-white/5 hover:bg-white/10 text-foreground"
+                                )}
+                            >
+                                {c}
+                            </button>
+                        ))}
                     </div>
                 </CardContent>
             </Card>

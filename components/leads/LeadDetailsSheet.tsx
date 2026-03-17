@@ -394,6 +394,30 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Custom Fields */}
+                                {settings?.customFields?.length > 0 && data.lead.customFields && Object.keys(data.lead.customFields).length > 0 && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-xs font-bold uppercase tracking-widest text-amber-400/80 flex items-center gap-2">
+                                            <Info className="h-3.5 w-3.5" />
+                                            Custom Fields
+                                        </h3>
+                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {settings.customFields.map((cf: any) => {
+                                                    const val = data.lead.customFields?.[cf.key];
+                                                    if (!val) return null;
+                                                    return (
+                                                        <div key={cf.key} className="space-y-1">
+                                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{cf.label}</span>
+                                                            <p className="text-sm font-medium text-foreground/90">{val}</p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </TabsContent>
 
                             {/* ─── NOTES TAB ─── */}

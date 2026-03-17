@@ -43,6 +43,25 @@ export async function createNotification({
         const session = await auth();
         const orgId = session?.user?.orgId;
         await dbConnect();
+
+        // Check org notification preferences before sending
+        if (orgId) {
+            const Organization = (await import("@/models/Organization")).default;
+            const org = await Organization.findById(orgId)
+                .select("settings.notificationPreferences")
+                .lean() as any;
+            const prefs = org?.settings?.notificationPreferences;
+            if (prefs) {
+                const prefMap: Record<string, boolean> = {
+                    new_lead: prefs.onNewLead !== false,
+                    lead_assigned: prefs.onAssigned !== false,
+                    status_changed: prefs.onStatusChange !== false,
+                };
+                // Skip notifications that are disabled by org preferences
+                if (prefMap[type] === false) return;
+            }
+        }
+
         const docs = userIds.map((uid) => ({
             orgId: orgId ? new mongoose.Types.ObjectId(orgId) : undefined,
             userId: new mongoose.Types.ObjectId(uid),

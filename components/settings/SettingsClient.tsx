@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { updateSettings, updateBranding, updateGoals, updateTheme, updateNotificationPrefs, updateAutoAssignStrategy } from "@/lib/actions/settings";
+import { updateSettings, updateBranding, updateGoals, updateTheme, updateNotificationPrefs, updateAutoAssignStrategy, updateCurrency } from "@/lib/actions/settings";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Save, Check, Database, HardDrive, FileDown, Download, X, Bell } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -227,6 +227,15 @@ export function SettingsClient({
                         const result = await updateAutoAssignStrategy(strategy as any);
                         if (result.success) {
                             toast({ title: "✅ Auto-assignment updated", description: `Strategy: ${strategy === "none" ? "Disabled" : strategy.replace("_", " ")}` });
+                        } else {
+                            toast({ title: "Error", description: result.error, variant: "destructive" });
+                        }
+                    }}
+                    defaultCurrency={settings?.defaultCurrency || "AED"}
+                    onCurrencyChange={async (currency) => {
+                        const result = await updateCurrency(currency);
+                        if (result.success) {
+                            toast({ title: "✅ Currency updated", description: `Default currency set to ${currency}` });
                         } else {
                             toast({ title: "Error", description: result.error, variant: "destructive" });
                         }

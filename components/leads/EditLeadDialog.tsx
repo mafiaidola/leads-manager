@@ -86,6 +86,7 @@ export function EditLeadDialog({
     const { toast } = useToast();
     const [duplicateWarning, setDuplicateWarning] = useState<{ exists: boolean; leadName?: string } | null>(null);
     const [checkingPhone, setCheckingPhone] = useState(false);
+    const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
     });
@@ -125,6 +126,8 @@ export function EditLeadDialog({
                 contactedToday: !!lead.contactedToday,
                 followUpDate: lead.followUpDate ? new Date(lead.followUpDate).toISOString().split("T")[0] : "",
             });
+            // Initialize custom field values from lead data
+            setCustomFieldValues(lead.customFields || {});
         }
     }, [lead, form]);
 
@@ -148,6 +151,10 @@ export function EditLeadDialog({
         });
 
         formData.append("id", lead._id);
+        // Append custom fields as JSON
+        if (Object.keys(customFieldValues).length > 0) {
+            formData.append("customFields", JSON.stringify(customFieldValues));
+        }
         const result = await updateLead(null, formData);
         if (result && result.message === "Invalid fields") {
             toast({ title: "Error", description: "Please check your input", variant: "destructive" });
@@ -552,6 +559,44 @@ export function EditLeadDialog({
                                 />
                             </div>
                         </div>
+
+                        {/* Custom Fields */}
+                        {settings?.customFields?.length > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold flex items-center gap-2 text-amber-400/80">
+                                    <span className="w-1 h-4 bg-amber-500 rounded-full" />
+                                    Custom Fields
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {settings.customFields.map((cf: any) => (
+                                        <div key={cf.key} className="space-y-1">
+                                            <label className="text-xs font-medium text-muted-foreground">{cf.label}</label>
+                                            {cf.type === "select" ? (
+                                                <select
+                                                    title={cf.label}
+                                                    value={customFieldValues[cf.key] || ""}
+                                                    onChange={(e) => setCustomFieldValues(prev => ({ ...prev, [cf.key]: e.target.value }))}
+                                                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm"
+                                                >
+                                                    <option value="">Select...</option>
+                                                    {cf.options?.map((opt: string) => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <Input
+                                                    type={cf.type || "text"}
+                                                    value={customFieldValues[cf.key] || ""}
+                                                    onChange={(e) => setCustomFieldValues(prev => ({ ...prev, [cf.key]: e.target.value }))}
+                                                    placeholder={cf.label}
+                                                    className="rounded-xl border-white/10 bg-white/5"
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="flex gap-3 justify-end pt-4">
                             <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-xl border-white/10">Cancel</Button>
