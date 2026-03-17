@@ -445,7 +445,9 @@ export async function getAllUsers() {
 }
 
 /**
- * Get active SALES users for lead assignment dropdowns.
+ * Get active users for lead assignment dropdowns.
+ * Returns all active users (not just SALES) since leads can now
+ * be assigned to any team member.
  */
 export async function getSalesUsers() {
     const session = await auth();
@@ -458,11 +460,10 @@ export async function getSalesUsers() {
         await dbConnect();
         const users = await User.find({
             orgId: (session.user as any).orgId,
-            role: USER_ROLES.SALES,
             active: true,
         })
             .select("-passwordHash")
-            .sort({ name: 1 })
+            .sort({ role: 1, name: 1 })
             .lean();
 
         return users.map((u: any) => ({
@@ -480,3 +481,4 @@ export async function getSalesUsers() {
         return [];
     }
 }
+
