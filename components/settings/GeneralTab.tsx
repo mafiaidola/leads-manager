@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Target, Save, GripVertical } from "lucide-react";
+import { X, Target, Save, GripVertical, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const COLOR_NAME_MAP: Record<string, string> = {
@@ -39,6 +39,9 @@ interface GeneralTabProps {
     onSaveGoals: () => void;
     // NEW: callback to reorder statuses
     onReorderStatuses?: (statuses: any[]) => void;
+    // Auto-assignment strategy
+    autoAssignStrategy?: string;
+    onAutoAssignStrategyChange?: (strategy: string) => void;
 }
 
 export function GeneralTab({
@@ -47,6 +50,8 @@ export function GeneralTab({
     onSourcesChange, onGoalsChange,
     onSaveSettings, onSaveGoals,
     onReorderStatuses,
+    autoAssignStrategy = "none",
+    onAutoAssignStrategyChange,
 }: GeneralTabProps) {
 
     // ── Drag-to-reorder state
@@ -263,6 +268,44 @@ export function GeneralTab({
                         <Button onClick={onSaveGoals} className="rounded-xl bg-amber-500 hover:bg-amber-600 px-8 shadow-lg shadow-amber-500/20">
                             <Save className="h-4 w-4 mr-2" /> Save Goals
                         </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* ── Auto-Assignment Strategy ────────────────────────── */}
+            <Card className="md:col-span-2 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                <CardHeader>
+                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                        <Users className="h-5 w-5 text-cyan-500" />
+                        Lead Auto-Assignment
+                    </CardTitle>
+                    <CardDescription className="text-muted-foreground/80">
+                        Automatically assign new leads to team members when no assignee is selected.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                        {[
+                            { value: "none", label: "Disabled", desc: "Manual assignment only" },
+                            { value: "round_robin", label: "Round Robin", desc: "Cycles through team members in order" },
+                            { value: "least_loaded", label: "Least Loaded", desc: "Assigns to member with fewest leads" },
+                        ].map(opt => (
+                            <button
+                                key={opt.value}
+                                onClick={() => onAutoAssignStrategyChange?.(opt.value)}
+                                className={cn(
+                                    "p-4 rounded-2xl border text-left transition-all",
+                                    autoAssignStrategy === opt.value
+                                        ? "border-cyan-500/50 bg-cyan-500/10 ring-1 ring-cyan-500/30"
+                                        : "border-white/10 bg-white/5 hover:bg-white/10"
+                                )}
+                            >
+                                <p className={cn("text-sm font-semibold", autoAssignStrategy === opt.value ? "text-cyan-400" : "text-foreground")}>
+                                    {opt.label}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">{opt.desc}</p>
+                            </button>
+                        ))}
                     </div>
                 </CardContent>
             </Card>

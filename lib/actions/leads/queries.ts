@@ -25,6 +25,7 @@ import LeadAction from "@/models/LeadAction";
 import AuditLog from "@/models/AuditLog";
 import { USER_ROLES } from "@/models/User";
 import mongoose from "mongoose";
+import { calculateLeadScore } from "@/lib/utils/leadScoring";
 
 // ─── Real-time duplicate phone check ────────────────────────────────────────
 export async function checkDuplicatePhone(phone: string, excludeId?: string) {
@@ -363,6 +364,10 @@ export async function getLeads(searchParams: any) {
                 noteCount: noteMap.get(id) || 0,
                 actionCount: actionMap.get(id) || 0,
                 followUpDate: l.followUpDate ? (l.followUpDate as Date).toISOString() : null,
+                ...(() => {
+                    const scoreResult = calculateLeadScore({ ...l, notesCount: noteMap.get(id) || 0 });
+                    return { leadScore: scoreResult.score, leadGrade: scoreResult.grade, leadScoreColor: scoreResult.color };
+                })(),
             };
         });
 

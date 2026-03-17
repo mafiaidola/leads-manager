@@ -69,6 +69,7 @@ export interface IOrganization {
         customRoles: IOrgCustomRole[];
         goals: IOrgGoals;
         defaultCurrency: string;
+        autoAssignStrategy: "round_robin" | "least_loaded" | "none";
         notificationPreferences: {
             onNewLead: boolean;
             onAssigned: boolean;
@@ -132,6 +133,7 @@ const OrganizationSchema = new Schema<IOrganization>(
                 monthlyConversionTarget: { type: Number, default: 10 },
             },
             defaultCurrency: { type: String, default: "AED" },
+            autoAssignStrategy: { type: String, enum: ["round_robin", "least_loaded", "none"], default: "none" },
             notificationPreferences: {
                 onNewLead: { type: Boolean, default: true },
                 onAssigned: { type: Boolean, default: true },

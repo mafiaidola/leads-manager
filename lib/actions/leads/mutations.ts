@@ -24,6 +24,8 @@ import mongoose from "mongoose";
 import { logAudit } from "@/lib/actions/audit";
 import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
 import { createNotification, getAdminUserIds } from "@/lib/actions/notifications";
+import { getAutoAssignee } from "@/lib/utils/autoAssignment";
+import Organization from "@/models/Organization";
 
 const LeadSchema = z.object({
     name: z.string().min(1),
@@ -50,6 +52,24 @@ const LeadSchema = z.object({
     contactedToday: z.string().optional(), // Checkbox
     followUpDate: z.string().optional(), // ISO date string
 });
+
+/**
+ * Resolves auto-assignment for a new lead based on org strategy.
+ * Returns userId string or undefined if strategy is "none".
+ */
+async function resolveAutoAssignment(orgId: string): Promise<string | undefined> {
+    try {
+        const org = await Organization.findById(orgId)
+            .select("settings.autoAssignStrategy")
+            .lean() as any;
+        const strategy = org?.settings?.autoAssignStrategy || "none";
+        if (strategy === "none") return undefined;
+        const userId = await getAutoAssignee(orgId, strategy);
+        return userId || undefined;
+    } catch {
+        return undefined;
+    }
+}
 
 export async function createLead(prevState: any, formData: FormData) {
     const session = await auth();
@@ -88,7 +108,7 @@ export async function createLead(prevState: any, formData: FormData) {
             ...rest,
             countryCode: rest.countryCode || "971",
             followUpDate: rest.followUpDate ? new Date(rest.followUpDate) : undefined,
-            assignedTo: assignedTo || undefined,
+            assignedTo: assignedTo || await resolveAutoAssignment(orgId),
             address: {
                 addressLine: rest.address,
                 city: rest.city,

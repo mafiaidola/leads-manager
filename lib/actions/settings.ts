@@ -58,6 +58,7 @@ export async function getSettings() {
             branding: org.branding || { appName: "Leads Mgr", accentColor: "#8b5cf6", logoUrl: "" },
             theme: org.theme || "violet",
             defaultCurrency: org.settings?.defaultCurrency || "AED",
+            autoAssignStrategy: org.settings?.autoAssignStrategy || "none",
             notifPrefs: org.settings?.notificationPreferences || { onNewLead: true, onAssigned: true, onStatusChange: false },
         }));
         return safe;
@@ -248,5 +249,30 @@ export async function updateCurrency(currency: string) {
     } catch (error) {
         console.error("updateCurrency error:", error);
         return { error: "Failed to update currency" };
+    }
+}
+
+/**
+ * Update auto-assignment strategy for the current organization.
+ */
+export async function updateAutoAssignStrategy(strategy: "round_robin" | "least_loaded" | "none") {
+    const session = await auth();
+    if (!session?.user?.orgId || session.user.role !== USER_ROLES.ADMIN) {
+        return { error: "Unauthorized" };
+    }
+
+    try {
+        await dbConnect();
+        const org = await Organization.findById(session.user.orgId);
+        if (!org) return { error: "Organization not found" };
+
+        org.settings.autoAssignStrategy = strategy;
+        await org.save();
+        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.SETTINGS, org._id.toString(), `Auto-assign strategy changed to: ${strategy}`);
+        revalidatePath("/settings");
+        return { message: "Auto-assignment strategy updated", success: true };
+    } catch (error) {
+        console.error("updateAutoAssignStrategy error:", error);
+        return { error: "Failed to update auto-assignment strategy" };
     }
 }
