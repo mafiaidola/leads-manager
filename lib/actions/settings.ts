@@ -18,6 +18,8 @@ import dbConnect from "@/lib/db";
 import Organization from "@/models/Organization";
 import { USER_ROLES } from "@/models/User";
 import { revalidatePath } from "next/cache";
+import { logAudit } from "@/lib/actions/audit";
+import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
 
 /**
  * Get settings for the current user's organization.
@@ -92,6 +94,7 @@ export async function updateSettings(data: {
         if (data.customRoles) org.settings.customRoles = data.customRoles;
 
         await org.save();
+        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.SETTINGS, org._id.toString(), "Updated general settings (statuses, sources, products, custom fields, roles)");
         revalidatePath("/settings");
         revalidatePath("/leads");
         revalidatePath("/");
@@ -130,6 +133,7 @@ export async function updateBranding(data: {
         if (data.logoUrl !== undefined) org.branding.logoUrl = data.logoUrl;
 
         await org.save();
+        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.SETTINGS, org._id.toString(), `Updated branding: ${data.appName || ""} accent=${data.accentColor || ""}`);
         revalidatePath("/settings");
         revalidatePath("/");
         return { message: "Branding updated successfully", success: true };

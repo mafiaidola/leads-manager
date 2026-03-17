@@ -6,6 +6,7 @@ import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import Organization from "@/models/Organization";
 import bcrypt from "bcryptjs";
+import { checkRateLimit, resetRateLimit } from "@/lib/utils/rateLimiter";
 
 declare module "next-auth" {
     interface Session {
@@ -56,6 +57,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
                 if (parsedCredentials.success) {
                     const { username, password, orgSlug } = parsedCredentials.data;
+
+                    // Rate limiting check (key = orgSlug:username)
+                    const rateLimitKey = `login:${orgSlug}:${username.toLowerCase()}`;
+                    const rateCheck = checkRateLimit(rateLimitKey);
+                    if (rateCheck.limited) {
+                        console.warn(`Rate limited: ${rateLimitKey}`);
+                        return null;
+                    }
 
                     await dbConnect();
 
@@ -108,6 +117,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                     );
 
                     if (passwordsMatch) {
+                        // Reset rate limit on successful login
+                        resetRateLimit(rateLimitKey);
                         // Track login history
                         try {
                             await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } });

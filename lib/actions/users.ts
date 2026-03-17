@@ -30,6 +30,16 @@ import { logAudit } from "@/lib/actions/audit";
 import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
 import mongoose from "mongoose";
 
+// ─── Password complexity ────────────────────────────────────────────────────
+
+function validatePasswordComplexity(pw: string): string | null {
+    if (pw.length < 8) return "Password must be at least 8 characters";
+    if (!/[A-Z]/.test(pw)) return "Password must contain at least one uppercase letter";
+    if (!/[a-z]/.test(pw)) return "Password must contain at least one lowercase letter";
+    if (!/[0-9]/.test(pw)) return "Password must contain at least one number";
+    return null; // Valid
+}
+
 // ─── Validation schemas ────────────────────────────────────────────────────
 
 const ALLOWED_ROLES = Object.values(USER_ROLES) as string[];
@@ -40,7 +50,7 @@ const CreateUserSchema = z.object({
         .string()
         .min(3, "Username must be at least 3 characters")
         .regex(/^[a-zA-Z0-9_.-]+$/, "Username: letters, numbers, dots, hyphens, underscores only"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
     role: z.enum(["ADMIN", "MARKETING", "SALES"]),
     targetOrgId: z.string().optional(),
 });
@@ -103,6 +113,10 @@ export async function createUserForOrg(data: {
     }
 
     const { name, username, password, role } = parsed.data;
+
+    // Server-side password complexity check
+    const complexityError = validatePasswordComplexity(password);
+    if (complexityError) return { message: complexityError };
 
     try {
         await dbConnect();
@@ -295,7 +309,9 @@ export async function changePassword(oldPassword: string, newPassword: string) {
     const session = await auth();
     if (!session) return { message: "Unauthorized" };
 
-    if (newPassword.length < 6) return { message: "Password must be at least 6 characters" };
+    if (newPassword.length < 8) return { message: "Password must be at least 8 characters" };
+    const complexityError = validatePasswordComplexity(newPassword);
+    if (complexityError) return { message: complexityError };
 
     try {
         await dbConnect();
@@ -322,7 +338,9 @@ export async function adminResetPassword(userId: string, newPassword: string) {
     const isAdmin = (session.user as any).role === USER_ROLES.ADMIN;
     if (!isSuperAdmin && !isAdmin) return { message: "Forbidden" };
 
-    if (!newPassword || newPassword.length < 6) return { message: "Password must be at least 6 characters" };
+    if (!newPassword || newPassword.length < 8) return { message: "Password must be at least 8 characters" };
+    const complexityError = validatePasswordComplexity(newPassword);
+    if (complexityError) return { message: complexityError };
 
     const sessionOrgId = (session.user as any).orgId as string;
 
