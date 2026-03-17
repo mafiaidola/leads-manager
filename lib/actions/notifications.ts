@@ -62,7 +62,8 @@ export async function createNotification({
 export async function getAdminUserIds(): Promise<string[]> {
     const session = await auth();
     await dbConnect();
-    const filter: any = { role: { $in: [USER_ROLES.ADMIN, USER_ROLES.MARKETING] } };
+    // 🔒 Only include active users — deactivated admins must not receive notifications
+    const filter: any = { role: { $in: [USER_ROLES.ADMIN, USER_ROLES.MARKETING] }, active: true };
     if (session?.user?.orgId) filter.orgId = session.user.orgId;
     const admins = await User.find(filter).select("_id").lean();
     return admins.map((u: any) => u._id.toString());

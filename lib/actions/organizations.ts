@@ -353,7 +353,7 @@ export async function getOrganizationUsers(orgId: string) {
     try {
         await dbConnect();
         const users = await User.find({ orgId: new mongoose.Types.ObjectId(orgId) })
-            .select("name username role active isSuperAdmin createdAt")
+            .select("name username role active isSuperAdmin lastLogin createdAt")  // ✅ lastLogin added
             .sort({ createdAt: -1 })
             .lean();
 
@@ -364,6 +364,7 @@ export async function getOrganizationUsers(orgId: string) {
             role: u.role,
             active: u.active,
             isSuperAdmin: u.isSuperAdmin || false,
+            lastLogin: u.lastLogin?.toISOString() || null,  // ✅ exposed
             createdAt: u.createdAt?.toISOString(),
         }));
     } catch (error) {
@@ -387,6 +388,13 @@ export async function addUserToOrganization(orgId: string, data: {
     try {
         await dbConnect();
 
+        // 🔒 Validate role against allowed enum values
+        const allowedRoles = Object.values(USER_ROLES);
+        const role = data.role || USER_ROLES.SALES;
+        if (!allowedRoles.includes(role as any)) {
+            return { error: `Invalid role "${data.role}". Allowed: ${allowedRoles.join(", ")}` };
+        }
+
         const existing = await User.findOne({
             username: data.username.toLowerCase(),
             orgId: new mongoose.Types.ObjectId(orgId),
@@ -399,7 +407,7 @@ export async function addUserToOrganization(orgId: string, data: {
             name: data.name,
             username: data.username.toLowerCase(),
             passwordHash,
-            role: data.role || USER_ROLES.SALES,
+            role,
             active: true,
         });
 
@@ -503,7 +511,14 @@ export async function updateOrgUser(
         if (user.isSuperAdmin) return { error: "Cannot modify SuperAdmin users." };
 
         if (data.name !== undefined) user.name = data.name;
-        if (data.role !== undefined) user.role = data.role as any;
+        if (data.role !== undefined) {
+            // 🔒 Validate role — reject non-enum values to prevent privilege escalation
+            const allowedRoles = Object.values(USER_ROLES);
+            if (!allowedRoles.includes(data.role as any)) {
+                return { error: `Invalid role "${data.role}". Allowed: ${allowedRoles.join(", ")}` };
+            }
+            user.role = data.role as any;
+        }
         if (data.active !== undefined) user.active = data.active;
         await user.save();
 
@@ -526,7 +541,10 @@ export async function removeOrgUser(orgId: string, userId: string) {
         if (!user) return { error: "User not found." };
         if (user.isSuperAdmin) return { error: "Cannot remove SuperAdmin users." };
 
-        await User.deleteOne({ _id: userId });
+        // ✅ Soft-delete: deactivate instead of hard-delete to preserve audit trail
+        user.active = false;
+        await user.save();
+
         revalidatePath("/settings");
         return { success: true };
     } catch (error: any) {

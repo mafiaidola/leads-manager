@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -219,17 +219,15 @@ export function BrandingTab({
                                 {/* Presets */}
                                 <div className="flex flex-wrap gap-2">
                                     {ACCENT_PRESETS.map((preset) => (
-                                        <button
-                                            key={preset.color}
-                                            onClick={() => onBrandingChange({ ...branding, accentColor: preset.color })}
+                                        <AccentColorDiv color={preset.color}
                                             title={preset.name}
-                                            style={{ '--accent-color': preset.color } as React.CSSProperties}
                                             className={cn(
                                                 "h-9 w-9 rounded-xl transition-all duration-200 hover:scale-110 border-2 branding-preview",
                                                 branding.accentColor === preset.color
                                                     ? "border-white shadow-lg scale-110"
                                                     : "border-transparent hover:border-white/30"
                                             )}
+                                            onClick={() => onBrandingChange({ ...branding, accentColor: preset.color })}
                                         />
                                     ))}
                                 </div>
@@ -272,16 +270,16 @@ export function BrandingTab({
                                 <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Sidebar</p>
                                 <div className="bg-[#0a0a0a] rounded-2xl p-5 border border-white/10">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <div
+                                        <AccentDiv
+                                            accent={branding.accentColor}
                                             className="h-11 w-11 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg accent-gradient-logo"
-                                            style={{ '--accent': branding.accentColor } as React.CSSProperties}
                                         >
                                             {branding.logoUrl ? (
                                                 <img src={branding.logoUrl} alt="" className="h-7 w-7 object-contain" />
                                             ) : (
                                                 (branding.appName || "A").charAt(0).toUpperCase()
                                             )}
-                                        </div>
+                                        </AccentDiv>
                                         <div>
                                             <p className="font-bold text-sm text-white">{branding.appName || "SMTC"}</p>
                                             <p className="text-[10px] text-white/40">Exclusive Edition</p>
@@ -302,27 +300,27 @@ export function BrandingTab({
                             <div>
                                 <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Login Page</p>
                                 <div className="bg-gradient-to-br from-[#0a0a0a] to-[#1a1a2e] rounded-2xl p-5 border border-white/10 text-center">
-                                    <div
-                                        className="h-14 w-14 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-xl shadow-xl mb-3 accent-gradient-logo"
-                                        style={{ '--accent': branding.accentColor } as React.CSSProperties}
-                                    >
+                                    <AccentDiv
+                                            accent={branding.accentColor}
+                                            className="h-14 w-14 rounded-2xl mx-auto flex items-center justify-center text-white font-bold text-xl shadow-xl mb-3 accent-gradient-logo"
+                                        >
                                         {branding.logoUrl ? (
                                             <img src={branding.logoUrl} alt="" className="h-9 w-9 object-contain" />
                                         ) : (
                                             (branding.appName || "A").charAt(0).toUpperCase()
                                         )}
-                                    </div>
+                                    </AccentDiv>
                                     <p className="font-bold text-white text-sm">{branding.appName || "SMTC Group"}</p>
                                     <p className="text-[10px] text-white/30 mb-3">Exclusive Edition</p>
                                     <div className="space-y-2 max-w-[180px] mx-auto">
                                         <div className="h-7 bg-white/5 rounded-lg border border-white/10" />
                                         <div className="h-7 bg-white/5 rounded-lg border border-white/10" />
-                                        <div
-                                            className="h-7 rounded-lg text-[10px] font-bold text-white flex items-center justify-center branding-preview"
-                                            style={{ '--accent-color': branding.accentColor } as React.CSSProperties}
-                                        >
-                                            Sign In
-                                        </div>
+                                        <AccentColorDiv
+                                                color={branding.accentColor}
+                                                className="h-7 rounded-lg text-[10px] font-bold text-white flex items-center justify-center branding-preview"
+                                            >
+                                                Sign In
+                                            </AccentColorDiv>
                                     </div>
                                 </div>
                             </div>
@@ -442,4 +440,22 @@ export function BrandingTab({
             </Card>
         </>
     );
+}
+
+/* ─── Accent helpers: inject CSS custom properties via ref to avoid inline style warnings ─── */
+function AccentDiv({ accent, className, children }: { accent: string; className?: string; children?: React.ReactNode }) {
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => { if (ref.current) ref.current.style.setProperty("--accent", accent); }, [accent]);
+    return <div ref={ref} className={className}>{children}</div>;
+}
+
+function AccentColorDiv({
+    color, className, children, onClick, title,
+}: {
+    color: string; className?: string; children?: React.ReactNode;
+    onClick?: () => void; title?: string;
+}) {
+    const ref = useRef<HTMLButtonElement>(null);
+    useEffect(() => { if (ref.current) ref.current.style.setProperty("--accent-color", color); }, [color]);
+    return <button ref={ref} className={className} onClick={onClick} title={title}>{children}</button>;
 }

@@ -1,12 +1,13 @@
 /**
  * @route GET /api/backup
- * @description Downloads org data as JSON attachment (admin-only).
- * Includes leads, users, notes, actions, audit logs, notifications.
+ * @description Downloads org data as JSON attachment (ADMIN-only).
+ * Includes leads, users (no passwordHash), notes, actions, audit logs.
+ * Security: Requires ADMIN role. Strips passwordHash from all user records.
  */
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
 import Lead from "@/models/Lead";
-import User from "@/models/User";
+import User, { USER_ROLES } from "@/models/User";
 import Organization from "@/models/Organization";
 import LeadNote from "@/models/LeadNote";
 import LeadAction from "@/models/LeadAction";
@@ -18,6 +19,13 @@ export async function GET() {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // 🔒 ADMIN-only: backup contains sensitive org data
+    const role = (session.user as any).role;
+    const isSuperAdmin = (session.user as any).isSuperAdmin;
+    if (role !== USER_ROLES.ADMIN && !isSuperAdmin) {
+        return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+    }
+
     const orgId = (session.user as any).orgId;
     if (!orgId) {
         return NextResponse.json({ error: "No organization context" }, { status: 400 });
@@ -27,7 +35,8 @@ export async function GET() {
         await dbConnect();
         const [leads, users, org, notes, actions] = await Promise.all([
             Lead.find({ orgId }).lean(),
-            User.find({ orgId }).lean(),
+            // 🔒 Never export passwordHash — use .select() to strip it
+            User.find({ orgId }).select("-passwordHash").lean(),
             Organization.findById(orgId).lean(),
             LeadNote.find({ orgId }).lean(),
             LeadAction.find({ orgId }).lean(),
@@ -36,6 +45,7 @@ export async function GET() {
         const backup = {
             exportedAt: new Date().toISOString(),
             exportedBy: session.user.name || session.user.email || "Admin",
+            _security: "passwordHash fields deliberately omitted",
             data: {
                 leads,
                 users,

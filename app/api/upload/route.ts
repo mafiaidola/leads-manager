@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put, del } from "@vercel/blob";
 import { auth } from "@/auth";
+import { USER_ROLES } from "@/models/User";
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"];
@@ -17,6 +18,13 @@ export async function POST(req: NextRequest) {
         const session = await auth();
         if (!session?.user?.orgId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // 🔒 Only ADMIN or SuperAdmin can upload org logos
+        const role = (session.user as any).role;
+        const isSuperAdmin = (session.user as any).isSuperAdmin;
+        if (role !== USER_ROLES.ADMIN && !isSuperAdmin) {
+            return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
         }
 
         const formData = await req.formData();

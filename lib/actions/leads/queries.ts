@@ -142,15 +142,23 @@ export async function getLeadTimeline(leadId: string) {
     const session = await auth();
     if (!session) return [];
 
+    // 🔒 Verify the lead belongs to the caller's org before returning timeline
+    const orgId = session.user.orgId;
+    if (!orgId) return [];
+
     try {
         await dbConnect();
 
+        // First verify the lead belongs to this org
+        const lead = await Lead.findOne({ _id: leadId, orgId }).select("_id").lean();
+        if (!lead) return [];  // Lead doesn't exist in caller's org
+
         const [notes, actions, audits] = await Promise.all([
-            LeadNote.find({ leadId })
+            LeadNote.find({ leadId, orgId })  // ✅ orgId scoped
                 .populate("authorId", "name")
                 .sort({ createdAt: -1 })
                 .lean(),
-            LeadAction.find({ leadId })
+            LeadAction.find({ leadId, orgId })  // ✅ orgId scoped
                 .populate("authorId", "name")
                 .sort({ createdAt: -1 })
                 .lean(),

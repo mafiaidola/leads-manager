@@ -1,36 +1,36 @@
 /**
  * @component SettingsClient
- * @description Main settings page client component with 9 tabbed sections:
- * General, Products, Team, Branding, Roles, Account, System, WhatsApp, Organizations.
- *
- * Receives serialised settings, users, and orgs from the server page component.
- * Renders each tab as a lazy-loaded child component.
+ * @description Main settings page client component with tabbed sections.
+ * URL-hash navigation: ?tab=xxx persists active tab across refreshes.
  */
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { updateSettings, updateBranding, updateGoals, updateTheme } from "@/lib/actions/settings";
-import { changePassword } from "@/lib/actions/users";
+import { Switch } from "@/components/ui/switch";
+import { updateSettings, updateBranding, updateGoals, updateTheme, updateNotificationPrefs } from "@/lib/actions/settings";
 import { useToast } from "@/hooks/use-toast";
-import { X, Shield, Key, Save, Check, Database, HardDrive, FileDown, Download } from "lucide-react";
+import { Shield, Save, Check, Database, HardDrive, FileDown, Download, X, Bell } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
 import WhatsAppConnectCard from "@/components/whatsapp/WhatsAppConnectCard";
 import dynamic from "next/dynamic";
 
-// Static imports for default-visible tabs
+// Static imports
 import { GeneralTab } from "./GeneralTab";
 import { ProductsTab } from "./ProductsTab";
+import { AccountTab } from "./AccountTab";
 
-// Dynamic imports for heavy tabs (loaded on demand)
-const TeamTab = dynamic(() => import("./TeamTab").then(m => ({ default: m.TeamTab })), { ssr: false });
-const BrandingTab = dynamic(() => import("./BrandingTab").then(m => ({ default: m.BrandingTab })), { ssr: false });
+// Dynamic imports (loaded on demand)
+const TeamTab       = dynamic(() => import("./TeamTab").then(m => ({ default: m.TeamTab })), { ssr: false });
+const BrandingTab   = dynamic(() => import("./BrandingTab").then(m => ({ default: m.BrandingTab })), { ssr: false });
+const SecurityTab   = dynamic(() => import("./SecurityTab").then(m => ({ default: m.SecurityTab })), { ssr: false });
 const OrganizationsTab = dynamic(() => import("./OrganizationsTab").then(m => ({ default: m.OrganizationsTab })), { ssr: false });
 
 const ALL_PERMISSIONS = [
@@ -44,11 +44,37 @@ const ALL_PERMISSIONS = [
     { key: "export_data", label: "Export Data" },
 ];
 
-export function SettingsClient({ settings, users, isSuperAdmin, organizations, currentOrgId }: { settings: any, users: any[], isSuperAdmin?: boolean, organizations?: any[], currentOrgId?: string }) {
+export function SettingsClient({
+    settings, users, isSuperAdmin, organizations, currentOrgId, securityStats, currentUser,
+}: {
+    settings: any;
+    users: any[];
+    isSuperAdmin?: boolean;
+    organizations?: any[];
+    currentOrgId?: string;
+    securityStats?: { users: any[]; recentEvents: any[] };
+    currentUser?: any;
+}) {
+    const router        = useRouter();
+    const searchParams  = useSearchParams();
+
+    // ── URL-persisted tab ────────────────────────────────────────
+    const defaultTab = searchParams.get("tab") || "general";
+    const handleTabChange = useCallback((value: string) => {
+        router.replace(`?tab=${value}`, { scroll: false });
+    }, [router]);
+
     const [statuses, setStatuses] = useState<any[]>(settings?.statuses || []);
-    const [sources, setSources] = useState<any[]>(settings?.sources || []);
+    const [sources, setSources]   = useState<any[]>(settings?.sources || []);
     const [products, setProducts] = useState<any[]>(settings?.products || []);
     const { toast } = useToast();
+
+    // Notification preferences
+    const [notifPrefs, setNotifPrefs] = useState({
+        onNewLead:      settings?.notifPrefs?.onNewLead      ?? true,
+        onAssigned:     settings?.notifPrefs?.onAssigned     ?? true,
+        onStatusChange: settings?.notifPrefs?.onStatusChange ?? false,
+    });
 
     // Branding state
     const [branding, setBranding] = useState({
@@ -66,8 +92,9 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
     // Theme state
     const [currentTheme, setCurrentTheme] = useState<"violet" | "ocean" | "emerald">(settings?.theme || "violet");
 
-    // Export format state
-    const [exportFormat, setExportFormat] = useState<"csv" | "excel" | "word">("csv");
+    // Export state
+    const [exportOrgId, setExportOrgId]    = useState<string>("all");
+    const [exportFormat, setExportFormat]  = useState<"csv" | "excel" | "word">("csv");
     const { setTheme } = useTheme();
 
     // Custom Roles state
@@ -76,8 +103,7 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
     // Custom Fields state
     const [customFields, setCustomFields] = useState<any[]>(settings?.customFields || []);
 
-    // Password change state
-    const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    // Password change state (kept for legacy, AccountTab manages its own)
 
     const handleSaveSettings = useCallback(async () => {
         const result = await updateSettings({
@@ -93,6 +119,11 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
             toast({ title: result?.error || "Error saving settings", variant: "destructive" });
         }
     }, [statuses, sources, products, customFields, customRoles, toast]);
+
+    // ✅ Drag-reorder callback for GeneralTab statuses
+    const handleReorderStatuses = useCallback((reordered: any[]) => {
+        setStatuses(reordered);
+    }, []);
 
     const handleAddStatus = useCallback(() => {
         setStatuses(prev => [...prev, { key: "new_status", label: "New Status", color: "#8b5cf6" }]);
@@ -118,19 +149,6 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
         });
     }, []);
 
-    const handleChangePassword = useCallback(async () => {
-        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-            toast({ title: "Passwords don't match", variant: "destructive" });
-            return;
-        }
-        const result = await changePassword(passwordForm.oldPassword, passwordForm.newPassword);
-        if (result?.success) {
-            toast({ title: "Password changed successfully" });
-            setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
-        } else {
-            toast({ title: result?.message || "Error", variant: "destructive" });
-        }
-    }, [passwordForm, toast]);
 
     const handleSaveBranding = useCallback(async () => {
         const result = await updateBranding(branding);
@@ -170,16 +188,21 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
     const allRoles = useMemo(() => [...builtinRoles, ...customRoles.map((r: any) => r.name)], [customRoles]);
 
     return (
-        <Tabs defaultValue="general" className="space-y-6">
+        <Tabs defaultValue={defaultTab} onValueChange={handleTabChange} className="space-y-6">
             <TabsList className="bg-card/40 backdrop-blur-xl border border-white/10 p-1 rounded-2xl h-auto flex overflow-x-auto scrollbar-hide gap-1">
-                <TabsTrigger value="general" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">General</TabsTrigger>
-                <TabsTrigger value="products" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Products</TabsTrigger>
-                <TabsTrigger value="users" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Team</TabsTrigger>
-                <TabsTrigger value="branding" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Branding</TabsTrigger>
-                <TabsTrigger value="roles" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Roles</TabsTrigger>
-                <TabsTrigger value="account" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Account</TabsTrigger>
-                <TabsTrigger value="system" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">System</TabsTrigger>
-                <TabsTrigger value="whatsapp" className="rounded-xl data-[state=active]:bg-green-600 data-[state=active]:text-white transition-all">WhatsApp</TabsTrigger>
+                <TabsTrigger value="general"       className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">General</TabsTrigger>
+                <TabsTrigger value="products"      className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Products</TabsTrigger>
+                <TabsTrigger value="users"         className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Team</TabsTrigger>
+                <TabsTrigger value="branding"      className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Branding</TabsTrigger>
+                <TabsTrigger value="roles"         className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Roles</TabsTrigger>
+                <TabsTrigger value="account"       className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Account</TabsTrigger>
+                <TabsTrigger value="system"        className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">System</TabsTrigger>
+                <TabsTrigger value="whatsapp"      className="rounded-xl data-[state=active]:bg-green-600 data-[state=active]:text-white transition-all">WhatsApp</TabsTrigger>
+                {isSuperAdmin && (
+                    <TabsTrigger value="security"  className="rounded-xl data-[state=active]:bg-red-600 data-[state=active]:text-white transition-all">
+                        🔐 Security
+                    </TabsTrigger>
+                )}
                 {isSuperAdmin && (
                     <TabsTrigger value="organizations" className="rounded-xl data-[state=active]:bg-amber-600 data-[state=active]:text-white transition-all">Organizations</TabsTrigger>
                 )}
@@ -198,6 +221,7 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
                     onGoalsChange={setGoals}
                     onSaveSettings={handleSaveSettings}
                     onSaveGoals={handleSaveGoals}
+                    onReorderStatuses={handleReorderStatuses}
                 />
             </TabsContent>
 
@@ -214,7 +238,13 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
 
             {/* ── Team Tab ─────────────────────────────────── */}
             <TabsContent value="users">
-                <TeamTab users={users} allRoles={allRoles} />
+                <TeamTab
+                    users={users}
+                    allRoles={allRoles}
+                    isSuperAdmin={isSuperAdmin}
+                    organizations={organizations as any[] || []}
+                    currentOrgId={currentOrgId || ""}
+                />
             </TabsContent>
 
             {/* ── Branding Tab ─────────────────────────────── */}
@@ -306,37 +336,53 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
 
             {/* ── Account Tab ──────────────────────────────── */}
             <TabsContent value="account">
-                <Card className="max-w-lg rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold flex items-center gap-2">
-                            <Key className="h-5 w-5 text-orange-500" />
-                            Change Password
-                        </CardTitle>
-                        <CardDescription className="text-muted-foreground/80">Update your account password.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs ml-1">Current Password</Label>
-                            <Input type="password" value={passwordForm.oldPassword} onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })} className="rounded-xl border-white/10 bg-black/20" placeholder="••••••••" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs ml-1">New Password</Label>
-                            <Input type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} className="rounded-xl border-white/10 bg-black/20" placeholder="••••••••" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs ml-1">Confirm New Password</Label>
-                            <Input type="password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} className="rounded-xl border-white/10 bg-black/20" placeholder="••••••••" />
-                        </div>
-                        {passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword && (
-                            <p className="text-xs text-red-400">Passwords don&apos;t match</p>
-                        )}
-                        <Button onClick={handleChangePassword}
-                            disabled={!passwordForm.oldPassword || !passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword}
-                            className="rounded-xl bg-orange-500 hover:bg-orange-600 px-8 shadow-lg shadow-orange-500/20">
-                            <Key className="h-4 w-4 mr-2" />Update Password
-                        </Button>
-                    </CardContent>
-                </Card>
+                <div className="space-y-6">
+                    <AccountTab currentUser={currentUser || {
+                        name: "Current User",
+                        username: "user",
+                        role: "ADMIN",
+                        isSuperAdmin,
+                    }} />
+
+                    {/* Notification preferences */}
+                    <Card className="max-w-3xl rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                <Bell className="h-5 w-5 text-blue-400" />
+                                Notification Preferences
+                            </CardTitle>
+                            <CardDescription>Choose which events send you in-app notifications.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {([
+                                { key: "onNewLead",      label: "New lead created",              desc: "Notify me whenever a new lead is added" },
+                                { key: "onAssigned",     label: "Lead assigned to me",           desc: "Notify me when I am assigned to a lead" },
+                                { key: "onStatusChange", label: "Lead status changes",           desc: "Notify me on every status update" },
+                            ] as const).map(({ key, label, desc }) => (
+                                <div key={key} className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5">
+                                    <div>
+                                        <div className="text-sm font-medium">{label}</div>
+                                        <div className="text-xs text-muted-foreground">{desc}</div>
+                                    </div>
+                                    <Switch
+                                        checked={notifPrefs[key]}
+                                        onCheckedChange={(v: boolean) => setNotifPrefs(prev => ({ ...prev, [key]: v }))}
+                                    />
+                                </div>
+                            ))}
+                            <Button
+                                onClick={async () => {
+                                    const res = await updateNotificationPrefs(notifPrefs);
+                                    if (res?.success) toast({ title: "✅ Preferences saved" });
+                                    else toast({ title: res?.error || "Error", variant: "destructive" });
+                                }}
+                                className="rounded-xl bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/20"
+                            >
+                                <Save className="h-4 w-4 mr-2" /> Save Preferences
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
             </TabsContent>
 
             {/* ── System Tab ────────────────────────────────── */}
@@ -367,6 +413,49 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
                                 <HardDrive className="h-4 w-4" />
                                 Download Backup (JSON)
                             </Button>
+
+                            {/* Restore Section */}
+                            <div className="pt-4 border-t border-white/5 space-y-3">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Restore from Backup</p>
+                                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                    <p className="text-xs text-amber-400">⚠️ Restoring will merge backup data into your current organization. Existing data will not be deleted.</p>
+                                </div>
+                                <input
+                                    type="file"
+                                    accept=".json"
+                                    title="Select backup file"
+                                    className="block w-full text-xs text-muted-foreground file:mr-3 file:py-2 file:px-4 file:border-0 file:text-xs file:font-semibold file:bg-amber-500/10 file:text-amber-400 file:rounded-lg hover:file:bg-amber-500/20 file:cursor-pointer cursor-pointer"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        try {
+                                            const text = await file.text();
+                                            const backupData = JSON.parse(text);
+                                            if (!backupData?._meta?.version) {
+                                                toast({ title: "Invalid backup file", description: "Missing metadata", variant: "destructive" });
+                                                return;
+                                            }
+                                            // Import settings from backup
+                                            const orgSettings = backupData.organization?.settings;
+                                            if (orgSettings) {
+                                                if (orgSettings.statuses) setStatuses(orgSettings.statuses);
+                                                if (orgSettings.sources) setSources(orgSettings.sources);
+                                                if (orgSettings.products) setProducts(orgSettings.products);
+                                                if (orgSettings.customFields) setCustomFields(orgSettings.customFields);
+                                                if (orgSettings.goals) setGoals(orgSettings.goals);
+                                            }
+                                            const orgBranding = backupData.organization?.branding;
+                                            if (orgBranding) {
+                                                setBranding(orgBranding);
+                                            }
+                                            toast({ title: "✅ Backup loaded", description: `Loaded ${backupData._stats?.leads || 0} leads, ${backupData._stats?.users || 0} users. Click Save to apply settings.` });
+                                        } catch (err) {
+                                            toast({ title: "Failed to read backup", description: "Invalid JSON file", variant: "destructive" });
+                                        }
+                                        e.target.value = '';
+                                    }}
+                                />
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -391,7 +480,20 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
                                     <li>Assigned agent, created date</li>
                                 </ul>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 flex-wrap">
+                                {isSuperAdmin && organizations && organizations.length > 0 && (
+                                    <Select value={exportOrgId} onValueChange={setExportOrgId}>
+                                        <SelectTrigger className="w-44 rounded-xl border-white/10 bg-black/20">
+                                            <SelectValue placeholder="All Organizations" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                            <SelectItem value="all">All Organizations</SelectItem>
+                                            {organizations.map((o: any) => (
+                                                <SelectItem key={o._id} value={o._id}>{o.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                                 <Select value={exportFormat} onValueChange={(v: "csv" | "excel" | "word") => setExportFormat(v)}>
                                     <SelectTrigger className="w-36 rounded-xl border-white/10 bg-black/20">
                                         <SelectValue />
@@ -403,7 +505,10 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
                                     </SelectContent>
                                 </Select>
                                 <Button
-                                    onClick={() => { window.location.href = `/api/leads/export?format=${exportFormat}`; }}
+                                    onClick={() => {
+                                        const orgParam = isSuperAdmin && exportOrgId !== "all" ? `&orgId=${exportOrgId}` : "";
+                                        window.location.href = `/api/leads/export?format=${exportFormat}${orgParam}`;
+                                    }}
                                     className="rounded-xl bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 gap-2"
                                 >
                                     <Download className="h-4 w-4" />
@@ -443,6 +548,16 @@ export function SettingsClient({ settings, users, isSuperAdmin, organizations, c
                     </Card>
                 </div>
             </TabsContent>
+
+            {/* ── Security Tab (SuperAdmin only) ────────────── */}
+            {isSuperAdmin && (
+                <TabsContent value="security">
+                    <SecurityTab
+                        users={securityStats?.users || []}
+                        recentEvents={securityStats?.recentEvents || []}
+                    />
+                </TabsContent>
+            )}
 
             {/* ── Organizations Tab (SuperAdmin only) ──────── */}
             {isSuperAdmin && (

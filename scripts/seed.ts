@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import User, { USER_ROLES } from "../models/User";
-import Settings from "../models/Settings";
+
 import path from "path";
 
 // Load environment variables from .env.local
@@ -48,19 +48,8 @@ async function seed() {
         await mongoose.connect(MONGODB_URI!);
         console.log("Connected to MongoDB for seeding");
 
-        // 1. Seed Settings
-        const settingsCount = await Settings.countDocuments();
-        if (settingsCount === 0) {
-            console.log("Seeding Settings...");
-            await Settings.create({
-                statuses: DEFAULT_STATUSES,
-                sources: DEFAULT_SOURCES,
-                products: DEFAULT_PRODUCTS,
-            });
-            console.log("Settings seeded.");
-        } else {
-            console.log("Settings already exist, skipping.");
-        }
+        // Settings are now embedded in Organization model, no standalone seeding needed
+        console.log("Settings are embedded in Organization model — skipping standalone seed.");
 
         // 2. Seed Users
         const adminEmail = "admin@example.com";

@@ -106,6 +106,7 @@ export async function createLead(prevState: any, formData: FormData) {
             public: rawFormData.public === "on",
             defaultLanguage: rest.defaultLanguage || "System Default",
             position: rest.position,
+            customFields: rawFormData.customFields ? JSON.parse(rawFormData.customFields as string) : {},
         });
 
         // Create SYSTEM note
@@ -242,6 +243,13 @@ export async function updateLead(prevState: any, formData: FormData) {
         lead.contactedToday = rawFormData.contactedToday === "on";
         lead.followUpDate = rest.followUpDate ? new Date(rest.followUpDate) : undefined;
         lead.updatedBy = new mongoose.Types.ObjectId(session.user.id);
+
+        // Custom fields
+        if (rawFormData.customFields) {
+            try {
+                lead.customFields = JSON.parse(rawFormData.customFields as string);
+            } catch { /* ignore parse errors */ }
+        }
 
         const prevAssignedTo = lead.assignedTo?.toString();
         await lead.save();

@@ -40,8 +40,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: `User "${username}" not found in org "${org.name}"` }, { status: 404 });
         }
 
-        // Reset password
-        user.passwordHash = await bcrypt.hash(newPassword, 10);
+        // Reset password — bcrypt cost 12 (consistent with organizations.ts and auth.ts)
+        user.passwordHash = await bcrypt.hash(newPassword, 12);
         await user.save();
 
         return NextResponse.json({

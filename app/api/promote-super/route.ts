@@ -15,12 +15,13 @@ import { NextRequest, NextResponse } from "next/server";
  * Only works in dev, or with the SEED_SECRET env variable.
  */
 export async function GET(request: NextRequest) {
-    const isDev = process.env.NODE_ENV === "development";
+    // 🔒 SECURITY: Always require SEED_SECRET, even in development.
+    // Removing isDev bypass prevents accidental SuperAdmin promotion in local dev.
     const seedSecret = process.env.SEED_SECRET?.trim();
     const providedSecret = request.nextUrl.searchParams.get("secret")?.trim();
     const username = request.nextUrl.searchParams.get("username");
 
-    if (!isDev && (!seedSecret || providedSecret !== seedSecret)) {
+    if (!seedSecret || providedSecret !== seedSecret) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

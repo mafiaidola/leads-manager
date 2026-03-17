@@ -37,8 +37,13 @@ export async function bulkUpdateStatus(ids: string[], status: string) {
 
     try {
         await dbConnect();
+        // 🔒 RBAC: Sales can only affect their own assigned leads
+        const bulkQuery: any = { _id: { $in: ids }, orgId: session.user.orgId };
+        if (session.user.role === USER_ROLES.SALES) {
+            bulkQuery.assignedTo = session.user.id;
+        }
         await Lead.updateMany(
-            { _id: { $in: ids }, orgId: session.user.orgId },
+            bulkQuery,
             { status, updatedBy: new mongoose.Types.ObjectId(session.user.id) }
         );
         logAudit(AUDIT_ACTIONS.BULK_UPDATE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk status change to ${status} (${ids.length} leads)`);

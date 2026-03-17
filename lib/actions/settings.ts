@@ -55,6 +55,8 @@ export async function getSettings() {
             goals: org.settings?.goals || { monthlyLeadTarget: 50, monthlyConversionTarget: 10 },
             branding: org.branding || { appName: "Leads Mgr", accentColor: "#8b5cf6", logoUrl: "" },
             theme: org.theme || "violet",
+            defaultCurrency: org.settings?.defaultCurrency || "AED",
+            notifPrefs: org.settings?.notificationPreferences || { onNewLead: true, onAssigned: true, onStatusChange: false },
         }));
         return safe;
     } catch (error) {
@@ -185,5 +187,62 @@ export async function updateTheme(theme: "violet" | "ocean" | "emerald") {
     } catch (error) {
         console.error("updateTheme error:", error);
         return { error: "Failed to update theme" };
+    }
+}
+
+/**
+ * Update notification preferences for the current organization.
+ */
+export async function updateNotificationPrefs(prefs: {
+    onNewLead?: boolean;
+    onAssigned?: boolean;
+    onStatusChange?: boolean;
+}) {
+    const session = await auth();
+    if (!session?.user?.orgId) return { error: "Unauthorized" };
+
+    try {
+        await dbConnect();
+        const org = await Organization.findById(session.user.orgId);
+        if (!org) return { error: "Organization not found" };
+
+        if (!org.settings.notificationPreferences) {
+            org.settings.notificationPreferences = { onNewLead: true, onAssigned: true, onStatusChange: false };
+        }
+        if (prefs.onNewLead !== undefined) org.settings.notificationPreferences.onNewLead = prefs.onNewLead;
+        if (prefs.onAssigned !== undefined) org.settings.notificationPreferences.onAssigned = prefs.onAssigned;
+        if (prefs.onStatusChange !== undefined) org.settings.notificationPreferences.onStatusChange = prefs.onStatusChange;
+
+        await org.save();
+        revalidatePath("/settings");
+        return { message: "Notification preferences saved", success: true };
+    } catch (error) {
+        console.error("updateNotificationPrefs error:", error);
+        return { error: "Failed to update notification preferences" };
+    }
+}
+
+/**
+ * Update default currency for the current organization.
+ */
+export async function updateCurrency(currency: string) {
+    const session = await auth();
+    if (!session?.user?.orgId || session.user.role !== USER_ROLES.ADMIN) {
+        return { error: "Unauthorized" };
+    }
+
+    try {
+        await dbConnect();
+        const org = await Organization.findById(session.user.orgId);
+        if (!org) return { error: "Organization not found" };
+
+        org.settings.defaultCurrency = currency;
+        await org.save();
+        revalidatePath("/settings");
+        revalidatePath("/leads");
+        return { message: "Currency updated", success: true };
+    } catch (error) {
+        console.error("updateCurrency error:", error);
+        return { error: "Failed to update currency" };
     }
 }

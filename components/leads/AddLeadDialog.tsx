@@ -72,6 +72,8 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
     const { toast } = useToast();
     const [duplicateWarning, setDuplicateWarning] = useState<{ exists: boolean; leadName?: string } | null>(null);
     const [checkingPhone, setCheckingPhone] = useState(false);
+    const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
+    const currency = settings?.defaultCurrency || "AED";
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -129,6 +131,11 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
             }
         });
 
+        // Add custom fields
+        if (Object.keys(customFieldValues).length > 0) {
+            formData.append('customFields', JSON.stringify(customFieldValues));
+        }
+
         const result = await createLead(null, formData);
         if (result && result.message === "Invalid fields") {
             toast({ title: "Error", description: "Please check your input", variant: "destructive" });
@@ -140,6 +147,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
 
         setOpen(false);
         setDuplicateWarning(null);
+        setCustomFieldValues({});
         toast({ title: "Success", description: "Lead created successfully" });
         form.reset();
     }
@@ -222,8 +230,8 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                                {users?.filter((u: any) => u.role === 'SALES').map((u: any) => (
-                                                    <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>
+                                                {users?.map((u: any) => (
+                                                    <SelectItem key={u._id} value={u._id}>{u.name} ({u.role})</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -324,7 +332,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                         name="value"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Expected Value (AED)</FormLabel>
+                                                <FormLabel>Expected Value ({currency})</FormLabel>
                                                 <FormControl>
                                                     <Input type="number" className="rounded-xl border-white/10 bg-white/5" {...field} />
                                                 </FormControl>
@@ -460,6 +468,44 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                 />
                             </div>
                         </div>
+
+                        {/* Dynamic Custom Fields */}
+                        {settings?.customFields?.length > 0 && (
+                            <div className="space-y-4 pt-4 border-t border-white/10">
+                                <h3 className="text-sm font-bold flex items-center gap-2 text-primary/80">
+                                    <span className="w-1 h-4 bg-amber-500 rounded-full" />
+                                    Custom Fields
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {settings.customFields.map((cf: any) => (
+                                        <div key={cf.key} className="space-y-1.5">
+                                            <label className="text-sm font-medium">{cf.label}</label>
+                                            {cf.type === 'select' ? (
+                                                <select
+                                                    title={`Select ${cf.label}`}
+                                                    value={customFieldValues[cf.key] || ''}
+                                                    onChange={e => setCustomFieldValues(prev => ({ ...prev, [cf.key]: e.target.value }))}
+                                                    className="w-full h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm"
+                                                >
+                                                    <option value="">Select...</option>
+                                                    {cf.options?.map((opt: string) => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <Input
+                                                    type={cf.type === 'number' ? 'number' : cf.type === 'date' ? 'date' : 'text'}
+                                                    placeholder={cf.label}
+                                                    value={customFieldValues[cf.key] || ''}
+                                                    onChange={e => setCustomFieldValues(prev => ({ ...prev, [cf.key]: e.target.value }))}
+                                                    className="rounded-xl border-white/10 bg-white/5"
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="space-y-4 pt-4 border-t border-white/10">
                             <FormField

@@ -68,6 +68,12 @@ export interface IOrganization {
         customFields: IOrgCustomField[];
         customRoles: IOrgCustomRole[];
         goals: IOrgGoals;
+        defaultCurrency: string;
+        notificationPreferences: {
+            onNewLead: boolean;
+            onAssigned: boolean;
+            onStatusChange: boolean;
+        };
     };
     createdAt: Date;
     updatedAt: Date;
@@ -124,6 +130,12 @@ const OrganizationSchema = new Schema<IOrganization>(
             goals: {
                 monthlyLeadTarget: { type: Number, default: 50 },
                 monthlyConversionTarget: { type: Number, default: 10 },
+            },
+            defaultCurrency: { type: String, default: "AED" },
+            notificationPreferences: {
+                onNewLead: { type: Boolean, default: true },
+                onAssigned: { type: Boolean, default: true },
+                onStatusChange: { type: Boolean, default: false },
             },
         },
     },

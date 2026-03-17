@@ -12,7 +12,7 @@
  */
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import {
     Building2, Users, BarChart3, TrendingUp, ArrowUpRight, Globe,
     Activity, Trophy, Clock, Zap
@@ -85,16 +85,16 @@ export const SuperAdminDashboard = React.memo(function SuperAdminDashboard({ sta
                                 <span className="text-sm font-bold uppercase tracking-wider">Top Performer</span>
                             </div>
                             <div className="flex items-center gap-3 mb-4">
-                                <div
+                                <AccentDiv
+                                    accent={stats.topPerformer.accentColor}
                                     className="h-12 w-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg accent-gradient-logo"
-                                    style={{ '--accent': stats.topPerformer.accentColor } as React.CSSProperties}
                                 >
                                     {stats.topPerformer.orgLogo ? (
                                         <img src={stats.topPerformer.orgLogo} alt="" className="h-7 w-7 object-contain" />
                                     ) : (
                                         stats.topPerformer.orgName.charAt(0).toUpperCase()
                                     )}
-                                </div>
+                                </AccentDiv>
                                 <div>
                                     <p className="text-lg font-bold">{stats.topPerformer.orgName}</p>
                                     <p className="text-xs text-muted-foreground">{stats.topPerformer.orgSlug}</p>
@@ -179,16 +179,16 @@ export const SuperAdminDashboard = React.memo(function SuperAdminDashboard({ sta
                                 </span>
 
                                 {/* Logo */}
-                                <div
+                                <AccentDiv
+                                    accent={org.accentColor}
                                     className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md accent-gradient-logo"
-                                    style={{ '--accent': org.accentColor } as React.CSSProperties}
                                 >
                                     {org.orgLogo ? (
                                         <img src={org.orgLogo} alt="" className="h-6 w-6 object-contain" />
                                     ) : (
                                         org.orgName.charAt(0).toUpperCase()
                                     )}
-                                </div>
+                                </AccentDiv>
 
                                 {/* Name */}
                                 <div className="min-w-0 flex-1 sm:min-w-[120px]">
@@ -201,12 +201,10 @@ export const SuperAdminDashboard = React.memo(function SuperAdminDashboard({ sta
                                 {/* Bar */}
                                 <div className="flex-1 hidden md:block">
                                     <div className="h-4 bg-white/5 rounded-full overflow-hidden">
-                                        <div
+                                        <AccentDiv
+                                            accent={org.accentColor}
                                             className="h-full rounded-full transition-all duration-500 accent-gradient-bar"
-                                            style={{
-                                                width: `${Math.max((org.totalLeads / maxLeads) * 100, 3)}%`,
-                                                '--accent': org.accentColor,
-                                            } as React.CSSProperties}
+                                            style={{ width: `${Math.max((org.totalLeads / maxLeads) * 100, 3)}%` }}
                                         />
                                     </div>
                                 </div>
@@ -262,15 +260,13 @@ export const SuperAdminDashboard = React.memo(function SuperAdminDashboard({ sta
                                     <div key={org.orgId} className="flex items-center gap-3">
                                         <div className="w-[100px] text-xs font-medium truncate">{org.orgName}</div>
                                         <div className="flex-1 h-8 bg-white/5 rounded-xl overflow-hidden relative">
-                                            <div
-                                                className="h-full rounded-xl flex items-center px-3 transition-all duration-700 accent-gradient-bar-soft"
-                                                style={{
-                                                    width: `${Math.max(pct, 5)}%`,
-                                                    '--accent': org.accentColor,
-                                                } as React.CSSProperties}
-                                            >
+                                            <AccentDiv
+                                            accent={org.accentColor}
+                                            className="h-full rounded-xl flex items-center px-3 transition-all duration-700 accent-gradient-bar-soft"
+                                            style={{ width: `${Math.max(pct, 5)}%` }}
+                                        >
                                                 <span className="text-[11px] font-bold text-white whitespace-nowrap">{org.totalLeads} leads</span>
-                                            </div>
+                                            </AccentDiv>
                                         </div>
                                         <div className="w-[50px] text-xs font-bold text-right text-emerald-400">{org.conversionRate}%</div>
                                     </div>
@@ -283,6 +279,22 @@ export const SuperAdminDashboard = React.memo(function SuperAdminDashboard({ sta
         </div>
     );
 });
+
+/* ─── AccentDiv: injects --accent CSS custom property via ref to avoid inline style warnings ─── */
+function AccentDiv({
+    accent, className, children, style,
+}: {
+    accent: string;
+    className?: string;
+    children?: React.ReactNode;
+    style?: React.CSSProperties;
+}) {
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (ref.current) ref.current.style.setProperty("--accent", accent);
+    }, [accent]);
+    return <div ref={ref} className={className} style={style}>{children}</div>;
+}
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
 function GlobalStatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color: string }) {

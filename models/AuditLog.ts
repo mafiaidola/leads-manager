@@ -32,6 +32,7 @@ export const ENTITY_TYPES = {
     LEAD: "lead",
     USER: "user",
     SETTINGS: "settings",
+    ORGANIZATION: "organization",  // Added: org lifecycle mutations
 } as const;
 
 export type EntityType = (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES];

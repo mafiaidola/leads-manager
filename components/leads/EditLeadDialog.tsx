@@ -346,8 +346,8 @@ export function EditLeadDialog({
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                                    {users?.filter((u: any) => u.role === 'SALES').map((u: any) => (
-                                                        <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>
+                                                    {users?.map((u: any) => (
+                                                        <SelectItem key={u._id} value={u._id}>{u.name} ({u.role})</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>

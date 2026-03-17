@@ -13,7 +13,7 @@
  */
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { ReadonlyURLSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -127,7 +127,7 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
                         <DropdownMenuContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
                             {settings?.statuses.map((s: any) => (
                                 <DropdownMenuItem key={s.key} onClick={() => onBulkStatus(s.key)} className="cursor-pointer">
-                                    <span className="w-2 h-2 rounded-full mr-2 status-dot" style={{ '--status-color': s.color } as React.CSSProperties} aria-hidden="true" />
+                                    <StatusDot color={s.color} />
                                     {s.label}
                                 </DropdownMenuItem>
                             ))}
@@ -308,3 +308,10 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
         </>
     );
 });
+
+/* ─── StatusDot: injects --status-color via ref.setProperty to avoid inline style warning ─── */
+function StatusDot({ color }: { color?: string }) {
+    const ref = useRef<HTMLSpanElement>(null);
+    useEffect(() => { if (ref.current) ref.current.style.setProperty("--status-color", color || "#8b5cf6"); }, [color]);
+    return <span ref={ref} className="w-2 h-2 rounded-full mr-2 status-dot" aria-hidden="true" />;
+}
