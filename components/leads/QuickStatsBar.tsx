@@ -27,19 +27,19 @@ export const QuickStatsBar = React.memo(function QuickStatsBar({ stats, settings
     const totalLeads = stats.reduce((acc, curr) => acc + curr.count, 0);
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-2 sm:gap-3 mb-6">
+        <div className="flex items-stretch gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide snap-x snap-mandatory">
             {/* Total Card */}
             <div
                 onClick={() => onStatusClick("")}
                 className={cn(
-                    "cursor-pointer group relative overflow-hidden flex flex-col p-3 sm:p-4 rounded-2xl border transition-all duration-300 lg:min-w-[120px]",
+                    "cursor-pointer group relative overflow-hidden flex flex-col p-3 rounded-2xl border transition-all duration-300 min-w-[100px] shrink-0 snap-start",
                     !currentStatus
                         ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105"
                         : "bg-card/40 border-white/10 hover:border-primary/50 backdrop-blur-xl"
                 )}
             >
-                <span className={cn("text-xs font-bold uppercase tracking-wider opacity-70", !currentStatus && "opacity-100")}>Total Leads</span>
-                <span className="text-2xl font-black mt-1">{totalLeads}</span>
+                <span className={cn("text-[10px] font-bold uppercase tracking-wider opacity-70 whitespace-nowrap", !currentStatus && "opacity-100")}>Total Leads</span>
+                <span className="text-xl font-black mt-0.5">{totalLeads}</span>
             </div>
 
             {/* Status Cards */}
@@ -53,20 +53,20 @@ export const QuickStatsBar = React.memo(function QuickStatsBar({ stats, settings
                         key={s.key}
                         onClick={() => onStatusClick(s.key)}
                         className={cn(
-                            "cursor-pointer group relative overflow-hidden flex flex-col p-3 sm:p-4 rounded-2xl border transition-all duration-300 lg:min-w-[120px]",
+                            "cursor-pointer group relative overflow-hidden flex flex-col p-3 rounded-2xl border transition-all duration-300 min-w-[100px] shrink-0 snap-start",
                             `[--status-color:${s.color}] [--status-shadow:${s.color}33]`,
                             isActive
                                 ? "shadow-[0_10px_15px_-3px_var(--status-shadow)] scale-105 bg-[var(--status-color)] border-[var(--status-color)] text-white"
                                 : "bg-card/40 border-white/10 hover:bg-white/5 backdrop-blur-xl"
                         )}
                     >
-                        <span className={cn("text-xs font-bold uppercase tracking-wider opacity-70", isActive && "opacity-100")}>{s.label}</span>
-                        <span className="text-2xl font-black mt-1">{count}</span>
+                        <span className={cn("text-[10px] font-bold uppercase tracking-wider opacity-70 whitespace-nowrap", isActive && "opacity-100")}>{s.label}</span>
+                        <span className="text-xl font-black mt-0.5">{count}</span>
 
                         {/* Subtle background glow */}
                         {!isActive && (
                             <div
-                                className="absolute -right-2 -bottom-2 w-12 h-12 rounded-full opacity-10 group-hover:opacity-20 transition-opacity bg-[var(--status-color)]"
+                                className="absolute -right-2 -bottom-2 w-10 h-10 rounded-full opacity-10 group-hover:opacity-20 transition-opacity bg-[var(--status-color)]"
                             />
                         )}
                     </div>

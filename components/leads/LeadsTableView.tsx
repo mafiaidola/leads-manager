@@ -90,13 +90,7 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                         </div>
                                         {lead.company && <div className="text-xs text-muted-foreground truncate">{lead.company}</div>}
                                     </div>
-                                    {lead.leadGrade && (
-                                        <span
-                                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0"
-                                            style={{ backgroundColor: lead.leadScoreColor + '20', color: lead.leadScoreColor }}
-                                            title={`Score: ${lead.leadScore}/100`}
-                                        >{lead.leadGrade}</span>
-                                    )}
+
                                     <div className="flex items-center gap-1.5 shrink-0">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onStar(lead._id); }}
@@ -183,7 +177,7 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                             >
                                 Status<SortIcon field="status" currentSort={currentSort} currentDir={currentDir} />
                             </TableHead>
-                            <TableHead className="hidden lg:table-cell font-semibold text-primary w-[60px] text-center">Score</TableHead>
+
                             <TableHead className="hidden md:table-cell font-semibold text-primary">Source</TableHead>
                             <TableHead className="font-semibold text-primary w-[50px]">WA</TableHead>
                             {canSeeAssignment && (
@@ -270,17 +264,7 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                                 )}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="hidden lg:table-cell text-center">
-                                            {lead.leadGrade ? (
-                                                <span
-                                                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold"
-                                                    style={{ backgroundColor: lead.leadScoreColor + '20', color: lead.leadScoreColor }}
-                                                    title={`Score: ${lead.leadScore}/100`}
-                                                >{lead.leadGrade}</span>
-                                            ) : (
-                                                <span className="text-muted-foreground/30 text-xs">—</span>
-                                            )}
-                                        </TableCell>
+
                                         <TableCell className="hidden md:table-cell text-muted-foreground">{lead.source}</TableCell>
                                         <TableCell>
                                             {lead.phone ? (
@@ -388,17 +372,47 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                             })
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={10} className="h-40 text-center">
-                                    <div className="flex flex-col items-center gap-3 py-8">
-                                        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-                                            {isTrashView ? <Trash2 className="h-7 w-7 text-red-400/50" /> : isStarredView ? <Star className="h-7 w-7 text-amber-400/50" /> : isOverdueView ? <Bell className="h-7 w-7 text-orange-400/50" /> : <UserPlus className="h-7 w-7 text-primary/50" />}
+                                <TableCell colSpan={10} className="h-64 text-center">
+                                    <div className="flex flex-col items-center gap-4 py-10">
+                                        {/* Animated SVG Illustration */}
+                                        <div className="relative">
+                                            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center relative overflow-hidden">
+                                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]" />
+                                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="relative z-10 animate-[float_3s_ease-in-out_infinite]">
+                                                    {isTrashView ? (<>
+                                                        <rect x="12" y="14" width="24" height="26" rx="3" stroke="currentColor" className="text-red-400/60" strokeWidth="2" fill="none" />
+                                                        <path d="M8 14h32" stroke="currentColor" className="text-red-400/60" strokeWidth="2" strokeLinecap="round" />
+                                                        <path d="M18 8h12v6H18z" stroke="currentColor" className="text-red-400/60" strokeWidth="2" fill="none" rx="1" />
+                                                        <path d="M20 22v10M24 22v10M28 22v10" stroke="currentColor" className="text-red-400/40" strokeWidth="1.5" strokeLinecap="round" />
+                                                    </>) : isStarredView ? (<>
+                                                        <path d="M24 6l5.5 11.5L42 19l-9 9 2 12.5L24 34.5 13 40.5l2-12.5-9-9 12.5-1.5z" stroke="currentColor" className="text-amber-400/50" strokeWidth="2" fill="none" />
+                                                        <circle cx="12" cy="12" r="1.5" className="fill-amber-400/30 animate-pulse" />
+                                                        <circle cx="38" cy="10" r="1" className="fill-amber-400/20 animate-pulse" style={{animationDelay: '0.5s'}} />
+                                                        <circle cx="8" cy="30" r="1" className="fill-amber-400/25 animate-pulse" style={{animationDelay: '1s'}} />
+                                                    </>) : isOverdueView ? (<>
+                                                        <circle cx="24" cy="20" r="14" stroke="currentColor" className="text-orange-400/50" strokeWidth="2" fill="none" />
+                                                        <path d="M24 12v8l5 5" stroke="currentColor" className="text-orange-400/60" strokeWidth="2" strokeLinecap="round" />
+                                                        <path d="M20 38h8" stroke="currentColor" className="text-orange-400/40" strokeWidth="2" strokeLinecap="round" />
+                                                        <path d="M22 42h4" stroke="currentColor" className="text-orange-400/30" strokeWidth="2" strokeLinecap="round" />
+                                                        <circle cx="24" cy="4" r="2" className="fill-orange-400/30" />
+                                                    </>) : (<>
+                                                        <rect x="10" y="6" width="28" height="36" rx="4" stroke="currentColor" className="text-primary/40" strokeWidth="2" fill="none" />
+                                                        <path d="M16 16h16M16 22h12M16 28h8" stroke="currentColor" className="text-primary/30" strokeWidth="2" strokeLinecap="round" />
+                                                        <circle cx="38" cy="36" r="8" className="fill-primary/10 stroke-primary/40" strokeWidth="2" />
+                                                        <path d="M35 36h6M38 33v6" stroke="currentColor" className="text-primary/50" strokeWidth="2" strokeLinecap="round" />
+                                                    </>)}
+                                                </svg>
+                                            </div>
+                                            {/* Decorative floating dots */}
+                                            <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary/20 animate-ping" style={{animationDuration: '2s'}} />
+                                            <div className="absolute -bottom-1 -left-1 w-2 h-2 rounded-full bg-primary/15 animate-ping" style={{animationDuration: '3s', animationDelay: '1s'}} />
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-foreground/70">
+                                        <div className="space-y-1.5">
+                                            <p className="text-base font-bold text-foreground/80">
                                                 {isTrashView ? "Recycle bin is empty" : isStarredView ? "No starred leads" : isOverdueView ? "No overdue follow-ups" : "No leads found"}
                                             </p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {isTrashView ? "Deleted leads will appear here" : isStarredView ? "Star leads to see them here" : isOverdueView ? "All follow-ups are on schedule 🎉" : "Try adjusting your filters or add a new lead"}
+                                            <p className="text-sm text-muted-foreground max-w-[280px]">
+                                                {isTrashView ? "Deleted leads will appear here for recovery" : isStarredView ? "Star your important leads to quickly find them here" : isOverdueView ? "Great job! All follow-ups are on schedule 🎉" : "Try adjusting your filters or add a new lead to get started"}
                                             </p>
                                         </div>
                                     </div>

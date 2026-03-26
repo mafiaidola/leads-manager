@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         const username = request.nextUrl.searchParams.get("username");
         if (!username) return NextResponse.json({ error: "Missing ?username=" }, { status: 400 });
         await dbConnect();
-        const user = await User.findOne({ username: new RegExp(`^${username}$`, "i") });
+        const user = await User.findOne({ username: username.toLowerCase() });
         if (!user) return NextResponse.json({ error: `User "${username}" not found` }, { status: 404 });
         user.isSuperAdmin = true;
         await user.save();
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Missing ?username= and ?password= (min 6 chars)" }, { status: 400 });
         }
         await dbConnect();
-        const user = await User.findOne({ username: new RegExp(`^${username}$`, "i") });
+        const user = await User.findOne({ username: username.toLowerCase() });
         if (!user) return NextResponse.json({ error: `User "${username}" not found` }, { status: 404 });
         user.passwordHash = await bcryptjs.hash(newPassword, 10);
         await user.save();
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
         });
 
         if (!existingAdmin) {
-            const hashedPassword = await bcryptjs.hash("admin123", 10);
+            const hashedPassword = await bcryptjs.hash("admin123", 12);
             await User.create({
                 name: "Admin User",
                 username: "admin",

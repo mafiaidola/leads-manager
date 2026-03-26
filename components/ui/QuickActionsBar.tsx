@@ -58,7 +58,7 @@ export function QuickActionsBar({
                                     {statuses.map((s) => (
                                         <SelectItem key={s.key} value={s.key}>
                                             <span className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                                <span className="w-2 h-2 rounded-full status-dot" ref={el => { if (el) el.style.setProperty('--status-color', s.color); }} />
                                                 {s.label}
                                             </span>
                                         </SelectItem>

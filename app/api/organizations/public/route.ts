@@ -15,7 +15,7 @@ export async function GET() {
     try {
         await dbConnect();
         const orgs = await Organization.find({ active: true })
-            .select("name slug branding.logoUrl branding.appName branding.accentColor")
+            .select("name slug branding.logoUrl branding.appName branding.accentColor branding.loginTheme")
             .sort({ name: 1 })
             .lean();
 
@@ -26,6 +26,7 @@ export async function GET() {
                 logo: o.branding?.logoUrl || "",
                 appName: o.branding?.appName || o.name,
                 accentColor: o.branding?.accentColor || "#8b5cf6",
+                loginTheme: o.branding?.loginTheme || "aurora",
             }))
         );
     } catch (error) {

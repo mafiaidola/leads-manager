@@ -1232,6 +1232,22 @@
   background: var(--status-color, var(--primary));
 }
 
+/* Lead score badge — dynamic bg/fg via --badge-bg and --badge-fg */
+.lead-score-badge {
+  background-color: var(--badge-bg);
+  color: var(--badge-fg);
+}
+
+/* Presence avatar — dynamic color via --avatar-color */
+.presence-avatar {
+  background-color: var(--avatar-color);
+}
+
+/* Status color dot in QuickActionsBar — via --status-color */
+.quick-action-status-dot {
+  background-color: var(--status-color);
+}
+
 /* Progress bar width — Reports goal progress */
 .progress-bar {
   width: var(--progress, 0%);

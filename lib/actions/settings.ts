@@ -113,6 +113,7 @@ export async function updateBranding(data: {
     appName?: string;
     accentColor?: string;
     logoUrl?: string;
+    loginTheme?: string;
 }) {
     const session = await auth();
     if (!session?.user?.orgId || session.user.role !== USER_ROLES.ADMIN) {
@@ -126,12 +127,13 @@ export async function updateBranding(data: {
 
         // Ensure branding subdocument exists (for orgs created before this field was added)
         if (!org.branding) {
-            org.branding = { appName: "Leads Mgr", accentColor: "#8b5cf6", logoUrl: "" };
+            org.branding = { appName: "Leads Mgr", accentColor: "#8b5cf6", logoUrl: "", loginTheme: "aurora" };
         }
 
         if (data.appName !== undefined) org.branding.appName = data.appName;
         if (data.accentColor !== undefined) org.branding.accentColor = data.accentColor;
         if (data.logoUrl !== undefined) org.branding.logoUrl = data.logoUrl;
+        if (data.loginTheme !== undefined) org.branding.loginTheme = data.loginTheme;
 
         await org.save();
         logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.SETTINGS, org._id.toString(), `Updated branding: ${data.appName || ""} accent=${data.accentColor || ""}`);
@@ -204,7 +206,7 @@ export async function updateNotificationPrefs(prefs: {
     onStatusChange?: boolean;
 }) {
     const session = await auth();
-    if (!session?.user?.orgId) return { error: "Unauthorized" };
+    if (!session?.user?.orgId || session.user.role !== USER_ROLES.ADMIN) return { error: "Unauthorized" };
 
     try {
         await dbConnect();

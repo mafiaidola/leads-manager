@@ -159,7 +159,8 @@ export function AccountTab({ currentUser }: AccountTabProps) {
                     </CardTitle>
                     <CardDescription>Update your account password.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
+                <form onSubmit={e => { e.preventDefault(); handleSave(); }} className="space-y-4">
 
                     {/* Current password */}
                     <div className="space-y-1.5">
@@ -257,6 +258,7 @@ export function AccountTab({ currentUser }: AccountTabProps) {
                         <Key className="h-4 w-4 mr-2" />
                         {saving ? "Saving…" : "Update Password"}
                     </Button>
+                </form>
                 </CardContent>
             </Card>
         </div>

@@ -59,9 +59,13 @@ export function GeneralTab({
     onCurrencyChange,
 }: GeneralTabProps) {
 
-    // ── Drag-to-reorder state
+    // ── Drag-to-reorder state (statuses)
     const dragIndex = useRef<number | null>(null);
     const [dragOver, setDragOver] = useState<number | null>(null);
+
+    // ── Drag-to-reorder state (sources)
+    const srcDragIndex = useRef<number | null>(null);
+    const [srcDragOver, setSrcDragOver] = useState<number | null>(null);
 
     const handleDragStart = useCallback((index: number) => {
         dragIndex.current = index;
@@ -187,12 +191,41 @@ export function GeneralTab({
                         <span className="w-1.5 h-5 bg-blue-500 rounded-full" />
                         Lead Sources
                     </CardTitle>
-                    <CardDescription className="text-muted-foreground/80">Where your leads come from.</CardDescription>
+                    <CardDescription className="text-muted-foreground/80">Where your leads come from. Drag <GripVertical className="inline h-3 w-3" /> to reorder.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         {sources.map((source, index) => (
-                            <div key={index} className="flex items-center gap-2 group bg-white/5 p-2 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                            <div
+                                key={index}
+                                draggable
+                                onDragStart={() => { srcDragIndex.current = index; }}
+                                onDragOver={e => { e.preventDefault(); setSrcDragOver(index); }}
+                                onDrop={e => {
+                                    e.preventDefault();
+                                    setSrcDragOver(null);
+                                    if (srcDragIndex.current === null || srcDragIndex.current === index) return;
+                                    const reordered = [...sources];
+                                    const [moved] = reordered.splice(srcDragIndex.current, 1);
+                                    reordered.splice(index, 0, moved);
+                                    srcDragIndex.current = null;
+                                    onSourcesChange(reordered);
+                                }}
+                                onDragEnd={() => { setSrcDragOver(null); srcDragIndex.current = null; }}
+                                className={cn(
+                                    "flex items-center gap-2 group bg-white/5 p-2 rounded-2xl border transition-all",
+                                    srcDragOver === index
+                                        ? "border-blue-500/50 bg-blue-500/5 scale-[1.01]"
+                                        : "border-white/5 hover:bg-white/10"
+                                )}
+                            >
+                                {/* Drag handle */}
+                                <div
+                                    className="text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing p-1 flex-shrink-0"
+                                    aria-label="Drag to reorder"
+                                >
+                                    <GripVertical className="h-4 w-4" />
+                                </div>
                                 <div className="flex-1">
                                     <Input
                                         value={source.label}

@@ -41,6 +41,20 @@ interface ActivityItem {
     details: string;
 }
 
+/** Maps audit-log action codes to human-readable past-tense labels */
+const ACTION_LABELS: Record<string, string> = {
+    CREATE: "created",
+    UPDATE: "updated",
+    DELETE: "deleted",
+    LOGIN: "logged in",
+    IMPORT: "imported",
+    EXPORT: "exported",
+    RESTORE: "restored",
+    BULK_DELETE: "bulk deleted",
+    BULK_UPDATE: "bulk updated",
+    SETTINGS: "updated settings for",
+};
+
 interface CrossOrgStats {
     totalOrgs: number;
     totalLeads: number;
@@ -139,7 +153,7 @@ export const SuperAdminDashboard = React.memo(function SuperAdminDashboard({ sta
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs truncate">
                                             <span className="font-medium">{item.userName}</span>
-                                            <span className="text-muted-foreground"> {item.action.toLowerCase()}d </span>
+                                            <span className="text-muted-foreground"> {ACTION_LABELS[item.action] || item.action.toLowerCase()} </span>
                                             <span className="text-muted-foreground">{item.entityType}</span>
                                         </p>
                                         <p className="text-[10px] text-muted-foreground flex items-center gap-1">

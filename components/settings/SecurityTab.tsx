@@ -247,27 +247,25 @@ export function SecurityTab({ users, recentEvents }: SecurityTabProps) {
                         Danger Zone
                     </CardTitle>
                     <CardDescription className="text-red-400/70">
-                        Irreversible system actions. Use with caution.
+                        System-level actions reserved for future releases.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-wrap gap-3">
                         <Button
                             variant="outline"
-                            className="rounded-xl border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
-                            onClick={() => {
-                                if (confirm("Force logout all users? They will need to log in again.")) {
-                                    // Could call a server action to invalidate all sessions
-                                    // For now: show a toast (future implementation)
-                                    alert("Feature coming soon: Force logout all sessions.");
-                                }
-                            }}
+                            className="rounded-xl border-red-500/30 text-red-400/40 cursor-not-allowed"
+                            disabled
+                            title="This feature will be available in a future release"
                         >
                             Force Logout All Users
+                            <Badge variant="outline" className="ml-2 text-[8px] px-1.5 h-4 text-amber-400 border-amber-400/30 bg-amber-500/10">
+                                Coming Soon
+                            </Badge>
                         </Button>
                     </div>
                     <p className="text-[10px] text-red-400/50 mt-3">
-                        These actions affect all users across all organizations and cannot be undone.
+                        Session invalidation and bulk security actions will be available in a future update.
                     </p>
                 </CardContent>
             </Card>

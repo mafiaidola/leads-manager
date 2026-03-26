@@ -194,8 +194,8 @@ export function AuditClient({ isSuperAdmin = false, organizations = [] }: { isSu
                                             </span>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-xs text-foreground/70 max-w-[300px] truncate">
-                                        {log.details || "—"}
+                                    <TableCell className="text-xs text-foreground/70 max-w-[300px]">
+                                        <span className="line-clamp-2">{log.details || "—"}</span>
                                     </TableCell>
                                 </TableRow>
                             ))}

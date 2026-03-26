@@ -18,7 +18,6 @@ import Lead from "@/models/Lead";
 import LeadNote, { NOTE_TYPES } from "@/models/LeadNote";
 import { USER_ROLES } from "@/models/User";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import mongoose from "mongoose";
 import { logAudit } from "@/lib/actions/audit";
@@ -75,7 +74,7 @@ export async function createLead(prevState: any, formData: FormData) {
     const session = await auth();
     // Allow ADMIN and MARKETING to create leads
     if (!session || !session.user.orgId || (session.user.role !== USER_ROLES.ADMIN && session.user.role !== USER_ROLES.MARKETING)) {
-        return { message: "Unauthorized" };
+        return { message: "Unauthorized", success: false };
     }
 
     const orgId = session.user.orgId;
@@ -84,7 +83,7 @@ export async function createLead(prevState: any, formData: FormData) {
     const validatedFields = LeadSchema.safeParse(rawFormData);
 
     if (!validatedFields.success) {
-        return { message: "Invalid fields", errors: validatedFields.error.flatten() };
+        return { message: "Invalid fields", errors: validatedFields.error.flatten(), success: false };
     }
 
     const { tags, assignedTo, ...rest } = validatedFields.data;
@@ -97,7 +96,7 @@ export async function createLead(prevState: any, formData: FormData) {
         await dbConnect();
         const existingLead = await Lead.findOne({ phone: sanitizedPhone, deletedAt: null, orgId });
         if (existingLead) {
-            return { message: `Lead with this phone number already exists (${existingLead.name}).`, duplicate: true };
+            return { message: `Lead with this phone number already exists (${existingLead.name}).`, duplicate: true, success: false };
         }
     }
 
@@ -165,18 +164,20 @@ export async function createLead(prevState: any, formData: FormData) {
             });
         }).catch(console.error);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Failed to create lead:", error);
-        return { message: "Database Error: Failed to create lead." };
+        const errMsg = error?.message || "Unknown error";
+        return { message: `Database Error: ${errMsg}`, success: false };
     }
 
     revalidatePath("/leads");
-    redirect("/leads");
+    revalidatePath("/");
+    return { message: "Lead created successfully", success: true };
 }
 
 export async function updateLead(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session || !session.user.orgId) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized", success: false };
 
     const rawFormData = Object.fromEntries(formData.entries());
     const id = rawFormData.id as string;
@@ -184,7 +185,7 @@ export async function updateLead(prevState: any, formData: FormData) {
     // Validate
     const validatedFields = LeadSchema.safeParse(rawFormData);
     if (!validatedFields.success) {
-        return { message: "Invalid fields", errors: validatedFields.error.flatten() };
+        return { message: "Invalid fields", errors: validatedFields.error.flatten(), success: false };
     }
 
     const { tags, assignedTo, ...rest } = validatedFields.data;
@@ -193,14 +194,14 @@ export async function updateLead(prevState: any, formData: FormData) {
     try {
         await dbConnect();
         const lead = await Lead.findOne({ _id: id, orgId: session.user.orgId });
-        if (!lead) return { message: "Lead not found" };
+        if (!lead) return { message: "Lead not found", success: false };
 
         // RBAC: Admin or assigned Sales can update. Marketing cannot edit.
         if (session.user.role === USER_ROLES.MARKETING) {
-            return { message: "Unauthorized: Marketing users cannot edit leads" };
+            return { message: "Unauthorized: Marketing users cannot edit leads", success: false };
         }
         if (session.user.role === USER_ROLES.SALES && lead.assignedTo?.toString() !== session.user.id) {
-            return { message: "Unauthorized" };
+            return { message: "Unauthorized", success: false };
         }
 
         // Duplicate phone check (server-side guard)
@@ -209,7 +210,7 @@ export async function updateLead(prevState: any, formData: FormData) {
             rest.phone = sanitizedPhone;
             const existingLead = await Lead.findOne({ phone: sanitizedPhone, deletedAt: null, orgId: session.user.orgId, _id: { $ne: id } });
             if (existingLead) {
-                return { message: `Phone number already belongs to "${existingLead.name}". Duplicates not allowed.`, duplicate: true };
+                return { message: `Phone number already belongs to "${existingLead.name}". Duplicates not allowed.`, duplicate: true, success: false };
             }
         }
 
@@ -291,28 +292,28 @@ export async function updateLead(prevState: any, formData: FormData) {
         revalidatePath(`/leads/${id}`);
         return { message: "Lead updated successfully", success: true };
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Update Error:", error);
-        return { message: "Failed to update lead" };
+        return { message: `Failed to update lead: ${error?.message || "Unknown error"}`, success: false };
     }
 }
 
 export async function updateLeadStatus(id: string, newStatus: string) {
     const session = await auth();
-    if (!session || !session.user.orgId) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized", success: false };
 
     // Marketing cannot change status
     if (session.user.role === USER_ROLES.MARKETING) {
-        return { message: "Unauthorized: Marketing users cannot change lead status" };
+        return { message: "Unauthorized: Marketing users cannot change lead status", success: false };
     }
 
     try {
         await dbConnect();
         const lead = await Lead.findOne({ _id: id, orgId: session.user.orgId });
-        if (!lead) return { message: "Lead not found" };
+        if (!lead) return { message: "Lead not found", success: false };
 
         if (session.user.role !== USER_ROLES.ADMIN && lead.assignedTo?.toString() !== session.user.id) {
-            return { message: "Unauthorized: Not assigned to you" };
+            return { message: "Unauthorized: Not assigned to you", success: false };
         }
 
         const oldStatus = lead.status;
@@ -347,21 +348,21 @@ export async function updateLeadStatus(id: string, newStatus: string) {
         revalidatePath("/leads");
         return { message: "Status updated", success: true };
     } catch (error) {
-        return { message: "Error updating status" };
+        return { message: "Error updating status", success: false };
     }
 }
 
 export async function deleteLead(id: string) {
     const session = await auth();
     if (!session || session.user.role !== USER_ROLES.ADMIN) {
-        return { message: "Unauthorized" };
+        return { message: "Unauthorized", success: false };
     }
 
     try {
         await dbConnect();
         // Soft delete — move to recycle bin
         const lead = await Lead.findOneAndUpdate({ _id: id, orgId: session.user.orgId }, { deletedAt: new Date() });
-        if (!lead) return { message: "Lead not found" };
+        if (!lead) return { message: "Lead not found", success: false };
 
         logAudit(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.LEAD, id, `Soft deleted lead: ${lead.name}`);
 
@@ -369,7 +370,7 @@ export async function deleteLead(id: string) {
         return { message: "Lead moved to recycle bin", success: true };
     } catch (error) {
         console.error("Delete Lead Error:", error);
-        return { message: "Failed to delete lead" };
+        return { message: "Failed to delete lead", success: false };
     }
 }
 
@@ -377,13 +378,13 @@ export async function deleteLead(id: string) {
 
 export async function toggleStarLead(leadId: string) {
     const session = await auth();
-    if (!session || !session.user.orgId) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized", success: false };
 
     try {
         await dbConnect();
         const userId = new mongoose.Types.ObjectId(session.user.id);
         const lead = await Lead.findOne({ _id: leadId, orgId: session.user.orgId });
-        if (!lead) return { message: "Lead not found" };
+        if (!lead) return { message: "Lead not found", success: false };
 
         const isStarred = lead.starred.some((s: any) => s.toString() === session.user.id);
         if (isStarred) {
@@ -396,7 +397,7 @@ export async function toggleStarLead(leadId: string) {
         return { message: isStarred ? "Unstarred" : "Starred", success: true, starred: !isStarred };
     } catch (error) {
         console.error("Toggle star error:", error);
-        return { message: "Failed to toggle star" };
+        return { message: "Failed to toggle star", success: false };
     }
 }
 
@@ -405,13 +406,13 @@ export async function toggleStarLead(leadId: string) {
 export async function transferLead(leadId: string, toUserId: string) {
     const session = await auth();
     if (!session || (session.user.role !== USER_ROLES.ADMIN && session.user.role !== USER_ROLES.MARKETING)) {
-        return { message: "Unauthorized" };
+        return { message: "Unauthorized", success: false };
     }
 
     try {
         await dbConnect();
         const lead = await Lead.findOne({ _id: leadId, orgId: session.user.orgId });
-        if (!lead) return { message: "Lead not found" };
+        if (!lead) return { message: "Lead not found", success: false };
 
         const previousAssignedTo = lead.assignedTo?.toString() || "Unassigned";
         lead.assignedTo = new mongoose.Types.ObjectId(toUserId);
@@ -434,6 +435,6 @@ export async function transferLead(leadId: string, toUserId: string) {
         return { message: "Lead transferred successfully", success: true };
     } catch (error) {
         console.error("Transfer error:", error);
-        return { message: "Failed to transfer lead" };
+        return { message: "Failed to transfer lead", success: false };
     }
 }

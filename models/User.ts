@@ -40,7 +40,7 @@ const UserSchema = new Schema<IUser>(
         orgId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
         name: { type: String, required: true },
         username: { type: String, required: true, lowercase: true, trim: true },
-        email: { type: String },
+        email: { type: String, sparse: true },
         passwordHash: { type: String, required: true },
         role: {
             type: String,

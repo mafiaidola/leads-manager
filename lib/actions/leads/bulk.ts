@@ -28,11 +28,11 @@ import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
 
 export async function bulkUpdateStatus(ids: string[], status: string) {
     const session = await auth();
-    if (!session || !session.user.orgId) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized", success: false };
 
     // Marketing cannot change lead statuses
     if (session.user.role === USER_ROLES.MARKETING) {
-        return { message: "Unauthorized: Marketing users cannot change lead status" };
+        return { message: "Unauthorized: Marketing users cannot change lead status", success: false };
     }
 
     try {
@@ -40,7 +40,7 @@ export async function bulkUpdateStatus(ids: string[], status: string) {
         // 🔒 RBAC: Sales can only affect their own assigned leads
         const bulkQuery: any = { _id: { $in: ids }, orgId: session.user.orgId };
         if (session.user.role === USER_ROLES.SALES) {
-            bulkQuery.assignedTo = session.user.id;
+            bulkQuery.assignedTo = new mongoose.Types.ObjectId(session.user.id);
         }
         await Lead.updateMany(
             bulkQuery,
@@ -52,18 +52,18 @@ export async function bulkUpdateStatus(ids: string[], status: string) {
         return { message: `${ids.length} leads updated`, success: true };
     } catch (error) {
         console.error("Bulk update error:", error);
-        return { message: "Failed to update leads" };
+        return { message: "Failed to update leads", success: false };
     }
 }
 
 export async function bulkAssign(ids: string[], assignToId: string) {
     const session = await auth();
     if (!session || (session.user.role !== USER_ROLES.ADMIN && session.user.role !== USER_ROLES.MARKETING)) {
-        return { message: "Unauthorized" };
+        return { message: "Unauthorized", success: false };
     }
 
     if (!assignToId || !mongoose.Types.ObjectId.isValid(assignToId)) {
-        return { message: "Invalid user ID" };
+        return { message: "Invalid user ID", success: false };
     }
 
     try {
@@ -73,7 +73,7 @@ export async function bulkAssign(ids: string[], assignToId: string) {
         const User = (await import("@/models/User")).default;
         const targetUser = await User.findById(assignToId).select("active name").lean();
         if (!targetUser || !targetUser.active) {
-            return { message: "Target user not found or is deactivated" };
+            return { message: "Target user not found or is deactivated", success: false };
         }
 
         await Lead.updateMany(
@@ -86,20 +86,20 @@ export async function bulkAssign(ids: string[], assignToId: string) {
         return { message: `${ids.length} leads assigned`, success: true };
     } catch (error) {
         console.error("Bulk assign error:", error);
-        return { message: "Failed to assign leads" };
+        return { message: "Failed to assign leads", success: false };
     }
 }
 
 export async function bulkSoftDelete(ids: string[]) {
     const session = await auth();
     if (!session || session.user.role !== USER_ROLES.ADMIN) {
-        return { message: "Unauthorized" };
+        return { message: "Unauthorized", success: false };
     }
 
     try {
         await dbConnect();
         await Lead.updateMany(
-            { _id: { $in: ids }, orgId: session.user.orgId },
+            { _id: { $in: ids }, orgId: new mongoose.Types.ObjectId(session.user.orgId as string) },
             { deletedAt: new Date() }
         );
         logAudit(AUDIT_ACTIONS.BULK_DELETE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk soft deleted ${ids.length} leads`);
@@ -108,7 +108,7 @@ export async function bulkSoftDelete(ids: string[]) {
         return { message: `${ids.length} leads moved to recycle bin`, success: true };
     } catch (error) {
         console.error("Bulk delete error:", error);
-        return { message: "Failed to delete leads" };
+        return { message: "Failed to delete leads", success: false };
     }
 }
 
@@ -117,37 +117,38 @@ export async function bulkSoftDelete(ids: string[]) {
 export async function restoreLead(id: string) {
     const session = await auth();
     if (!session || session.user.role !== USER_ROLES.ADMIN) {
-        return { message: "Unauthorized" };
+        return { message: "Unauthorized", success: false };
     }
 
     try {
         await dbConnect();
-        await Lead.findOneAndUpdate({ _id: id, orgId: session.user.orgId }, { deletedAt: null });
+        await Lead.findOneAndUpdate({ _id: id, orgId: new mongoose.Types.ObjectId(session.user.orgId as string) }, { deletedAt: null });
         logAudit(AUDIT_ACTIONS.RESTORE, ENTITY_TYPES.LEAD, id, "Lead restored from recycle bin");
         revalidatePath("/leads");
         return { message: "Lead restored", success: true };
     } catch (error) {
         console.error("Restore error:", error);
-        return { message: "Failed to restore lead" };
+        return { message: "Failed to restore lead", success: false };
     }
 }
 
 export async function permanentDeleteLead(id: string) {
     const session = await auth();
     if (!session || session.user.role !== USER_ROLES.ADMIN) {
-        return { message: "Unauthorized" };
+        return { message: "Unauthorized", success: false };
     }
 
     try {
         await dbConnect();
-        await Lead.findOneAndDelete({ _id: id, orgId: session.user.orgId });
-        await LeadNote.deleteMany({ leadId: id, orgId: session.user.orgId });
-        await LeadAction.deleteMany({ leadId: id, orgId: session.user.orgId });
+        const orgOid = new mongoose.Types.ObjectId(session.user.orgId as string);
+        await Lead.findOneAndDelete({ _id: id, orgId: orgOid });
+        await LeadNote.deleteMany({ leadId: id, orgId: orgOid });
+        await LeadAction.deleteMany({ leadId: id, orgId: orgOid });
         logAudit(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.LEAD, id, "Lead permanently deleted");
         revalidatePath("/leads");
         return { message: "Lead permanently deleted", success: true };
     } catch (error) {
         console.error("Permanent delete error:", error);
-        return { message: "Failed to permanently delete lead" };
+        return { message: "Failed to permanently delete lead", success: false };
     }
 }

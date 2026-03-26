@@ -12,6 +12,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -42,8 +43,7 @@ import { AlertTriangle, Ban } from "lucide-react";
 import { PhoneInputWithCountry } from "@/components/ui/PhoneInputWithCountry";
 
 const formSchema = z.object({
-    name: z.string().min(2, "Name must be at least 2 characters."),
-    company: z.string().optional(),
+    name: z.string().optional(),
     email: z.string().optional(),
     phone: z.string().regex(/^\d*$/, "Phone number must contain only digits (no spaces, dashes or special characters)").optional(),
     countryCode: z.string().optional(),
@@ -52,16 +52,7 @@ const formSchema = z.object({
     product: z.string().optional(),
     assignedTo: z.string().optional(),
     value: z.any().optional(),
-    website: z.string().optional(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    country: z.string().optional(),
-    zipCode: z.string().optional(),
-    position: z.string().optional(),
-    defaultLanguage: z.string().optional(),
     description: z.string().optional(),
-    tags: z.string().optional(),
     public: z.boolean(),
     contactedToday: z.boolean(),
     followUpDate: z.string().optional(),
@@ -70,6 +61,7 @@ const formSchema = z.object({
 export function AddLeadDialog({ settings, users }: { settings: any, users: any[] }) {
     const [open, setOpen] = useState(false);
     const { toast } = useToast();
+    const router = useRouter();
     const [duplicateWarning, setDuplicateWarning] = useState<{ exists: boolean; leadName?: string } | null>(null);
     const [checkingPhone, setCheckingPhone] = useState(false);
     const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
@@ -79,7 +71,6 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: "",
-            company: "",
             email: "",
             phone: "",
             countryCode: "971",
@@ -88,16 +79,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
             product: "",
             assignedTo: "",
             value: 0,
-            website: "",
-            address: "",
-            city: "",
-            state: "",
-            country: "UAE",
-            zipCode: "",
-            position: "",
-            defaultLanguage: "System Default",
             description: "",
-            tags: "",
             public: false,
             contactedToday: false,
             followUpDate: "",
@@ -143,6 +125,9 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
         } else if (result && (result as any).duplicate) {
             toast({ title: "Duplicate Detected", description: result.message, variant: "destructive" });
             return;
+        } else if (!result || !(result as any).success) {
+            toast({ title: "Error", description: result?.message || "Failed to create lead", variant: "destructive" });
+            return;
         }
 
         setOpen(false);
@@ -150,6 +135,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
         setCustomFieldValues({});
         toast({ title: "Success", description: "Lead created successfully" });
         form.reset();
+        router.refresh();
     }
 
     return (
@@ -230,7 +216,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                                {users?.map((u: any) => (
+                                                {users?.filter((u: any) => u.active !== false).map((u: any) => (
                                                     <SelectItem key={u._id} value={u._id}>{u.name} ({u.role})</SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -253,7 +239,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                     name="name"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Full Name *</FormLabel>
+                                            <FormLabel>Full Name</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="John Doe" className="rounded-xl border-white/10 bg-white/5" {...field} />
                                             </FormControl>
@@ -261,34 +247,6 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                         </FormItem>
                                     )}
                                 />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="position"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Position</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="CEO" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="company"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Company</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Acme Inc" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
                                 <FormField
                                     control={form.control}
                                     name="email"
@@ -326,124 +284,27 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                         )}
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="value"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Expected Value ({currency})</FormLabel>
-                                                <FormControl>
-                                                    <Input type="number" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="website"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Website</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="https://..." className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
+                                <FormField
+                                    control={form.control}
+                                    name="value"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Expected Value ({currency})</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" className="rounded-xl border-white/10 bg-white/5" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
 
-                            {/* Right Column: Address & Details */}
+                            {/* Right Column: Details */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-bold flex items-center gap-2 text-primary/80">
                                     <span className="w-1 h-4 bg-primary rounded-full" />
-                                    Location & Details
+                                    Details
                                 </h3>
-                                <FormField
-                                    control={form.control}
-                                    name="address"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Address Line</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Business Bay" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="city"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>City</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Dubai" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="state"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>State/Province</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Dubai" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="country"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Country</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="UAE" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="zipCode"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Zip Code</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="00000" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <FormField
-                                    control={form.control}
-                                    name="defaultLanguage"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Default Language</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="English" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
                                 <FormField
                                     control={form.control}
                                     name="product"
@@ -521,19 +382,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name="tags"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Tags (comma separated)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="vip, urgent" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+
                             <FormField
                                 control={form.control}
                                 name="followUpDate"

@@ -5,6 +5,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 
+const isDev = process.env.NODE_ENV !== "production";
+
 /**
  * WhatsApp webhook handler.
  * GET  — webhook verification (hub.challenge)
@@ -21,7 +23,7 @@ export async function GET(req: NextRequest) {
     const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
 
     if (mode === "subscribe" && token === verifyToken) {
-        console.log("✅ WhatsApp webhook verified");
+        if (isDev) console.info("[WA] Webhook verified");
         return new NextResponse(challenge, { status: 200 });
     }
 
@@ -43,8 +45,8 @@ export async function POST(req: NextRequest) {
                 // Message status updates
                 if (value.statuses) {
                     for (const status of value.statuses) {
-                        console.log(
-                            `📱 WA Status: ${status.id} → ${status.status} (to: ${status.recipient_id})`
+                        if (isDev) console.info(
+                            `[WA] Status: ${status.id} → ${status.status} (to: ${status.recipient_id})`
                         );
                     }
                 }
@@ -52,8 +54,8 @@ export async function POST(req: NextRequest) {
                 // Incoming messages (could be used for auto-replies in the future)
                 if (value.messages) {
                     for (const msg of value.messages) {
-                        console.log(
-                            `📩 WA Incoming: from ${msg.from}, type: ${msg.type}`
+                        if (isDev) console.info(
+                            `[WA] Incoming: from ${msg.from}, type: ${msg.type}`
                         );
                     }
                 }

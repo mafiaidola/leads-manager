@@ -427,7 +427,7 @@ export function TeamTab({
                             {/* Org filter — SuperAdmin only */}
                             {isSuperAdmin && (
                                 <Select value={filterOrg} onValueChange={setFilterOrg}>
-                                    <SelectTrigger className="h-8 text-xs rounded-xl border-white/10 bg-white/5 w-[140px]">
+                                    <SelectTrigger className="h-8 text-xs rounded-xl border-white/10 bg-white/5 w-[180px]">
                                         <Building2 className="h-3 w-3 mr-1.5 text-muted-foreground" />
                                         <SelectValue placeholder="All orgs" />
                                     </SelectTrigger>

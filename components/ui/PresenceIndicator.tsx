@@ -113,8 +113,8 @@ export function PresenceIndicator({ currentUserId, currentUserName, currentPage 
                     {onlineUsers.slice(0, 3).map((u) => (
                         <div
                             key={u.userId}
-                            className="w-5 h-5 rounded-full border-2 border-card flex items-center justify-center text-[8px] font-bold text-white"
-                            style={{ backgroundColor: u.color }}
+                            className="w-5 h-5 rounded-full border-2 border-card flex items-center justify-center text-[8px] font-bold text-white presence-avatar"
+                            ref={el => { if (el) el.style.setProperty('--avatar-color', u.color); }}
                             title={u.name}
                         >
                             {u.name.charAt(0)}
@@ -137,8 +137,8 @@ export function PresenceIndicator({ currentUserId, currentUserName, currentPage 
                         {onlineUsers.map((u) => (
                             <div key={u.userId} className="px-3 py-2 flex items-center gap-2.5">
                                 <div
-                                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                                    style={{ backgroundColor: u.color }}
+                                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white presence-avatar"
+                                    ref={el => { if (el) el.style.setProperty('--avatar-color', u.color); }}
                                 >
                                     {u.name.charAt(0)}
                                 </div>

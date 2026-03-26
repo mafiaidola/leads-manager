@@ -60,12 +60,12 @@ export default async function DashboardPage() {
 
                     <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                         <div>
-                            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+                            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
                                 <span className="bg-gradient-to-r from-primary via-primary to-foreground bg-clip-text text-transparent">
                                     {greeting} {firstName}
                                 </span>
                                 <Sparkles className="inline-block ml-2 h-6 w-6 text-amber-400 animate-pulse" />
-                            </h2>
+                            </h1>
                             <p className="text-sm text-muted-foreground mt-2 max-w-lg">
                                 Here&apos;s what&apos;s happening with your leads today. Stay on top of your pipeline and hit your targets.
                             </p>

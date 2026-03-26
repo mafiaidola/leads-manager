@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,12 +15,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { updateSettings, updateBranding, updateGoals, updateTheme, updateNotificationPrefs, updateAutoAssignStrategy, updateCurrency } from "@/lib/actions/settings";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Save, Check, Database, HardDrive, FileDown, Download, X, Bell } from "lucide-react";
+import { Shield, Save, Check, Database, HardDrive, FileDown, Download, X, Bell, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
-import WhatsAppConnectCard from "@/components/whatsapp/WhatsAppConnectCard";
+
 import dynamic from "next/dynamic";
+import { ImportHistoryPanel } from "@/components/ui/ImportHistoryPanel";
+import { UnsavedChangesBar } from "@/components/ui/UnsavedChangesBar";
 
 // Static imports
 import { GeneralTab } from "./GeneralTab";
@@ -81,6 +83,7 @@ export function SettingsClient({
         appName: settings?.branding?.appName || "Leads Mgr",
         accentColor: settings?.branding?.accentColor || "#8b5cf6",
         logoUrl: settings?.branding?.logoUrl || "",
+        loginTheme: settings?.branding?.loginTheme || "aurora",
     });
 
     // Goals state
@@ -103,7 +106,58 @@ export function SettingsClient({
     // Custom Fields state
     const [customFields, setCustomFields] = useState<any[]>(settings?.customFields || []);
 
-    // Password change state (kept for legacy, AccountTab manages its own)
+    // Settings Search state
+    const [settingsSearch, setSettingsSearch] = useState("");
+
+    // Unsaved changes tracking — snapshot initial values
+    const initialSnapshot = useRef(JSON.stringify({
+        statuses, sources, products, branding, notifPrefs, goals, currentTheme, customRoles,
+    }));
+
+    const hasUnsavedChanges = useMemo(() => {
+        const current = JSON.stringify({
+            statuses, sources, products, branding, notifPrefs, goals, currentTheme, customRoles,
+        });
+        return current !== initialSnapshot.current;
+    }, [statuses, sources, products, branding, notifPrefs, goals, currentTheme, customRoles]);
+
+    const discardChanges = useCallback(() => {
+        const snap = JSON.parse(initialSnapshot.current);
+        setStatuses(snap.statuses);
+        setSources(snap.sources);
+        setProducts(snap.products);
+        setBranding(snap.branding);
+        setNotifPrefs(snap.notifPrefs);
+        setGoals(snap.goals);
+        setCurrentTheme(snap.currentTheme);
+        setCustomRoles(snap.customRoles);
+    }, []);
+
+    const SETTINGS_TAB_KEYWORDS: Record<string, { label: string; keywords: string[] }> = useMemo(() => ({
+        general: { label: "General", keywords: ["statuses", "sources", "goals", "currency", "auto-assign", "lead stages"] },
+        products: { label: "Products", keywords: ["products", "custom fields", "catalog"] },
+        users: { label: "Team", keywords: ["users", "team", "members", "create user", "roles"] },
+        branding: { label: "Branding", keywords: ["logo", "color", "theme", "app name", "accent"] },
+        roles: { label: "Roles", keywords: ["permissions", "admin", "marketing", "sales", "custom role"] },
+        account: { label: "Account", keywords: ["password", "profile", "notifications", "preferences"] },
+        system: { label: "System", keywords: ["backup", "export", "restore", "download", "database"] },
+
+        ...(isSuperAdmin ? {
+            security: { label: "Security", keywords: ["audit", "login", "sessions", "danger"] },
+            organizations: { label: "Organizations", keywords: ["org", "create org", "suspend", "multi-tenant"] },
+        } : {}),
+    }), [isSuperAdmin]);
+
+    const matchingTabs = useMemo(() => {
+        if (!settingsSearch.trim()) return [];
+        const q = settingsSearch.toLowerCase();
+        return Object.entries(SETTINGS_TAB_KEYWORDS)
+            .filter(([key, { label, keywords }]) =>
+                label.toLowerCase().includes(q) ||
+                keywords.some(kw => kw.includes(q))
+            )
+            .map(([key, { label }]) => ({ key, label }));
+    }, [settingsSearch, SETTINGS_TAB_KEYWORDS]);
 
     const handleSaveSettings = useCallback(async () => {
         const result = await updateSettings({
@@ -188,23 +242,63 @@ export function SettingsClient({
     const allRoles = useMemo(() => [...builtinRoles, ...customRoles.map((r: any) => r.name)], [customRoles]);
 
     return (
+        <div className="space-y-4">
+            {/* Unsaved Changes Bar */}
+            <UnsavedChangesBar
+                hasChanges={hasUnsavedChanges}
+                onSave={handleSaveSettings}
+                onDiscard={discardChanges}
+            />
+
+            {/* Settings Quick Search */}
+            <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    value={settingsSearch}
+                    onChange={e => setSettingsSearch(e.target.value)}
+                    placeholder="Search settings... (statuses, branding, backup, users...)"
+                    className="pl-11 h-11 rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl text-sm"
+                />
+                {settingsSearch && (
+                    <button
+                        onClick={() => setSettingsSearch("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label="Clear search"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+                )}
+            </div>
+            {matchingTabs.length > 0 && settingsSearch && (
+                <div className="flex flex-wrap gap-2">
+                    {matchingTabs.map(({ key, label }) => (
+                        <button
+                            key={key}
+                            onClick={() => { handleTabChange(key); setSettingsSearch(""); }}
+                            className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-sm font-medium text-primary hover:bg-primary/20 transition-all"
+                        >
+                            Go to {label} →
+                        </button>
+                    ))}
+                </div>
+            )}
         <Tabs defaultValue={defaultTab} onValueChange={handleTabChange} className="space-y-6">
             <TabsList className="bg-card/40 backdrop-blur-xl border border-white/10 p-1 rounded-2xl h-auto flex overflow-x-auto scrollbar-hide gap-1">
-                <TabsTrigger value="general"       className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">General</TabsTrigger>
-                <TabsTrigger value="products"      className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Products</TabsTrigger>
-                <TabsTrigger value="users"         className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Team</TabsTrigger>
-                <TabsTrigger value="branding"      className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Branding</TabsTrigger>
-                <TabsTrigger value="roles"         className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Roles</TabsTrigger>
-                <TabsTrigger value="account"       className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Account</TabsTrigger>
-                <TabsTrigger value="system"        className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white transition-all">System</TabsTrigger>
-                <TabsTrigger value="whatsapp"      className="rounded-xl data-[state=active]:bg-green-600 data-[state=active]:text-white transition-all">WhatsApp</TabsTrigger>
+                <TabsTrigger value="general"       className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">General</TabsTrigger>
+                <TabsTrigger value="products"      className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Products</TabsTrigger>
+                <TabsTrigger value="users"         className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Team</TabsTrigger>
+                <TabsTrigger value="branding"      className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Branding</TabsTrigger>
+                <TabsTrigger value="roles"         className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Roles</TabsTrigger>
+                <TabsTrigger value="account"       className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Account</TabsTrigger>
+                <TabsTrigger value="system"        className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">System</TabsTrigger>
+
                 {isSuperAdmin && (
-                    <TabsTrigger value="security"  className="rounded-xl data-[state=active]:bg-red-600 data-[state=active]:text-white transition-all">
+                    <TabsTrigger value="security"  className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-red-600 data-[state=active]:text-white transition-all">
                         🔐 Security
                     </TabsTrigger>
                 )}
                 {isSuperAdmin && (
-                    <TabsTrigger value="organizations" className="rounded-xl data-[state=active]:bg-amber-600 data-[state=active]:text-white transition-all">Organizations</TabsTrigger>
+                    <TabsTrigger value="organizations" className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-amber-600 data-[state=active]:text-white transition-all">Organizations</TabsTrigger>
                 )}
             </TabsList>
 
@@ -287,6 +381,11 @@ export function SettingsClient({
                         <CardDescription className="text-muted-foreground/80">Create custom roles with specific permissions. Built-in roles (Admin, Marketing, Sales) cannot be removed.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                        {/* Phase 2 Notice */}
+                        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                            <p className="text-xs text-amber-400 font-medium">⚠️ Phase 2 Feature</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Custom roles are saved to your organization settings but not yet enforced by the backend permission system. Backend enforcement is planned for a future release.</p>
+                        </div>
                         {/* Built-in roles */}
                         <div className="space-y-3">
                             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Built-in Roles</h3>
@@ -466,7 +565,7 @@ export function SettingsClient({
                                             if (orgBranding) {
                                                 setBranding(orgBranding);
                                             }
-                                            toast({ title: "✅ Backup loaded", description: `Loaded ${backupData._stats?.leads || 0} leads, ${backupData._stats?.users || 0} users. Click Save to apply settings.` });
+                                            toast({ title: "✅ Settings loaded from backup", description: `Loaded statuses, sources, products, goals, and branding. Note: leads & users are NOT restored. Click "Save" in each section to apply.` });
                                         } catch (err) {
                                             toast({ title: "Failed to read backup", description: "Invalid JSON file", variant: "destructive" });
                                         }
@@ -536,36 +635,25 @@ export function SettingsClient({
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Import History */}
+                <Card className="md:col-span-2 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                    <CardHeader>
+                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                            <FileDown className="h-5 w-5 text-violet-500" />
+                            Import History
+                        </CardTitle>
+                        <CardDescription className="text-muted-foreground/80">
+                            Log of recent lead import operations.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ImportHistoryPanel />
+                    </CardContent>
+                </Card>
             </TabsContent>
 
-            {/* ── WhatsApp Tab ─────────────────────────────── */}
-            <TabsContent value="whatsapp">
-                <div className="grid gap-6 md:grid-cols-2">
-                    <WhatsAppConnectCard />
-                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl">
-                        <CardHeader>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <span className="w-1.5 h-5 bg-green-500 rounded-full" />
-                                How It Works
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3 text-sm text-muted-foreground">
-                            <p>1️⃣ Click <strong>Connect WhatsApp</strong> to link your Meta Business account</p>
-                            <p>2️⃣ Authorize the app to access your WhatsApp Business API</p>
-                            <p>3️⃣ Go to any lead with a phone number and click the <strong>WhatsApp</strong> button</p>
-                            <p>4️⃣ Send free-text messages (within 24h window) or pre-approved templates</p>
-                            <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                                <p className="text-xs text-amber-400 font-medium">⚠️ Requirements</p>
-                                <ul className="text-xs text-muted-foreground mt-1 space-y-1 list-disc list-inside">
-                                    <li>Meta Business account with WhatsApp Business API</li>
-                                    <li>Facebook App with whatsapp_business_messaging scope</li>
-                                    <li>Phone number registered in WhatsApp Business Manager</li>
-                                </ul>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </TabsContent>
+
 
             {/* ── Security Tab (SuperAdmin only) ────────────── */}
             {isSuperAdmin && (
@@ -584,5 +672,6 @@ export function SettingsClient({
                 </TabsContent>
             )}
         </Tabs>
+        </div>
     );
 }

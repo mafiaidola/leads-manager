@@ -12,6 +12,7 @@ import {
     Eye, EyeOff, Building2, ChevronDown, Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import "./loginThemes.css";
 
 interface OrgOption {
     slug: string;
@@ -19,6 +20,7 @@ interface OrgOption {
     logo: string;
     appName: string;
     accentColor: string;
+    loginTheme: string;
 }
 
 export default function LoginPage() {
@@ -60,9 +62,10 @@ export default function LoginPage() {
 
     const displayName = selectedOrg?.appName || "Leads Manager";
     const accent = selectedOrg?.accentColor;
+    const loginTheme = selectedOrg?.loginTheme || "aurora";
 
     return (
-        <div className="login-page">
+        <div className="login-page" data-login-theme={loginTheme}>
             {/* ── Animated Mesh Gradient Aurora ─────────────────────────── */}
             <div className="login-aurora">
                 <div className="login-aurora-blob login-aurora-blob--1" />
@@ -77,6 +80,10 @@ export default function LoginPage() {
 
             {/* ── Floating Orbs ────────────────────────────────────────── */}
             <FloatingOrbs />
+
+            {/* ── Theme-Specific Background Elements ───────────────────── */}
+            <ThemeBackground theme={loginTheme} accent={accent} />
+
 
             {/* ── Main Content ─────────────────────────────────────────── */}
             <div className="login-container" ref={el => {
@@ -313,3 +320,129 @@ function FloatingOrbs() {
         </div>
     );
 }
+
+/* ── Theme Background — renders theme-specific decorative elements ─────── */
+function ThemeBackground({ theme, accent }: { theme: string; accent?: string }) {
+    const color = accent || "#8b5cf6";
+
+    if (theme === "waves") {
+        return (
+            <div className="login-waves-layer">
+                {[1, 2, 3].map(i => (
+                    <div key={i} className={`login-wave login-wave--${i}`}>
+                        <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+                            <path
+                                fill={color}
+                                d={i === 1
+                                    ? "M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,138.7C672,128,768,160,864,181.3C960,203,1056,213,1152,197.3C1248,181,1344,139,1392,117.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+                                    : i === 2
+                                    ? "M0,224L48,213.3C96,203,192,181,288,192C384,203,480,245,576,250.7C672,256,768,224,864,192C960,160,1056,128,1152,128C1248,128,1344,160,1392,176L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+                                    : "M0,288L48,272C96,256,192,224,288,213.3C384,203,480,213,576,229.3C672,245,768,267,864,261.3C960,256,1056,224,1152,208C1248,192,1344,192,1392,192L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+                                }
+                            />
+                        </svg>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    if (theme === "particles") {
+        const particles = Array.from({ length: 30 }, (_, i) => ({
+            x: `${Math.random() * 100}%`,
+            y: `${Math.random() * 100}%`,
+            size: 2 + Math.random() * 3,
+            dur: 6 + Math.random() * 8,
+            delay: Math.random() * 5,
+            dx: (Math.random() - 0.5) * 60,
+            dy: (Math.random() - 0.5) * 60,
+        }));
+        return (
+            <div className="login-particles">
+                {particles.map((p, i) => (
+                    <div
+                        key={i}
+                        className="login-particle"
+                        ref={el => {
+                            if (el) {
+                                el.style.left = p.x;
+                                el.style.top = p.y;
+                                el.style.width = `${p.size}px`;
+                                el.style.height = `${p.size}px`;
+                                el.style.setProperty('--p-dur', `${p.dur}s`);
+                                el.style.setProperty('--p-delay', `${p.delay}s`);
+                                el.style.setProperty('--p-dx', `${p.dx}px`);
+                                el.style.setProperty('--p-dy', `${p.dy}px`);
+                            }
+                        }}
+                    />
+                ))}
+            </div>
+        );
+    }
+
+    if (theme === "neon") {
+        return (
+            <>
+                <div className="login-neon-scanline" />
+                {[
+                    { x: "20%", y: "30%", w: 300, h: 300, dur: 6, delay: 0 },
+                    { x: "70%", y: "60%", w: 250, h: 250, dur: 8, delay: 2 },
+                    { x: "50%", y: "80%", w: 200, h: 200, dur: 7, delay: 1 },
+                ].map((g, i) => (
+                    <div
+                        key={i}
+                        className="login-neon-glow"
+                        ref={el => {
+                            if (el) {
+                                el.style.left = g.x;
+                                el.style.top = g.y;
+                                el.style.width = `${g.w}px`;
+                                el.style.height = `${g.h}px`;
+                                el.style.background = `radial-gradient(circle, ${color}25, transparent 70%)`;
+                                el.style.setProperty('--ng-dur', `${g.dur}s`);
+                                el.style.setProperty('--ng-delay', `${g.delay}s`);
+                            }
+                        }}
+                    />
+                ))}
+            </>
+        );
+    }
+
+    if (theme === "gradient") {
+        return (
+            <>
+                {[
+                    { x: "15%", y: "25%", w: 400, dur: 12, delay: 0 },
+                    { x: "75%", y: "65%", w: 350, dur: 15, delay: 3 },
+                    { x: "45%", y: "80%", w: 300, dur: 10, delay: 1.5 },
+                ].map((b, i) => (
+                    <div
+                        key={i}
+                        className="login-gradient-blob"
+                        ref={el => {
+                            if (el) {
+                                el.style.left = b.x;
+                                el.style.top = b.y;
+                                el.style.width = `${b.w}px`;
+                                el.style.height = `${b.w}px`;
+                                el.style.background = color;
+                                el.style.setProperty('--gb-dur', `${b.dur}s`);
+                                el.style.setProperty('--gb-delay', `${b.delay}s`);
+                            }
+                        }}
+                    />
+                ))}
+            </>
+        );
+    }
+
+    if (theme === "minimal") {
+        return <div className="login-minimal-spot" />;
+    }
+
+    // Aurora (default) — no extra elements needed
+    return null;
+}
+

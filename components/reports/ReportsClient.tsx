@@ -395,6 +395,49 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                 </Card>
             </div>
 
+            {/* Period Comparison Strip */}
+            {(data.monthlyTrends?.length ?? 0) >= 2 && (() => {
+                const curr = data.monthlyTrends[data.monthlyTrends.length - 1];
+                const prev = data.monthlyTrends[data.monthlyTrends.length - 2];
+                const leadsDelta = curr.total - prev.total;
+                const leadsPercent = prev.total > 0 ? ((leadsDelta / prev.total) * 100).toFixed(0) : "∞";
+                const isPositive = leadsDelta > 0;
+                const isNeutral = leadsDelta === 0;
+                return (
+                    <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                        <CardContent className="py-5 px-6">
+                            <div className="flex items-center justify-between flex-wrap gap-4">
+                                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                    <CalendarDays className="h-4 w-4" />
+                                    <span>Period Comparison:</span>
+                                    <span className="font-bold text-foreground">{curr.name}</span>
+                                    <span>vs</span>
+                                    <span className="text-foreground">{prev.name}</span>
+                                </div>
+                                <div className="flex items-center gap-6 flex-wrap">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-muted-foreground">Leads:</span>
+                                        <span className="text-sm font-bold">{curr.total}</span>
+                                        <span className={cn(
+                                            "text-xs font-bold px-2 py-0.5 rounded-full",
+                                            isPositive ? "bg-emerald-500/15 text-emerald-400" :
+                                            isNeutral ? "bg-white/10 text-muted-foreground" :
+                                            "bg-red-500/15 text-red-400"
+                                        )}>
+                                            {isPositive ? "↑" : isNeutral ? "→" : "↓"} {Math.abs(leadsDelta)} ({leadsPercent}%)
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-muted-foreground">Previous:</span>
+                                        <span className="text-sm font-medium text-muted-foreground">{prev.total} leads</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })()}
+
             {/* Goal vs Actual Cards */}
             <div className="grid gap-6 md:grid-cols-2">
                 <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">

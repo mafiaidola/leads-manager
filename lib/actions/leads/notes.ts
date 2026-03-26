@@ -23,21 +23,21 @@ import mongoose from "mongoose";
 
 export async function addNote(leadId: string, message: string) {
     const session = await auth();
-    if (!session || !session.user.orgId) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized", success: false };
 
     // Marketing cannot add notes
     if (session.user.role === USER_ROLES.MARKETING) {
-        return { message: "Unauthorized: Marketing users cannot add notes" };
+        return { message: "Unauthorized: Marketing users cannot add notes", success: false };
     }
 
     try {
         // Check access
         await dbConnect();
         const lead = await Lead.findOne({ _id: leadId, orgId: session.user.orgId });
-        if (!lead) return { message: "Lead not found" };
+        if (!lead) return { message: "Lead not found", success: false };
 
         if (session.user.role !== USER_ROLES.ADMIN && lead.assignedTo?.toString() !== session.user.id) {
-            return { message: "Unauthorized" };
+            return { message: "Unauthorized", success: false };
         }
 
         await LeadNote.create({
@@ -53,7 +53,7 @@ export async function addNote(leadId: string, message: string) {
         return { message: "Note added", success: true };
     } catch (error) {
         console.error("addNote error:", error);
-        return { message: "Failed to add note" };
+        return { message: "Failed to add note", success: false };
     }
 }
 
@@ -64,21 +64,21 @@ export async function addLeadAction(
     data: { type: string; description: string; outcome?: string }
 ) {
     const session = await auth();
-    if (!session || !session.user.orgId) return { message: "Unauthorized" };
+    if (!session || !session.user.orgId) return { message: "Unauthorized", success: false };
 
     // Marketing cannot add actions
     if (session.user.role === USER_ROLES.MARKETING) {
-        return { message: "Unauthorized: Marketing users cannot add actions" };
+        return { message: "Unauthorized: Marketing users cannot add actions", success: false };
     }
 
     try {
         await dbConnect();
         const lead = await Lead.findOne({ _id: leadId, orgId: session.user.orgId });
-        if (!lead) return { message: "Lead not found" };
+        if (!lead) return { message: "Lead not found", success: false };
 
         // Only Admin or assigned Sales
         if (session.user.role !== USER_ROLES.ADMIN && lead.assignedTo?.toString() !== session.user.id) {
-            return { message: "Unauthorized" };
+            return { message: "Unauthorized", success: false };
         }
 
         await LeadAction.create({
@@ -110,6 +110,6 @@ export async function addLeadAction(
         return { message: "Action added successfully", success: true };
     } catch (error) {
         console.error("addLeadAction error:", error);
-        return { message: "Failed to add action" };
+        return { message: "Failed to add action", success: false };
     }
 }

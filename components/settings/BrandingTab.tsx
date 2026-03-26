@@ -14,12 +14,21 @@ import { Palette, Sparkles, Save, Check, Upload, X, ImageIcon, Loader2, Building
 import { cn } from "@/lib/utils";
 
 interface BrandingTabProps {
-    branding: { appName: string; accentColor: string; logoUrl: string };
+    branding: { appName: string; accentColor: string; logoUrl: string; loginTheme: string };
     currentTheme: "violet" | "ocean" | "emerald";
-    onBrandingChange: (branding: { appName: string; accentColor: string; logoUrl: string }) => void;
+    onBrandingChange: (branding: { appName: string; accentColor: string; logoUrl: string; loginTheme: string }) => void;
     onSaveBranding: () => void;
     onChangeTheme: (theme: "violet" | "ocean" | "emerald") => void;
 }
+
+const LOGIN_THEMES = [
+    { key: "aurora", name: "Aurora Mesh", desc: "Animated gradient blobs & floating orbs", gradient: "from-violet-600 via-purple-600 to-fuchsia-600", borderColor: "violet" },
+    { key: "waves", name: "Geometric Waves", desc: "Layered SVG wave animations", gradient: "from-blue-600 via-indigo-600 to-violet-700", borderColor: "blue" },
+    { key: "particles", name: "Particle Network", desc: "Floating connected particles", gradient: "from-cyan-600 via-blue-700 to-indigo-800", borderColor: "cyan" },
+    { key: "neon", name: "Neon Grid", desc: "Cyberpunk grid with scan lines", gradient: "from-green-500 via-emerald-600 to-teal-700", borderColor: "emerald" },
+    { key: "gradient", name: "Gradient Shift", desc: "Smooth gradient rotation & blobs", gradient: "from-pink-500 via-rose-600 to-orange-600", borderColor: "pink" },
+    { key: "minimal", name: "Minimal Blur", desc: "Clean, frosted glass spotlight", gradient: "from-slate-600 via-zinc-700 to-neutral-800", borderColor: "slate" },
+];
 
 const ACCENT_PRESETS = [
     { color: "#8b5cf6", name: "Violet" },
@@ -436,6 +445,80 @@ export function BrandingTab({
                             </div>
                         </button>
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* Login Theme Picker */}
+            <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden mt-6">
+                <CardHeader>
+                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                        <Eye className="h-5 w-5 text-cyan-500" />
+                        Login Page Theme
+                    </CardTitle>
+                    <CardDescription className="text-muted-foreground/80">
+                        Choose a creative background for the login page. Each theme uses your accent color.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                        {LOGIN_THEMES.map(t => (
+                            <button
+                                key={t.key}
+                                onClick={() => {
+                                    onBrandingChange({ ...branding, loginTheme: t.key });
+                                }}
+                                className={cn(
+                                    "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02] text-left",
+                                    branding.loginTheme === t.key
+                                        ? `border-${t.borderColor}-500 shadow-lg shadow-${t.borderColor}-500/25 ring-1 ring-${t.borderColor}-500/30`
+                                        : "border-white/10 hover:border-white/30"
+                                )}
+                            >
+                                <div className="rounded-xl overflow-hidden">
+                                    <div className={cn("h-20 bg-gradient-to-br relative", t.gradient)}>
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent)]" />
+                                        {/* Mini decorative elements per theme */}
+                                        {t.key === "waves" && (
+                                            <svg className="absolute bottom-0 left-0 w-full h-8 opacity-40" viewBox="0 0 400 40" preserveAspectRatio="none">
+                                                <path d="M0,20 Q100,5 200,20 T400,20 L400,40 L0,40 Z" fill="white" opacity="0.3" />
+                                            </svg>
+                                        )}
+                                        {t.key === "particles" && (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                {[0,1,2,3,4].map(i => (
+                                                    <div key={i} className="absolute w-1.5 h-1.5 bg-white/40 rounded-full" style={{ left: `${20 + i * 15}%`, top: `${30 + (i % 2) * 30}%` }} />
+                                                ))}
+                                            </div>
+                                        )}
+                                        {t.key === "neon" && (
+                                            <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+                                        )}
+                                        {t.key === "minimal" && (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="w-16 h-16 rounded-full bg-white/10 blur-xl" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-3 bg-card/80">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-bold">{t.name}</p>
+                                                <p className="text-[10px] text-muted-foreground">{t.desc}</p>
+                                            </div>
+                                            {branding.loginTheme === t.key && (
+                                                <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                                                    <Check className="h-3.5 w-3.5 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                    <Button onClick={onSaveBranding} className="rounded-xl bg-cyan-500 hover:bg-cyan-600 px-8 shadow-lg shadow-cyan-500/20 mt-4">
+                        <Save className="h-4 w-4 mr-2" />Save Login Theme
+                    </Button>
                 </CardContent>
             </Card>
         </>

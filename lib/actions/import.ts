@@ -76,13 +76,13 @@ export async function importLeadsWithMapping(
 ) {
     const session = await auth();
     if (!session || session.user.role !== USER_ROLES.ADMIN || !session.user.orgId) {
-        return { message: "Unauthorized" };
+        return { message: "Unauthorized", success: false };
     }
 
     const orgId = session.user.orgId;
 
     const file = formData.get("file") as File;
-    if (!file) return { message: "No file uploaded" };
+    if (!file) return { message: "No file uploaded", success: false };
 
     const text = await fileToCSVText(file);
 
@@ -231,7 +231,7 @@ export async function importLeadsWithMapping(
         };
     } catch (error) {
         console.error("Import failed:", error);
-        return { message: "Import failed due to server error." };
+        return { message: "Import failed due to server error.", success: false };
     }
 }
 
@@ -241,14 +241,14 @@ export async function importLeadsWithMapping(
 export async function importLeads(formData: FormData) {
     const session = await auth();
     if (!session || session.user.role !== USER_ROLES.ADMIN || !session.user.orgId) {
-        return { message: "Unauthorized" };
+        return { message: "Unauthorized", success: false };
     }
 
     const orgId = session.user.orgId;
 
     const file = formData.get("file") as File;
     if (!file) {
-        return { message: "No file uploaded" };
+        return { message: "No file uploaded", success: false };
     }
 
     const text = await file.text();
@@ -338,6 +338,6 @@ export async function importLeads(formData: FormData) {
         };
     } catch (error) {
         console.error("Import failed:", error);
-        return { message: "Import failed due to server error." };
+        return { message: "Import failed due to server error.", success: false };
     }
 }

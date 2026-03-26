@@ -80,10 +80,36 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                             isSuperAdmin: true,
                             active: true,
                         });
-                        if (!superAdmin) return null;
+                        if (!superAdmin) {
+                            // Log failed attempt — user not found
+                            try {
+                                const AuditLog = (await import("@/models/AuditLog")).default;
+                                await AuditLog.create({
+                                    action: "LOGIN_FAILED", entityType: "user",
+                                    entityId: "unknown",
+                                    userId: undefined, userName: username,
+                                    orgId: org._id,
+                                    details: `Failed login: user "${username}" not found in ${org.name}`,
+                                });
+                            } catch { /* silent */ }
+                            return null;
+                        }
                         // SuperAdmin found — allow login with target org context
                         const passwordsMatch = await bcrypt.compare(password, superAdmin.passwordHash);
-                        if (!passwordsMatch) return null;
+                        if (!passwordsMatch) {
+                            // Log failed SuperAdmin attempt
+                            try {
+                                const AuditLog = (await import("@/models/AuditLog")).default;
+                                await AuditLog.create({
+                                    action: "LOGIN_FAILED", entityType: "user",
+                                    entityId: superAdmin._id.toString(),
+                                    userId: superAdmin._id, userName: superAdmin.name,
+                                    orgId: org._id,
+                                    details: `Failed login: wrong password for SuperAdmin "${superAdmin.name}"`,
+                                });
+                            } catch { /* silent */ }
+                            return null;
+                        }
                         // Track login
                         try {
                             await User.updateOne({ _id: superAdmin._id }, { $set: { lastLogin: new Date() } });
@@ -100,16 +126,32 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                             id: superAdmin._id.toString(),
                             name: superAdmin.name,
                             email: superAdmin.email || superAdmin.username,
+                            username: superAdmin.username,
                             role: superAdmin.role,
                             orgId: org._id.toString(),
                             orgSlug: org.slug,
                             orgName: org.name,
                             isSuperAdmin: true,
+                            createdAt: superAdmin.createdAt?.toISOString() || null,
+                            lastLogin: new Date().toISOString(),
                         };
                     }
 
                     // Check if user is active
-                    if (user.active === false) return null;
+                    if (user.active === false) {
+                        // Log failed attempt — inactive user
+                        try {
+                            const AuditLog = (await import("@/models/AuditLog")).default;
+                            await AuditLog.create({
+                                action: "LOGIN_FAILED", entityType: "user",
+                                entityId: user._id.toString(),
+                                userId: user._id, userName: user.name,
+                                orgId: org._id,
+                                details: `Failed login: inactive user "${user.name}"`,
+                            });
+                        } catch { /* silent */ }
+                        return null;
+                    }
 
                     const passwordsMatch = await bcrypt.compare(
                         password,
@@ -138,13 +180,28 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                             id: user._id.toString(),
                             name: user.name,
                             email: user.email || user.username,
+                            username: user.username,
                             role: user.role,
                             orgId: org._id.toString(),
                             orgSlug: org.slug,
                             orgName: org.name,
                             isSuperAdmin: user.isSuperAdmin || false,
+                            createdAt: user.createdAt?.toISOString() || null,
+                            lastLogin: new Date().toISOString(),
                         };
                     }
+
+                    // Failed password — log attempt
+                    try {
+                        const AuditLog = (await import("@/models/AuditLog")).default;
+                        await AuditLog.create({
+                            action: "LOGIN_FAILED", entityType: "user",
+                            entityId: user._id.toString(),
+                            userId: user._id, userName: user.name,
+                            orgId: org._id,
+                            details: `Failed login: wrong password for "${user.name}"`,
+                        });
+                    } catch { /* silent */ }
                 }
 
                 return null;

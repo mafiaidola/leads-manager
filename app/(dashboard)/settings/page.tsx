@@ -13,6 +13,7 @@ import { getUsers, getAllUsers } from "@/lib/actions/users";
 import { getOrganizations } from "@/lib/actions/organizations";
 import { getSecurityStats } from "@/lib/actions/security";
 import { SettingsClient } from "@/components/settings/SettingsClient";
+import { SettingsTabSkeleton } from "@/components/ui/SettingsTabSkeleton";
 import { redirect } from "next/navigation";
 import { USER_ROLES } from "@/models/User";
 
@@ -44,7 +45,7 @@ export default async function SettingsPage() {
     return (
         <div className="p-8 space-y-6">
             <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-            <Suspense>
+            <Suspense fallback={<SettingsTabSkeleton />}>
                 <SettingsClient
                     settings={settings}
                     users={users}

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @component LeadsClient
  * @description Main client orchestrator for the Leads page.
  *
@@ -76,7 +76,7 @@ export function LeadsClient({
     const isAdmin = currentUserRole === 'ADMIN';
     const isMarketing = currentUserRole === 'MARKETING';
     const isSales = currentUserRole === 'SALES';
-    const canAddLead = isAdmin || isMarketing;
+    const canAddLead = isAdmin || isMarketing || isSales;
     const canSeeAssignment = isAdmin || isMarketing;
 
     const isStarredView = searchParams.get("starred") === "true";
@@ -430,6 +430,8 @@ export function LeadsClient({
             <EditLeadDialog lead={leadToEdit} open={isEditOpen} setOpen={setIsEditOpen} settings={settings} users={users} currentUserRole={currentUserRole} />
             <ImportDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
 
+
+
             {/* Delete Confirm Dialog */}
             <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
                 <DialogContent className="rounded-3xl border-white/10 bg-card/95 backdrop-blur-xl">
@@ -454,7 +456,7 @@ export function LeadsClient({
                     <Select value={transferUserId} onValueChange={setTransferUserId}>
                         <SelectTrigger className="rounded-xl border-white/10 bg-black/20"><SelectValue placeholder="Select user..." /></SelectTrigger>
                         <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                            {users.map((u: any) => (
+                            {users.filter((u: any) => u.active !== false).map((u: any) => (
                                 <SelectItem key={u._id} value={u._id}>{u.name} ({u.role})</SelectItem>
                             ))}
                         </SelectContent>

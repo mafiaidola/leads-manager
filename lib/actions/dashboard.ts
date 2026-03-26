@@ -32,7 +32,7 @@ export async function getDashboardStats(
 
         const matchStage: any = { deletedAt: null, orgId: new mongoose.Types.ObjectId(session.user.orgId as string) };
         if (session.user.role === USER_ROLES.SALES) {
-            matchStage.assignedTo = session.user.id;
+            matchStage.assignedTo = new mongoose.Types.ObjectId(session.user.id);
         }
 
         // Agent filter (Admin/Marketing only) — overrides role-based default
@@ -86,7 +86,7 @@ export async function getDashboardStats(
             }),
             Lead.countDocuments({
                 ...matchStage,
-                status: "customer",
+                status: { $regex: /customer/i },
             }),
             // Leads by Source
             Lead.aggregate([

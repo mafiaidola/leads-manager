@@ -27,14 +27,13 @@ export const LeadContactCard = React.memo(function LeadContactCard({ lead }: Lea
             </CardHeader>
             <CardContent className="space-y-3">
                 {lead.phone && (
-                    <a href={`tel:${lead.phone}`} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
+                    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5">
                         <div className="h-8 w-8 rounded-lg bg-emerald-500/15 flex items-center justify-center"><Phone className="h-4 w-4 text-emerald-400" /></div>
                         <div>
                             <div className="text-xs text-muted-foreground">Phone</div>
-                            <div className="text-sm font-medium group-hover:text-primary transition-colors">{formatPhoneDisplay(lead.phone)}</div>
+                            <div className="text-sm font-medium">{formatPhoneDisplay(lead.phone)}</div>
                         </div>
-                        <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </a>
+                    </div>
                 )}
                 {lead.email && (
                     <a href={`mailto:${lead.email}`} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
@@ -42,16 +41,6 @@ export const LeadContactCard = React.memo(function LeadContactCard({ lead }: Lea
                         <div>
                             <div className="text-xs text-muted-foreground">Email</div>
                             <div className="text-sm font-medium group-hover:text-primary transition-colors">{lead.email}</div>
-                        </div>
-                        <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </a>
-                )}
-                {lead.website && (
-                    <a href={lead.website.startsWith("http") ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
-                        <div className="h-8 w-8 rounded-lg bg-purple-500/15 flex items-center justify-center"><Globe className="h-4 w-4 text-purple-400" /></div>
-                        <div>
-                            <div className="text-xs text-muted-foreground">Website</div>
-                            <div className="text-sm font-medium group-hover:text-primary transition-colors truncate max-w-[180px]">{lead.website}</div>
                         </div>
                         <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </a>
@@ -65,17 +54,6 @@ export const LeadContactCard = React.memo(function LeadContactCard({ lead }: Lea
                         </div>
                         <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </a>
-                )}
-                {(lead.address?.city || lead.address?.country) && (
-                    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5">
-                        <div className="h-8 w-8 rounded-lg bg-amber-500/15 flex items-center justify-center"><MapPin className="h-4 w-4 text-amber-400" /></div>
-                        <div>
-                            <div className="text-xs text-muted-foreground">Location</div>
-                            <div className="text-sm font-medium">
-                                {[lead.address?.addressLine, lead.address?.city, lead.address?.state, lead.address?.country].filter(Boolean).join(", ")}
-                            </div>
-                        </div>
-                    </div>
                 )}
                 {lead.followUpDate && (() => {
                     const fDate = new Date(lead.followUpDate);

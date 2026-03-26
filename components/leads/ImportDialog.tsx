@@ -22,6 +22,7 @@ import { previewCSVImport, importLeadsWithMapping } from "@/lib/actions/import";
 import { LEAD_FIELD_OPTIONS } from "@/lib/constants/leadFields";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { logImport } from "@/components/ui/ImportHistoryPanel";
 
 interface ImportDialogProps {
     open: boolean;
@@ -102,6 +103,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         setStep("result");
 
         if (res.success) {
+            // Log to import history
+            logImport({
+                filename: file?.name || "unknown.csv",
+                totalRows: totalRows,
+                successCount: res.importedCount || 0,
+                failCount: res.errors?.length || 0,
+                duplicateCount: res.duplicateCount || 0,
+            });
             router.refresh();
         }
     };

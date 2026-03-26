@@ -147,7 +147,7 @@ export function PhoneInputWithCountry({
                     </button>
 
                     {dropdownOpen && (
-                        <div className="absolute top-full left-0 mt-1 w-[280px] max-h-[300px] overflow-hidden rounded-xl border border-white/10 bg-card/95 backdrop-blur-xl shadow-2xl z-50 flex flex-col">
+                        <div className="absolute top-full left-0 mt-1 w-[280px] max-h-[300px] overflow-hidden rounded-xl border border-white/10 bg-card/95 backdrop-blur-xl shadow-2xl z-[200] flex flex-col">
                             <div className="p-2 border-b border-white/5">
                                 <input
                                     ref={searchRef}

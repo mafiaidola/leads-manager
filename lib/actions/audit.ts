@@ -78,7 +78,8 @@ export async function getAuditLogs(params: {
         if (params.entityType) filter.entityType = params.entityType;
         if (params.action) filter.action = params.action;
         if (params.search) {
-            const searchRegex = { $regex: params.search, $options: "i" };
+            const safeSearch = params.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const searchRegex = { $regex: safeSearch, $options: "i" };
             filter.$or = [
                 { userName: searchRegex },
                 { details: searchRegex },

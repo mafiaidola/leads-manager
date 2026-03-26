@@ -102,15 +102,26 @@ export async function getLeadsByStatus() {
     try {
         await dbConnect();
 
-        const query: any = { deletedAt: null, orgId: session.user.orgId };
+        let orgId: any;
+        try {
+            orgId = new mongoose.Types.ObjectId(session.user.orgId as string);
+        } catch {
+            orgId = session.user.orgId;
+        }
+        const query: any = { deletedAt: null, orgId };
         if (session.user.role === USER_ROLES.SALES) {
-            query.assignedTo = session.user.id;
+            try {
+                query.assignedTo = new mongoose.Types.ObjectId(session.user.id);
+            } catch {
+                query.assignedTo = session.user.id;
+            }
         }
 
         const leads = await Lead.find(query)
             .sort({ createdAt: -1 })
             .populate("assignedTo", "name")
             .lean();
+
 
         const grouped: Record<string, any[]> = {};
         for (const lead of leads) {
@@ -241,7 +252,7 @@ export async function getLeads(searchParams: any) {
 
         // RBAC: Sales sees only assigned. Marketing sees all. Admin sees all.
         if (session.user.role === USER_ROLES.SALES) {
-            query.assignedTo = session.user.id;
+            query.assignedTo = new mongoose.Types.ObjectId(session.user.id);
         } else if (searchParams.assignedTo) {
             query.assignedTo = searchParams.assignedTo;
         }
@@ -400,7 +411,7 @@ export async function getLeadsStats(targetOrgId?: string) {
         }
         // Sales sees only own stats. Marketing + Admin see all.
         if (session.user.role === USER_ROLES.SALES) {
-            query.assignedTo = session.user.id;
+            query.assignedTo = new mongoose.Types.ObjectId(session.user.id);
         }
 
         const stats = await Lead.aggregate([
@@ -422,16 +433,18 @@ export async function searchLeads(query: string) {
 
     try {
         await dbConnect();
+        // Escape regex special characters to prevent injection
+        const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const searchDigits = query.replace(/[^0-9]/g, "");
         const searchNoPrefix = query.replace(/^[#]?/i, "");
         const filter: any = {
             deletedAt: null,
             orgId: session.user.orgId,
             $or: [
-                { name: { $regex: query, $options: "i" } },
-                { company: { $regex: query, $options: "i" } },
-                { email: { $regex: query, $options: "i" } },
-                { phone: { $regex: query, $options: "i" } },
+                { name: { $regex: safeQuery, $options: "i" } },
+                { company: { $regex: safeQuery, $options: "i" } },
+                { email: { $regex: safeQuery, $options: "i" } },
+                { phone: { $regex: safeQuery, $options: "i" } },
                 ...(searchDigits.length >= 3 ? [{ serialNumber: parseInt(searchDigits, 10) || -1 }] : []),
                 ...(searchNoPrefix !== query && searchNoPrefix.length >= 3 ? [{ serialNumber: parseInt(searchNoPrefix, 10) || -1 }] : []),
             ],
@@ -439,7 +452,7 @@ export async function searchLeads(query: string) {
 
         // RBAC
         if (session.user.role === USER_ROLES.SALES) {
-            filter.assignedTo = session.user.id;
+            filter.assignedTo = new mongoose.Types.ObjectId(session.user.id);
         }
 
         const leads = await Lead.find(filter)

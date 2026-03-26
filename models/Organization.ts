@@ -49,6 +49,7 @@ export interface IOrgBranding {
     appName: string;
     accentColor: string;
     logoUrl: string;
+    loginTheme: string;
 }
 
 export interface IOrganization {
@@ -92,6 +93,7 @@ const OrganizationSchema = new Schema<IOrganization>(
             appName: { type: String, default: "Leads Mgr" },
             accentColor: { type: String, default: "#8b5cf6" },
             logoUrl: { type: String, default: "" },
+            loginTheme: { type: String, default: "aurora" },
         },
         theme: { type: String, enum: ["violet", "ocean", "emerald"], default: "violet" },
         settings: {
@@ -144,7 +146,6 @@ const OrganizationSchema = new Schema<IOrganization>(
     { timestamps: true }
 );
 
-OrganizationSchema.index({ slug: 1 }, { unique: true });
 OrganizationSchema.index({ active: 1 });
 
 const Organization: Model<IOrganization> =

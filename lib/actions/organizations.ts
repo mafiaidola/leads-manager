@@ -541,9 +541,8 @@ export async function removeOrgUser(orgId: string, userId: string) {
         if (!user) return { error: "User not found." };
         if (user.isSuperAdmin) return { error: "Cannot remove SuperAdmin users." };
 
-        // ✅ Soft-delete: deactivate instead of hard-delete to preserve audit trail
-        user.active = false;
-        await user.save();
+        // Hard-delete: actually remove the user from the database
+        await User.deleteOne({ _id: userId });
 
         revalidatePath("/settings");
         return { success: true };

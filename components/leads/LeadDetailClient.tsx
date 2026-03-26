@@ -256,6 +256,15 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
     const isStarred = useMemo(() => (lead.starred || []).includes(userId), [lead.starred, userId]);
     const assignedName = lead.assignedTo?.name || "Unassigned";
 
+    // RBAC: determine what this user can do
+    const isAdmin = userRole === "ADMIN";
+    const isMarketing = userRole === "MARKETING";
+    const isSales = userRole === "SALES";
+    const canEdit = isAdmin || (isSales && lead.assignedTo?._id === userId);
+    const canDelete = isAdmin;
+    const canAddNote = isAdmin || (isSales && lead.assignedTo?._id === userId);
+    const canChangeStatus = isAdmin || (isSales && lead.assignedTo?._id === userId);
+
     const handleExport = useCallback(() => {
         const data = {
             Name: lead.name,
@@ -272,7 +281,9 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
             Created: formatDate(lead.createdAt),
         };
         const csv = Object.entries(data).map(([k, v]) => `${k},"${String(v).replace(/"/g, '""')}"`).join("\n");
-        const blob = new Blob(["Field,Value\n" + csv], { type: "text/csv" });
+        // UTF-8 BOM ensures Arabic + English names render correctly in Excel
+        const bom = '\uFEFF';
+        const blob = new Blob([bom + "Field,Value\n" + csv], { type: "text/csv; charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -320,12 +331,15 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                         <Button variant="ghost" size="icon" className="rounded-full" onClick={handleToggleStar} disabled={isPending}>
                             {isStarred ? <Star className="h-5 w-5 fill-amber-400 text-amber-400" /> : <StarOff className="h-5 w-5 text-muted-foreground" />}
                         </Button>
-                        <Button variant="outline" size="sm" className="rounded-full border-white/10 gap-1.5" onClick={() => setShowEdit(true)}>
-                            <Pencil className="h-3.5 w-3.5" /> Edit
-                        </Button>
+                        {canEdit && (
+                            <Button variant="outline" size="sm" className="rounded-full border-white/10 gap-1.5" onClick={() => setShowEdit(true)}>
+                                <Pencil className="h-3.5 w-3.5" /> Edit
+                            </Button>
+                        )}
                         <Button variant="outline" size="sm" className="rounded-full border-white/10 gap-1.5" onClick={handleExport}>
                             <Download className="h-3.5 w-3.5" /> Export
                         </Button>
+                        {canDelete && (
                         <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
                             <AlertDialogTrigger asChild>
                                 <Button variant="outline" size="sm" className="rounded-full border-red-500/20 text-red-400 hover:bg-red-500/10 gap-1.5">
@@ -347,17 +361,24 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
-                        <Select value={currentStatus} onValueChange={handleStatusChange}>
-                            <SelectTrigger
-                                className={cn("w-[140px] rounded-full border font-semibold text-xs h-8 status-chip-dynamic", !statusColorMap[currentStatus] && (STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30"))}
-                                style={getStatusChipStyle(currentStatus)}
-                            >
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                {statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
+                        )}
+                        {canChangeStatus ? (
+                            <Select value={currentStatus} onValueChange={handleStatusChange}>
+                                <SelectTrigger
+                                    className={cn("w-[140px] rounded-full border font-semibold text-xs h-8 status-chip-dynamic", !statusColorMap[currentStatus] && (STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30"))}
+                                    style={getStatusChipStyle(currentStatus)}
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                    {statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <Badge className={cn("rounded-full font-semibold text-xs px-3 py-1 status-chip-dynamic", !statusColorMap[currentStatus] && (STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30"))} style={getStatusChipStyle(currentStatus)}>
+                                {currentStatus}
+                            </Badge>
+                        )}
                     </div>
                 </div>
             </FadeIn>
@@ -444,20 +465,24 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                 <FadeIn delay={0.15} className="lg:col-span-2 space-y-6">
                     {/* Quick Action Buttons */}
                     <div className="flex flex-wrap gap-2">
-                        <Button
-                            variant="outline"
-                            className="rounded-full border-white/10 bg-card/40 backdrop-blur-xl gap-1.5 hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all"
-                            onClick={() => setIsAddingNote(!isAddingNote)}
-                        >
-                            <MessageSquare className="h-4 w-4" /> Add Note
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="rounded-full border-white/10 bg-card/40 backdrop-blur-xl gap-1.5 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 transition-all"
-                            onClick={() => setIsAddingAction(!isAddingAction)}
-                        >
-                            <Plus className="h-4 w-4" /> Log Action
-                        </Button>
+                        {canAddNote && (
+                            <Button
+                                variant="outline"
+                                className="rounded-full border-white/10 bg-card/40 backdrop-blur-xl gap-1.5 hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all"
+                                onClick={() => setIsAddingNote(!isAddingNote)}
+                            >
+                                <MessageSquare className="h-4 w-4" /> Add Note
+                            </Button>
+                        )}
+                        {canAddNote && (
+                            <Button
+                                variant="outline"
+                                className="rounded-full border-white/10 bg-card/40 backdrop-blur-xl gap-1.5 hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 transition-all"
+                                onClick={() => setIsAddingAction(!isAddingAction)}
+                            >
+                                <Plus className="h-4 w-4" /> Log Action
+                            </Button>
+                        )}
                         {lead.phone && (
                             <a href={`tel:${lead.phone}`}>
                                 <Button variant="outline" className="rounded-full border-white/10 bg-card/40 backdrop-blur-xl gap-1.5 hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-400 transition-all">

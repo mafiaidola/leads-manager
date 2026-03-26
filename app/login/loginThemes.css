@@ -1,0 +1,216 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Login Page Theme System — 6 Pre-Built Themes
+   Each theme replaces the background layer behind the glassmorphism card.
+   Theme is selected via data-login-theme attribute on .login-page
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Theme 1: Aurora Mesh (Default) ──────────────────────────────────────── */
+/* Aurora is the default — uses existing .login-aurora-blob styles from globals.css */
+
+/* ── Theme 2: Geometric Waves ────────────────────────────────────────────── */
+.login-page[data-login-theme="waves"] .login-aurora { display: none; }
+.login-page[data-login-theme="waves"] .login-orbs { display: none; }
+.login-page[data-login-theme="waves"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+        radial-gradient(ellipse 80% 60% at 50% 120%, var(--login-accent, #8b5cf6)22 0%, transparent 70%),
+        linear-gradient(180deg, #050510 0%, #0a0a20 100%);
+}
+.login-page[data-login-theme="waves"] .login-grid { display: none; }
+
+.login-waves-layer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 60vh;
+    z-index: 0;
+    overflow: hidden;
+}
+.login-wave {
+    position: absolute;
+    bottom: 0; left: -10%;
+    width: 120%;
+    height: 100%;
+    opacity: 0.25;
+}
+.login-wave svg {
+    width: 100%;
+    height: 100%;
+}
+.login-wave--1 { animation: waveShift 7s ease-in-out infinite; opacity: 0.3; }
+.login-wave--2 { animation: waveShift 9s ease-in-out infinite reverse; opacity: 0.2; bottom: -10%; }
+.login-wave--3 { animation: waveShift 11s ease-in-out infinite; opacity: 0.15; bottom: -20%; }
+
+@keyframes waveShift {
+    0%, 100% { transform: translateX(0) scaleY(1); }
+    50%      { transform: translateX(-3%) scaleY(1.08); }
+}
+
+/* ── Theme 3: Particle Network ───────────────────────────────────────────── */
+.login-page[data-login-theme="particles"] .login-aurora { display: none; }
+.login-page[data-login-theme="particles"] .login-orbs { display: none; }
+.login-page[data-login-theme="particles"] .login-grid { display: none; }
+.login-page[data-login-theme="particles"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: radial-gradient(ellipse 80% 80% at 50% 50%, var(--login-accent, #8b5cf6)08 0%, transparent 60%),
+                #030308;
+}
+
+.login-particles {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+}
+.login-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--login-accent, #8b5cf6);
+    opacity: 0.4;
+    animation: particleFloat var(--p-dur) ease-in-out infinite var(--p-delay);
+}
+@keyframes particleFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+    25%      { transform: translate(var(--p-dx, 20px), var(--p-dy, -30px)) scale(1.2); opacity: 0.6; }
+    50%      { transform: translate(calc(var(--p-dx, 20px) * -0.5), calc(var(--p-dy, -30px) * 1.5)) scale(0.8); opacity: 0.3; }
+    75%      { transform: translate(calc(var(--p-dx, 20px) * 1.3), calc(var(--p-dy, -30px) * -0.8)) scale(1.1); opacity: 0.5; }
+}
+
+/* Particle connection lines */
+.login-particle-line {
+    position: absolute;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--login-accent, #8b5cf6)33, transparent);
+    transform-origin: left center;
+    animation: lineFlicker 4s ease-in-out infinite var(--l-delay);
+}
+@keyframes lineFlicker {
+    0%, 100% { opacity: 0.1; }
+    50%      { opacity: 0.3; }
+}
+
+/* ── Theme 4: Neon Grid ──────────────────────────────────────────────────── */
+.login-page[data-login-theme="neon"] .login-aurora { display: none; }
+.login-page[data-login-theme="neon"] .login-orbs { display: none; }
+.login-page[data-login-theme="neon"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: #020206;
+}
+.login-page[data-login-theme="neon"] .login-grid {
+    background-image:
+        linear-gradient(var(--login-accent, #8b5cf6)11 1px, transparent 1px),
+        linear-gradient(90deg, var(--login-accent, #8b5cf6)11 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: neonGridPulse 4s ease-in-out infinite;
+    opacity: 0.6;
+}
+
+.login-neon-glow {
+    position: fixed;
+    z-index: 0;
+    border-radius: 50%;
+    filter: blur(100px);
+    animation: neonGlowPulse var(--ng-dur) ease-in-out infinite var(--ng-delay);
+}
+@keyframes neonGridPulse {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 0.7; }
+}
+@keyframes neonGlowPulse {
+    0%, 100% { opacity: 0.15; transform: scale(1); }
+    50%      { opacity: 0.3; transform: scale(1.15); }
+}
+
+/* Horizontal neon scan line */
+.login-neon-scanline {
+    position: fixed;
+    left: 0; right: 0;
+    height: 2px;
+    z-index: 0;
+    background: linear-gradient(90deg, transparent 0%, var(--login-accent, #8b5cf6)55 30%, var(--login-accent, #8b5cf6)88 50%, var(--login-accent, #8b5cf6)55 70%, transparent 100%);
+    animation: neonScan 6s linear infinite;
+    box-shadow: 0 0 15px var(--login-accent, #8b5cf6)44;
+}
+@keyframes neonScan {
+    0%   { top: -2px; }
+    100% { top: 100vh; }
+}
+
+/* ── Theme 5: Gradient Shift ─────────────────────────────────────────────── */
+.login-page[data-login-theme="gradient"] .login-aurora { display: none; }
+.login-page[data-login-theme="gradient"] .login-orbs { display: none; }
+.login-page[data-login-theme="gradient"] .login-grid { display: none; }
+.login-page[data-login-theme="gradient"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(135deg,
+        var(--login-accent, #8b5cf6)33,
+        #0a0a1a,
+        var(--login-accent, #8b5cf6)22,
+        #050515
+    );
+    background-size: 400% 400%;
+    animation: gradientRotate 15s ease infinite;
+}
+@keyframes gradientRotate {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Floating gradient blobs */
+.login-gradient-blob {
+    position: fixed;
+    z-index: 0;
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    filter: blur(80px);
+    opacity: 0.2;
+    animation: gradBlobFloat var(--gb-dur) ease-in-out infinite var(--gb-delay);
+}
+@keyframes gradBlobFloat {
+    0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+    33%      { transform: translate(30px, -50px) rotate(120deg) scale(1.1); }
+    66%      { transform: translate(-20px, 20px) rotate(240deg) scale(0.9); }
+}
+
+/* ── Theme 6: Minimal Blur ───────────────────────────────────────────────── */
+.login-page[data-login-theme="minimal"] .login-aurora { display: none; }
+.login-page[data-login-theme="minimal"] .login-orbs { display: none; }
+.login-page[data-login-theme="minimal"] .login-grid { display: none; }
+.login-page[data-login-theme="minimal"] .login-noise { display: none; }
+.login-page[data-login-theme="minimal"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(160deg, #08080f 0%, #0f0f1a 50%, #0a0a15 100%);
+}
+
+/* Subtle accent spotlight */
+.login-minimal-spot {
+    position: fixed;
+    z-index: 0;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--login-accent, #8b5cf6)15, transparent 70%);
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    filter: blur(60px);
+    animation: minimalPulse 8s ease-in-out infinite;
+}
+@keyframes minimalPulse {
+    0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(1); }
+    50%      { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+}

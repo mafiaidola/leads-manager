@@ -9,16 +9,16 @@ import { Sidebar } from "@/components/Sidebar";
 import { MobileSidebar } from "@/components/MobileSidebar";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { LogOut, UserCircle2, Search } from "lucide-react";
+import { LogOut, UserCircle2 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { handleSignOut } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
-import { CommandPalette } from "@/components/CommandPalette";
 import dbConnect from "@/lib/db";
 import Organization from "@/models/Organization";
 import { ToastHistoryPanel } from "@/components/ui/ToastHistoryPanel";
 import { PresenceIndicator } from "@/components/ui/PresenceIndicator";
+import { SessionTimeoutWarning } from "@/components/session/SessionTimeoutWarning";
 
 export default async function DashboardLayout({
     children,
@@ -68,12 +68,6 @@ export default async function DashboardLayout({
                         </div>
 
                         <div className="flex items-center gap-3">
-                            {/* Search trigger — visual only, Ctrl+K handled by CommandPalette */}
-                            <div className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground bg-white/5 border border-white/10 rounded-xl cursor-default">
-                                <Search className="h-3.5 w-3.5" />
-                                <span className="hidden lg:inline text-xs">Search...</span>
-                                <kbd className="hidden lg:inline text-[10px] font-mono text-muted-foreground/50 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">Ctrl+K</kbd>
-                            </div>
 
                             {/* Notifications */}
                             <NotificationBell />
@@ -133,8 +127,8 @@ export default async function DashboardLayout({
                         {children}
                     </Suspense>
                 </div>
-                <CommandPalette />
                 <ToastHistoryPanel />
+                <SessionTimeoutWarning />
             </main>
         </div>
     );

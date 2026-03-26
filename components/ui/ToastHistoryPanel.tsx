@@ -48,7 +48,7 @@ export function ToastHistoryPanel() {
     if (history.length === 0) return null;
 
     return (
-        <div className="fixed bottom-4 right-4 z-50">
+        <div className="fixed bottom-6 right-4 z-50">
             {/* Toggle Button */}
             <button
                 onClick={() => { setIsOpen(!isOpen); setHasNew(false); }}

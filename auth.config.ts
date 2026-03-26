@@ -5,6 +5,23 @@ export const authConfig = {
         signIn: "/login",
     },
     providers: [], // Added later in auth.ts
+    session: {
+        strategy: "jwt" as const,
+        maxAge: 8 * 60 * 60, // 8 hours — forces re-login after this period
+        updateAge: 60 * 60,  // Refresh token every 1 hour
+    },
+    cookies: {
+        sessionToken: {
+            name: "next-auth.session-token",
+            options: {
+                httpOnly: true,
+                sameSite: "lax" as const,
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                // NO maxAge → session cookie → expires when browser closes
+            },
+        },
+    },
     callbacks: {
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
@@ -40,6 +57,9 @@ export const authConfig = {
                 token.orgSlug = user.orgSlug;
                 token.orgName = user.orgName;
                 token.isSuperAdmin = user.isSuperAdmin || false;
+                token.username = user.username || "";
+                token.createdAt = user.createdAt || null;
+                token.lastLogin = user.lastLogin || null;
             }
             return token;
         },
@@ -51,6 +71,9 @@ export const authConfig = {
                 session.user.orgSlug = token.orgSlug;
                 session.user.orgName = token.orgName;
                 session.user.isSuperAdmin = token.isSuperAdmin || false;
+                session.user.username = token.username || "";
+                session.user.createdAt = token.createdAt || null;
+                session.user.lastLogin = token.lastLogin || null;
             }
             return session;
         },

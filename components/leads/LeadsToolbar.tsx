@@ -203,30 +203,31 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
                             ))}
                         </SelectContent>
                     </Select>
-                    {isAdmin && (
-                        <>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="icon" title="Export" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 order-3">
-                                        <Download className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                    <DropdownMenuItem onClick={() => onExport("csv")} className="cursor-pointer">
-                                        <FileText className="h-4 w-4 mr-2 text-muted-foreground" /> CSV
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => onExport("excel")} className="cursor-pointer">
-                                        <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-500" /> Excel (.xlsx)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => onExport("word")} className="cursor-pointer">
-                                        <FileText className="h-4 w-4 mr-2 text-blue-500" /> Word (.docx)
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button variant="outline" size="icon" onClick={onImportOpen} title="Import CSV" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 order-4">
-                                <FileUp className="h-4 w-4" />
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon" title="Export" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 order-3">
+                                <Download className="h-4 w-4" />
                             </Button>
-                        </>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                            <DropdownMenuItem onClick={() => onExport("csv")} className="cursor-pointer">
+                                <FileText className="h-4 w-4 mr-2 text-muted-foreground" /> CSV
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onExport("excel")} className="cursor-pointer">
+                                <FileSpreadsheet className="h-4 w-4 mr-2 text-emerald-500" /> Excel (.xlsx)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onExport("word")} className="cursor-pointer">
+                                <FileText className="h-4 w-4 mr-2 text-blue-500" /> Word (.docx)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onExport("pdf")} className="cursor-pointer">
+                                <FileText className="h-4 w-4 mr-2 text-red-500" /> PDF
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    {isAdmin && (
+                        <Button variant="outline" size="icon" onClick={onImportOpen} title="Import CSV" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 order-4">
+                            <FileUp className="h-4 w-4" />
+                        </Button>
                     )}
                     {canAddLead && <div className="order-5"><AddLeadDialog settings={settings} users={users} /></div>}
                 </div>
