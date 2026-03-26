@@ -11,6 +11,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { LogOut, UserCircle2 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { handleSignOut } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
 import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
@@ -71,6 +72,9 @@ export default async function DashboardLayout({
 
                             {/* Notifications */}
                             <NotificationBell />
+
+                            {/* Dark/Light Mode */}
+                            <ThemeToggle />
 
                             {/* Presence */}
                             <PresenceIndicator

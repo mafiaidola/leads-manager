@@ -24,6 +24,7 @@ import { logAudit } from "@/lib/actions/audit";
 import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
 import { createNotification, getAdminUserIds } from "@/lib/actions/notifications";
 import { getAutoAssignee } from "@/lib/utils/autoAssignment";
+import { trackLeadChanges } from "@/lib/utils/trackChanges";
 import Organization from "@/models/Organization";
 
 const LeadSchema = z.object({
@@ -196,6 +197,9 @@ export async function updateLead(prevState: any, formData: FormData) {
         const lead = await Lead.findOne({ _id: id, orgId: session.user.orgId });
         if (!lead) return { message: "Lead not found", success: false };
 
+        // Capture old data for field-level change tracking
+        const oldData = lead.toObject();
+
         // RBAC: Admin or assigned Sales can update. Marketing cannot edit.
         if (session.user.role === USER_ROLES.MARKETING) {
             return { message: "Unauthorized: Marketing users cannot edit leads", success: false };
@@ -274,6 +278,16 @@ export async function updateLead(prevState: any, formData: FormData) {
 
         const prevAssignedTo = lead.assignedTo?.toString();
         await lead.save();
+
+        // Field-level change tracking (non-blocking)
+        trackLeadChanges({
+            orgId: session.user.orgId,
+            leadId: id,
+            oldData,
+            newData: lead.toObject(),
+            changedBy: session.user.id,
+            changedByName: session.user.name || "Unknown",
+        });
 
         logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, changes.length > 0 ? changes.join(" | ") : `Updated lead: ${lead.name}`);
 

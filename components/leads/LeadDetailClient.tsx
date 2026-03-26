@@ -35,7 +35,8 @@ import { updateLead } from "@/lib/actions/leads";
 import { LeadContactCard } from "./LeadContactCard";
 import { LeadDealCard } from "./LeadDealCard";
 import { LeadTimeline } from "./LeadTimeline";
-import { LeadEditDialog } from "./LeadEditDialog";
+import { LeadEditDialog } from "@/components/leads/LeadEditDialog";
+import { FieldChangeHistory } from "@/components/leads/FieldChangeHistory";
 import { FadeIn } from "@/components/dashboard/DashboardAnimations";
 
 // Action type options
@@ -106,9 +107,10 @@ interface LeadDetailClientProps {
     users?: any[];
     userRole: string;
     userId: string;
+    changeHistory?: any[];
 }
 
-export default function LeadDetailClient({ lead, notes, actions, statuses, sources, settings, users, userRole, userId }: LeadDetailClientProps) {
+export default function LeadDetailClient({ lead, notes, actions, statuses, sources, settings, users, userRole, userId, changeHistory = [] }: LeadDetailClientProps) {
     const router = useRouter();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
@@ -567,6 +569,11 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                         formatDate={formatDate}
                         formatTime={formatTime}
                     />
+
+                    {/* Field Change History — Admin/SuperAdmin only */}
+                    {(userRole === "ADMIN" || (lead as any).isSuperAdmin) && changeHistory.length > 0 && (
+                        <FieldChangeHistory changes={changeHistory} />
+                    )}
                 </FadeIn>
             </div>
 

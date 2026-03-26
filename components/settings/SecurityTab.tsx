@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
     Shield, Clock, Activity, AlertTriangle, Search, CheckCircle2,
-    XCircle, Users, UserCheck, UserX, TrendingUp,
+    XCircle, Users, UserCheck, UserX, TrendingUp, Database, Download, HardDrive, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,9 +28,15 @@ interface AuditEvent {
     _id: string; action: string; entityType: string;
     userName: string; details: string; createdAt: string;
 }
+interface BackupRecord {
+    _id: string; orgName: string; fileName: string; fileSize: number;
+    downloadUrl?: string; status: "completed" | "failed";
+    triggeredBy: "cron" | "manual"; createdAt: string;
+}
 interface SecurityTabProps {
     users: SecurityUser[];
     recentEvents: AuditEvent[];
+    backupHistory?: BackupRecord[];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -71,7 +77,7 @@ function loginStatus(lastLogin: string | null): { label: string; class: string }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function SecurityTab({ users, recentEvents }: SecurityTabProps) {
+export function SecurityTab({ users, recentEvents, backupHistory = [] }: SecurityTabProps) {
     const [search, setSearch] = useState("");
 
     // Stats
@@ -238,6 +244,58 @@ export function SecurityTab({ users, recentEvents }: SecurityTabProps) {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* ── Backup History ─────────────────────────────────── */}
+            <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                <CardHeader>
+                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                        <Database className="h-5 w-5 text-emerald-400" />
+                        Backup History
+                    </CardTitle>
+                    <CardDescription className="text-xs">Automated and manual data backups. Cron runs weekly.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {backupHistory.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                            <HardDrive className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                            <p className="text-sm">No backups yet</p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">Automated backups run weekly on Vercel</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-hide">
+                            {backupHistory.map(b => (
+                                <div key={b._id} className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/5">
+                                    <div className={cn(
+                                        "h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                                        b.status === "completed" ? "bg-emerald-500/10" : "bg-red-500/10"
+                                    )}>
+                                        {b.status === "completed"
+                                            ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                                            : <XCircle className="h-4 w-4 text-red-400" />
+                                        }
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium truncate">{b.fileName}</div>
+                                        <div className="text-[10px] text-muted-foreground">
+                                            {b.orgName} · {b.triggeredBy === "cron" ? "Auto" : "Manual"} · {(b.fileSize / 1024).toFixed(1)} KB
+                                        </div>
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground/60 text-right flex-shrink-0">
+                                        {relativeTime(b.createdAt)}
+                                    </div>
+                                    {b.downloadUrl && (
+                                        <a href={b.downloadUrl} target="_blank" rel="noopener noreferrer"
+                                            title={`Download ${b.fileName}`}
+                                            className="text-primary hover:text-primary/80 flex-shrink-0">
+                                            <Download className="h-4 w-4" />
+                                        </a>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
             {/* ── Danger Zone ───────────────────────────────────────── */}
             <Card className="rounded-3xl border-red-500/20 bg-red-500/5 backdrop-blur-xl shadow-xl">

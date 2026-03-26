@@ -11,6 +11,7 @@ import { getSettings } from "@/lib/actions/settings";
 import { redirect } from "next/navigation";
 import LeadDetailClient from "@/components/leads/LeadDetailClient";
 import { getSalesUsers } from "@/lib/actions/users";
+import { getLeadChangeHistory } from "@/lib/utils/trackChanges";
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
@@ -31,6 +32,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     const serializedSettings = serialize(settings || {});
     const serializedUsers = serialize(users);
 
+    // Fetch field change history for Admin/SuperAdmin
+    const isAdmin = session.user.role === "ADMIN" || (session.user as any).isSuperAdmin;
+    const changeHistory = isAdmin ? await getLeadChangeHistory(id) : [];
+
     return (
         <LeadDetailClient
             lead={data.lead}
@@ -42,6 +47,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             users={serializedUsers}
             userRole={session.user.role}
             userId={session.user.id}
+            changeHistory={changeHistory}
         />
     );
 }
