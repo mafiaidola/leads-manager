@@ -22,6 +22,12 @@ export async function GET(req: NextRequest) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    // RBAC: Only Admin can export leads
+    const userRole = (session.user as any).role;
+    if (userRole !== "ADMIN") {
+        return new NextResponse("Forbidden — only Admins can export leads", { status: 403 });
+    }
+
     const orgId = (session.user as any).orgId;
     if (!orgId) {
         return new NextResponse("No organization context", { status: 400 });

@@ -76,7 +76,7 @@ export function LeadsClient({
     const isAdmin = currentUserRole === 'ADMIN';
     const isMarketing = currentUserRole === 'MARKETING';
     const isSales = currentUserRole === 'SALES';
-    const canAddLead = isAdmin || isMarketing || isSales;
+    const canAddLead = isAdmin || isMarketing;
     const canSeeAssignment = isAdmin || isMarketing;
 
     const isStarredView = searchParams.get("starred") === "true";
