@@ -28,7 +28,7 @@ import { trackLeadChanges } from "@/lib/utils/trackChanges";
 import Organization from "@/models/Organization";
 
 const LeadSchema = z.object({
-    name: z.string().min(1),
+    name: z.string().optional(),
     company: z.string().optional(),
     email: z.string().email().optional().or(z.literal("")),
     phone: z.string().regex(/^\d*$/, "Phone number must contain only digits").optional(),
@@ -236,7 +236,7 @@ export async function updateLead(prevState: any, formData: FormData) {
         trackField("Website", lead.website, rest.website);
 
         // Update fields
-        lead.name = rest.name;
+        lead.name = rest.name || lead.name || "";
         lead.company = rest.company;
         lead.email = rest.email;
         lead.phone = rest.phone;

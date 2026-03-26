@@ -69,9 +69,11 @@ export default async function DashboardPage() {
                             <p className="text-sm text-muted-foreground mt-2 max-w-lg">
                                 Here&apos;s what&apos;s happening with your leads today. Stay on top of your pipeline and hit your targets.
                             </p>
+                            {session?.user?.role !== "SALES" && (
                             <div className="mt-4">
-                                <QuickActions />
+                                <QuickActions userRole={session?.user?.role} />
                             </div>
+                            )}
                         </div>
                         <div className="hidden md:block text-right text-sm text-muted-foreground shrink-0">
                             <div className="font-semibold text-foreground text-lg">

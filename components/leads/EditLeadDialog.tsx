@@ -5,6 +5,8 @@
  * Pre-populates form fields from existing lead data.
  * Validates via Zod schema and calls `updateLead` server action.
  * Shows loading state during submission.
+ *
+ * Removed fields: address, position, company, city, state, country, zipCode, website, defaultLanguage, tags
  */
 "use client";
 
@@ -23,7 +25,6 @@ import {
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -38,8 +39,7 @@ import { Ban } from "lucide-react";
 import { PhoneInputWithCountry } from "@/components/ui/PhoneInputWithCountry";
 
 const formSchema = z.object({
-    name: z.string().min(2, "Name must be at least 2 characters."),
-    company: z.string().optional(),
+    name: z.string().optional(),
     email: z.string().optional(),
     phone: z.string().regex(/^\d*$/, "Phone number must contain only digits").optional(),
     countryCode: z.string().optional(),
@@ -47,18 +47,8 @@ const formSchema = z.object({
     source: z.string().optional(),
     product: z.string().optional(),
     assignedTo: z.string().optional(),
-    // Note: z.any() used to avoid RHF resolver generic type conflicts; runtime coercion is handled by the HTML input[type=number] and the server action.
     value: z.any().optional(),
-    website: z.string().optional(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    country: z.string().optional(),
-    zipCode: z.string().optional(),
-    position: z.string().optional(),
-    defaultLanguage: z.string().optional(),
     description: z.string().optional(),
-    tags: z.string().optional(),
     public: z.boolean(),
     contactedToday: z.boolean(),
     followUpDate: z.string().optional(),
@@ -103,7 +93,6 @@ export function EditLeadDialog({
         if (lead) {
             form.reset({
                 name: lead.name || "",
-                company: lead.company || "",
                 email: lead.email || "",
                 phone: lead.phone || "",
                 countryCode: lead.countryCode || "971",
@@ -112,16 +101,7 @@ export function EditLeadDialog({
                 product: lead.product || "",
                 assignedTo: typeof lead.assignedTo === 'string' ? lead.assignedTo : lead.assignedTo?._id || "",
                 value: lead.value || 0,
-                website: lead.website || "",
-                address: lead.address?.addressLine || "",
-                city: lead.address?.city || "",
-                state: lead.address?.state || "",
-                country: lead.address?.country || "UAE",
-                zipCode: lead.address?.zipCode || "",
-                position: lead.position || "",
-                defaultLanguage: lead.defaultLanguage || "System Default",
                 description: lead.description || "",
-                tags: Array.isArray(lead.tags) ? lead.tags.join(", ") : lead.tags || "",
                 public: !!lead.public,
                 contactedToday: !!lead.contactedToday,
                 followUpDate: lead.followUpDate ? new Date(lead.followUpDate).toISOString().split("T")[0] : "",
@@ -169,10 +149,10 @@ export function EditLeadDialog({
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border-white/10 bg-card/95 backdrop-blur-xl shadow-2xl">
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl border-white/10 bg-card/95 backdrop-blur-xl shadow-2xl">
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                        Edit Lead: {lead.name}
+                        Edit Lead: {lead.name || "Unnamed"}
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground/80">
                         Update the details for this lead.
@@ -180,273 +160,71 @@ export function EditLeadDialog({
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Left Column: Basic Info */}
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold flex items-center gap-2 text-primary/80">
-                                    <span className="w-1 h-4 bg-primary rounded-full" />
-                                    General Information
-                                </h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="name"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Full Name</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="John Doe" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="position"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Position</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="CEO" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-bold flex items-center gap-2 text-primary/80">
+                                <span className="w-1 h-4 bg-primary rounded-full" />
+                                General Information
+                            </h3>
+                            <div className="grid grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
-                                    name="company"
+                                    name="name"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Company</FormLabel>
+                                            <FormLabel>Full Name</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Acme Inc." className="rounded-xl border-white/10 bg-white/5" {...field} />
+                                                <Input placeholder="John Doe" className="rounded-xl border-white/10 bg-white/5" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="email"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Email</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="john@example.com" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="phone"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Phone</FormLabel>
-                                                <FormControl>
-                                                    <PhoneInputWithCountry
-                                                        value={field.value || ""}
-                                                        countryCode={form.watch("countryCode") || "971"}
-                                                        onChange={(phone, cc) => {
-                                                            field.onChange(phone);
-                                                            form.setValue("countryCode", cc);
-                                                        }}
-                                                        checkDuplicate={(fullPhone) => checkDuplicatePhone(fullPhone, lead?._id)}
-                                                        onDuplicateStatus={handlePhoneDuplicateStatus}
-                                                        excludePhone={lead?.phone}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="value"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Lead Value ({settings?.defaultCurrency || "AED"})</FormLabel>
-                                                <FormControl>
-                                                    <Input type="number" placeholder="5000" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="website"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Website</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="https://..." className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="status"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Status</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
-                                                            <SelectValue placeholder="Status" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                                        {settings?.statuses?.map((s: any) => (
-                                                            <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="source"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Source</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
-                                                            <SelectValue placeholder="Select source" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                                        {settings?.sources?.map((s: any) => (
-                                                            <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
                                 <FormField
                                     control={form.control}
-                                    name="assignedTo"
+                                    name="email"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Assign To {isSales && <span className="text-xs text-muted-foreground">(Read-only)</span>}</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSales}>
-                                                <FormControl>
-                                                    <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
-                                                        <SelectValue placeholder="Unassigned" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                                    {users?.map((u: any) => (
-                                                        <SelectItem key={u._id} value={u._id}>{u.name} ({u.role})</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <FormLabel>Email</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="john@example.com" className="rounded-xl border-white/10 bg-white/5" {...field} />
+                                            </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                             </div>
-
-                            {/* Right Column: Address & Details */}
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold flex items-center gap-2 text-primary/80">
-                                    <span className="w-1 h-4 bg-primary rounded-full" />
-                                    Location & Details
-                                </h3>
+                            <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Phone</FormLabel>
+                                        <FormControl>
+                                            <PhoneInputWithCountry
+                                                value={field.value || ""}
+                                                countryCode={form.watch("countryCode") || "971"}
+                                                onChange={(phone, cc) => {
+                                                    field.onChange(phone);
+                                                    form.setValue("countryCode", cc);
+                                                }}
+                                                checkDuplicate={(fullPhone) => checkDuplicatePhone(fullPhone, lead?._id)}
+                                                onDuplicateStatus={handlePhoneDuplicateStatus}
+                                                excludePhone={lead?.phone}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="grid grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
-                                    name="address"
+                                    name="value"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Address Line</FormLabel>
+                                            <FormLabel>Lead Value ({settings?.defaultCurrency || "AED"})</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Business Bay" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="city"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>City</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Dubai" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="state"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>State/Province</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Dubai" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="country"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Country</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="UAE" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="zipCode"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Zip Code</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="00000" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                                <FormField
-                                    control={form.control}
-                                    name="defaultLanguage"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Default Language</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="English" className="rounded-xl border-white/10 bg-white/5" {...field} />
+                                                <Input type="number" placeholder="5000" className="rounded-xl border-white/10 bg-white/5" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -454,19 +232,56 @@ export function EditLeadDialog({
                                 />
                                 <FormField
                                     control={form.control}
-                                    name="product"
+                                    name="followUpDate"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Product/Interest</FormLabel>
+                                            <FormLabel>Follow-up Date</FormLabel>
+                                            <FormControl>
+                                                <Input type="date" className="rounded-xl border-white/10 bg-white/5" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="status"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Status</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
-                                                        <SelectValue placeholder="Select product" />
+                                                        <SelectValue placeholder="Status" />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                                    {settings?.products?.map((p: any) => (
-                                                        <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+                                                    {settings?.statuses?.map((s: any) => (
+                                                        <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="source"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Source</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
+                                                        <SelectValue placeholder="Select source" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                                    {settings?.sources?.map((s: any) => (
+                                                        <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -475,6 +290,50 @@ export function EditLeadDialog({
                                     )}
                                 />
                             </div>
+                            <FormField
+                                control={form.control}
+                                name="product"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Product/Interest</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
+                                                    <SelectValue placeholder="Select product" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                                {settings?.products?.map((p: any) => (
+                                                    <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="assignedTo"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Assign To {isSales && <span className="text-xs text-muted-foreground">(Read-only)</span>}</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSales}>
+                                            <FormControl>
+                                                <SelectTrigger className="rounded-xl border-white/10 bg-white/5">
+                                                    <SelectValue placeholder="Unassigned" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                                {users?.map((u: any) => (
+                                                    <SelectItem key={u._id} value={u._id}>{u.name} ({u.role})</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
 
                         <div className="space-y-4 pt-4 border-t border-white/10">
@@ -486,32 +345,6 @@ export function EditLeadDialog({
                                         <FormLabel>Notes / Description</FormLabel>
                                         <FormControl>
                                             <Textarea placeholder="Additional details..." className="rounded-xl border-white/10 bg-white/5 min-h-[100px]" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="tags"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Tags (comma separated)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="vip, urgent" className="rounded-xl border-white/10 bg-white/5" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="followUpDate"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Follow-up Date</FormLabel>
-                                        <FormControl>
-                                            <Input type="date" className="rounded-xl border-white/10 bg-white/5" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

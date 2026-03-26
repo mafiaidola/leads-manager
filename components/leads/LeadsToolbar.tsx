@@ -203,6 +203,7 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
                             ))}
                         </SelectContent>
                     </Select>
+                    {isAdmin && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="icon" title="Export" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 order-3">
@@ -224,6 +225,7 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    )}
                     {isAdmin && (
                         <Button variant="outline" size="icon" onClick={onImportOpen} title="Import CSV" className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 order-4">
                             <FileUp className="h-4 w-4" />
