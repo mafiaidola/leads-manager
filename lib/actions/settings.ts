@@ -59,7 +59,7 @@ export async function getSettings() {
             theme: org.theme || "violet",
             defaultCurrency: org.settings?.defaultCurrency || "AED",
             autoAssignStrategy: org.settings?.autoAssignStrategy || "none",
-            notifPrefs: org.settings?.notificationPreferences || { onNewLead: true, onAssigned: true, onStatusChange: false },
+            notifPrefs: org.settings?.notificationPreferences || { onNewLead: true, onAssigned: true, onLeadUpdated: true, onStatusChange: true, onLeadTransferred: true, onLeadDeleted: true, onBulkAction: true },
         }));
         return safe;
     } catch (error) {
@@ -203,7 +203,11 @@ export async function updateTheme(theme: "violet" | "ocean" | "emerald") {
 export async function updateNotificationPrefs(prefs: {
     onNewLead?: boolean;
     onAssigned?: boolean;
+    onLeadUpdated?: boolean;
     onStatusChange?: boolean;
+    onLeadTransferred?: boolean;
+    onLeadDeleted?: boolean;
+    onBulkAction?: boolean;
 }) {
     const session = await auth();
     if (!session?.user?.orgId || session.user.role !== USER_ROLES.ADMIN) return { error: "Unauthorized" };
@@ -214,11 +218,19 @@ export async function updateNotificationPrefs(prefs: {
         if (!org) return { error: "Organization not found" };
 
         if (!org.settings.notificationPreferences) {
-            org.settings.notificationPreferences = { onNewLead: true, onAssigned: true, onStatusChange: false };
+            org.settings.notificationPreferences = {
+                onNewLead: true, onAssigned: true, onLeadUpdated: true,
+                onStatusChange: true, onLeadTransferred: true, onLeadDeleted: true, onBulkAction: true,
+            };
         }
-        if (prefs.onNewLead !== undefined) org.settings.notificationPreferences.onNewLead = prefs.onNewLead;
-        if (prefs.onAssigned !== undefined) org.settings.notificationPreferences.onAssigned = prefs.onAssigned;
-        if (prefs.onStatusChange !== undefined) org.settings.notificationPreferences.onStatusChange = prefs.onStatusChange;
+        const np = org.settings.notificationPreferences;
+        if (prefs.onNewLead !== undefined) np.onNewLead = prefs.onNewLead;
+        if (prefs.onAssigned !== undefined) np.onAssigned = prefs.onAssigned;
+        if (prefs.onLeadUpdated !== undefined) np.onLeadUpdated = prefs.onLeadUpdated;
+        if (prefs.onStatusChange !== undefined) np.onStatusChange = prefs.onStatusChange;
+        if (prefs.onLeadTransferred !== undefined) np.onLeadTransferred = prefs.onLeadTransferred;
+        if (prefs.onLeadDeleted !== undefined) np.onLeadDeleted = prefs.onLeadDeleted;
+        if (prefs.onBulkAction !== undefined) np.onBulkAction = prefs.onBulkAction;
 
         await org.save();
         revalidatePath("/settings");

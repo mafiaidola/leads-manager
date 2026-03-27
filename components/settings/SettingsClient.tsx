@@ -73,9 +73,13 @@ export function SettingsClient({
 
     // Notification preferences
     const [notifPrefs, setNotifPrefs] = useState({
-        onNewLead:      settings?.notifPrefs?.onNewLead      ?? true,
-        onAssigned:     settings?.notifPrefs?.onAssigned     ?? true,
-        onStatusChange: settings?.notifPrefs?.onStatusChange ?? false,
+        onNewLead:         settings?.notifPrefs?.onNewLead         ?? true,
+        onAssigned:        settings?.notifPrefs?.onAssigned        ?? true,
+        onLeadUpdated:     settings?.notifPrefs?.onLeadUpdated     ?? true,
+        onStatusChange:    settings?.notifPrefs?.onStatusChange    ?? true,
+        onLeadTransferred: settings?.notifPrefs?.onLeadTransferred ?? true,
+        onLeadDeleted:     settings?.notifPrefs?.onLeadDeleted     ?? true,
+        onBulkAction:      settings?.notifPrefs?.onBulkAction      ?? true,
     });
 
     // Branding state
@@ -472,9 +476,13 @@ export function SettingsClient({
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {([
-                                { key: "onNewLead",      label: "New lead created",              desc: "Notify me whenever a new lead is added" },
-                                { key: "onAssigned",     label: "Lead assigned to me",           desc: "Notify me when I am assigned to a lead" },
-                                { key: "onStatusChange", label: "Lead status changes",           desc: "Notify me on every status update" },
+                                { key: "onNewLead",         label: "New lead created",              desc: "When a new lead is added to the system" },
+                                { key: "onAssigned",        label: "Lead assigned",                 desc: "When a lead is assigned or reassigned" },
+                                { key: "onLeadUpdated",     label: "Lead updated",                  desc: "When lead details are modified (name, phone, value, etc.)" },
+                                { key: "onStatusChange",    label: "Status changes",                desc: "When a lead status is changed (e.g. New → Contacted)" },
+                                { key: "onLeadTransferred", label: "Lead transferred",              desc: "When a lead is transferred between agents" },
+                                { key: "onLeadDeleted",     label: "Lead deleted / restored",       desc: "When leads are moved to recycle bin or restored" },
+                                { key: "onBulkAction",      label: "Bulk operations",               desc: "Bulk status changes, assignments, and deletions" },
                             ] as const).map(({ key, label, desc }) => (
                                 <div key={key} className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5">
                                     <div>

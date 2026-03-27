@@ -9,7 +9,7 @@
  * - `restoreLead` — restore a soft-deleted lead (clears `deletedAt`)
  * - `permanentDeleteLead` — hard-delete a lead and its notes/actions
  *
- * All operations require ADMIN role and log audit entries.
+ * All operations require ADMIN role, log audit entries, and notify admins.
  */
 "use server";
 
@@ -23,6 +23,7 @@ import { revalidatePath } from "next/cache";
 import mongoose from "mongoose";
 import { logAudit } from "@/lib/actions/audit";
 import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
+import { createNotification, getAdminUserIds } from "@/lib/actions/notifications";
 
 // ─── Bulk Actions ────────────────────────────────────────────────────────────
 
@@ -47,6 +48,16 @@ export async function bulkUpdateStatus(ids: string[], status: string) {
             { status, updatedBy: new mongoose.Types.ObjectId(session.user.id) }
         );
         logAudit(AUDIT_ACTIONS.BULK_UPDATE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk status change to ${status} (${ids.length} leads)`);
+
+        // Notify admins about bulk status change
+        getAdminUserIds().then((adminIds) => {
+            createNotification({
+                userIds: adminIds.filter(uid => uid !== session.user.id),
+                type: "bulk_status_change",
+                title: "Bulk Status Change",
+                message: `${session.user.name} changed ${ids.length} leads to "${status}".`,
+            });
+        }).catch(console.error);
 
         revalidatePath("/leads");
         return { message: `${ids.length} leads updated`, success: true };
@@ -82,6 +93,17 @@ export async function bulkAssign(ids: string[], assignToId: string) {
         );
         logAudit(AUDIT_ACTIONS.BULK_UPDATE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk assigned ${ids.length} leads to ${targetUser.name}`);
 
+        // Notify admins + newly assigned user
+        getAdminUserIds().then((adminIds) => {
+            const targets = [...new Set([...adminIds, assignToId])];
+            createNotification({
+                userIds: targets.filter(uid => uid !== session.user.id),
+                type: "bulk_assignment",
+                title: "Bulk Lead Assignment",
+                message: `${session.user.name} assigned ${ids.length} leads to ${targetUser.name}.`,
+            });
+        }).catch(console.error);
+
         revalidatePath("/leads");
         return { message: `${ids.length} leads assigned`, success: true };
     } catch (error) {
@@ -104,6 +126,16 @@ export async function bulkSoftDelete(ids: string[]) {
         );
         logAudit(AUDIT_ACTIONS.BULK_DELETE, ENTITY_TYPES.LEAD, ids.join(","), `Bulk soft deleted ${ids.length} leads`);
 
+        // Notify admins about bulk deletion
+        getAdminUserIds().then((adminIds) => {
+            createNotification({
+                userIds: adminIds.filter(uid => uid !== session.user.id),
+                type: "bulk_deleted",
+                title: "Bulk Lead Deletion",
+                message: `${session.user.name} moved ${ids.length} leads to recycle bin.`,
+            });
+        }).catch(console.error);
+
         revalidatePath("/leads");
         return { message: `${ids.length} leads moved to recycle bin`, success: true };
     } catch (error) {
@@ -122,8 +154,26 @@ export async function restoreLead(id: string) {
 
     try {
         await dbConnect();
-        await Lead.findOneAndUpdate({ _id: id, orgId: new mongoose.Types.ObjectId(session.user.orgId as string) }, { deletedAt: null });
-        logAudit(AUDIT_ACTIONS.RESTORE, ENTITY_TYPES.LEAD, id, "Lead restored from recycle bin");
+        const lead = await Lead.findOneAndUpdate(
+            { _id: id, orgId: new mongoose.Types.ObjectId(session.user.orgId as string) },
+            { deletedAt: null },
+            { new: false } // return old doc to get the name
+        );
+        if (!lead) return { message: "Lead not found", success: false };
+
+        logAudit(AUDIT_ACTIONS.RESTORE, ENTITY_TYPES.LEAD, id, `Lead restored from recycle bin: ${lead.name}`);
+
+        // Notify admins about restoration
+        getAdminUserIds().then((adminIds) => {
+            createNotification({
+                userIds: adminIds.filter(uid => uid !== session.user.id),
+                type: "lead_restored",
+                title: "Lead Restored",
+                message: `${session.user.name} restored "${lead.name}" from recycle bin.`,
+                leadId: id,
+            });
+        }).catch(console.error);
+
         revalidatePath("/leads");
         return { message: "Lead restored", success: true };
     } catch (error) {
@@ -141,10 +191,23 @@ export async function permanentDeleteLead(id: string) {
     try {
         await dbConnect();
         const orgOid = new mongoose.Types.ObjectId(session.user.orgId as string);
-        await Lead.findOneAndDelete({ _id: id, orgId: orgOid });
+        const lead = await Lead.findOneAndDelete({ _id: id, orgId: orgOid });
+        if (!lead) return { message: "Lead not found", success: false };
+
         await LeadNote.deleteMany({ leadId: id, orgId: orgOid });
         await LeadAction.deleteMany({ leadId: id, orgId: orgOid });
-        logAudit(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.LEAD, id, "Lead permanently deleted");
+        logAudit(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.LEAD, id, `Lead permanently deleted: ${lead.name}`);
+
+        // Notify admins about permanent deletion
+        getAdminUserIds().then((adminIds) => {
+            createNotification({
+                userIds: adminIds.filter(uid => uid !== session.user.id),
+                type: "lead_deleted",
+                title: "Lead Permanently Deleted",
+                message: `${session.user.name} permanently deleted "${lead.name}".`,
+            });
+        }).catch(console.error);
+
         revalidatePath("/leads");
         return { message: "Lead permanently deleted", success: true };
     } catch (error) {

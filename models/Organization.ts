@@ -74,7 +74,11 @@ export interface IOrganization {
         notificationPreferences: {
             onNewLead: boolean;
             onAssigned: boolean;
+            onLeadUpdated: boolean;
             onStatusChange: boolean;
+            onLeadTransferred: boolean;
+            onLeadDeleted: boolean;
+            onBulkAction: boolean;
         };
     };
     createdAt: Date;
@@ -139,7 +143,11 @@ const OrganizationSchema = new Schema<IOrganization>(
             notificationPreferences: {
                 onNewLead: { type: Boolean, default: true },
                 onAssigned: { type: Boolean, default: true },
-                onStatusChange: { type: Boolean, default: false },
+                onLeadUpdated: { type: Boolean, default: true },
+                onStatusChange: { type: Boolean, default: true },
+                onLeadTransferred: { type: Boolean, default: true },
+                onLeadDeleted: { type: Boolean, default: true },
+                onBulkAction: { type: Boolean, default: true },
             },
             workSchedule: {
                 enabled: { type: Boolean, default: false },

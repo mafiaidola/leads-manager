@@ -261,16 +261,29 @@ export async function updateLead(prevState: any, formData: FormData) {
 
         logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, changes.length > 0 ? changes.join(" | ") : `Updated lead: ${lead.name}`);
 
-        // Notify newly assigned user (if assignment changed)
-        if (assignedTo && assignedTo !== prevAssignedTo) {
+        // Notify admins about the update
+        const changeSummary = changes.length > 0 ? changes.slice(0, 3).join(", ") : "fields updated";
+        getAdminUserIds().then((adminIds) => {
+            // Notify admins about the update
             createNotification({
-                userIds: [assignedTo],
-                type: "lead_assigned",
-                title: "Lead Assigned to You",
-                message: `${session.user.name} assigned "${lead.name}" to you.`,
+                userIds: adminIds.filter(id => id !== session.user.id),
+                type: "lead_updated",
+                title: "Lead Updated",
+                message: `${session.user.name} updated "${lead.name}": ${changeSummary}.`,
                 leadId: id,
-            }).catch(console.error);
-        }
+            });
+
+            // Notify newly assigned user (if assignment changed)
+            if (assignedTo && assignedTo !== prevAssignedTo) {
+                createNotification({
+                    userIds: [assignedTo],
+                    type: "lead_assigned",
+                    title: "Lead Assigned to You",
+                    message: `${session.user.name} assigned "${lead.name}" to you.`,
+                    leadId: id,
+                });
+            }
+        }).catch(console.error);
 
         revalidatePath("/leads");
         revalidatePath(`/leads/${id}`);
@@ -317,16 +330,17 @@ export async function updateLeadStatus(id: string, newStatus: string) {
 
         logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, `Status changed from ${oldStatus} to ${newStatus}`);
 
-        // Notify assigned user about status change
-        if (lead.assignedTo) {
+        // Notify admins + assigned user about status change
+        getAdminUserIds().then((adminIds) => {
+            const targets = [...new Set([...adminIds, ...(lead.assignedTo ? [lead.assignedTo.toString()] : [])])];
             createNotification({
-                userIds: [lead.assignedTo.toString()],
+                userIds: targets.filter(uid => uid !== session.user.id),
                 type: "status_changed",
                 title: "Lead Status Changed",
-                message: `"${lead.name}" status changed from ${oldStatus} → ${newStatus}.`,
+                message: `${session.user.name} changed "${lead.name}" from ${oldStatus} → ${newStatus}.`,
                 leadId: id,
-            }).catch(console.error);
-        }
+            });
+        }).catch(console.error);
 
         revalidatePath(`/leads/${id}`);
         revalidatePath("/leads");
@@ -349,6 +363,17 @@ export async function deleteLead(id: string) {
         if (!lead) return { message: "Lead not found", success: false };
 
         logAudit(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.LEAD, id, `Soft deleted lead: ${lead.name}`);
+
+        // Notify admins about deletion
+        getAdminUserIds().then((adminIds) => {
+            createNotification({
+                userIds: adminIds.filter(uid => uid !== session.user.id),
+                type: "lead_deleted",
+                title: "Lead Deleted",
+                message: `${session.user.name} moved "${lead.name}" to recycle bin.`,
+                leadId: id,
+            });
+        }).catch(console.error);
 
         revalidatePath("/leads");
         return { message: "Lead moved to recycle bin", success: true };
@@ -414,6 +439,22 @@ export async function transferLead(leadId: string, toUserId: string) {
         });
 
         logAudit(AUDIT_ACTIONS.TRANSFER, ENTITY_TYPES.LEAD, leadId, `Transferred lead from ${previousAssignedTo} to ${toUserId}`);
+
+        // Notify admins + new assignee + old assignee
+        getAdminUserIds().then((adminIds) => {
+            const targets = [...new Set([
+                ...adminIds,
+                toUserId,
+                ...(previousAssignedTo !== "Unassigned" ? [previousAssignedTo] : []),
+            ])];
+            createNotification({
+                userIds: targets.filter(uid => uid !== session.user.id),
+                type: "lead_transferred",
+                title: "Lead Transferred",
+                message: `${session.user.name} transferred "${lead.name}" to a new agent.`,
+                leadId,
+            });
+        }).catch(console.error);
 
         revalidatePath("/leads");
         return { message: "Lead transferred successfully", success: true };

@@ -8,6 +8,7 @@
  * - `getAllNotifications` — paginated list of all notifications
  * - `markNotificationRead` — marks a single notification as read
  * - `markAllNotificationsRead` — bulk mark-all-read
+ * - `deleteAllNotifications` — remove all notifications for current user
  */
 "use server";
 
@@ -20,10 +21,15 @@ import mongoose from "mongoose";
 export type NotificationType =
     | "new_lead"
     | "lead_assigned"
+    | "lead_updated"
     | "status_changed"
+    | "lead_transferred"
     | "follow_up_due"
     | "lead_restored"
-    | "lead_deleted";
+    | "lead_deleted"
+    | "bulk_status_change"
+    | "bulk_assignment"
+    | "bulk_deleted";
 
 // ─── Internal helper: create a notification (called from leads.ts) ───────────
 export async function createNotification({
@@ -55,14 +61,23 @@ export async function createNotification({
                 const prefMap: Record<string, boolean> = {
                     new_lead: prefs.onNewLead !== false,
                     lead_assigned: prefs.onAssigned !== false,
+                    lead_updated: prefs.onLeadUpdated !== false,
                     status_changed: prefs.onStatusChange !== false,
+                    lead_transferred: prefs.onLeadTransferred !== false,
+                    lead_deleted: prefs.onLeadDeleted !== false,
+                    lead_restored: prefs.onLeadDeleted !== false,
+                    bulk_status_change: prefs.onBulkAction !== false,
+                    bulk_assignment: prefs.onBulkAction !== false,
+                    bulk_deleted: prefs.onBulkAction !== false,
                 };
                 // Skip notifications that are disabled by org preferences
                 if (prefMap[type] === false) return;
             }
         }
 
-        const docs = userIds.map((uid) => ({
+        // Filter out empty/invalid userIds
+        const validIds = userIds.filter(uid => uid && mongoose.Types.ObjectId.isValid(uid));
+        const docs = validIds.map((uid) => ({
             orgId: orgId ? new mongoose.Types.ObjectId(orgId) : undefined,
             userId: new mongoose.Types.ObjectId(uid),
             type,
@@ -123,7 +138,7 @@ export async function getAllNotifications() {
     const userId = (session.user as any).id;
     const notifications = await Notification.find({ userId, ...(session.user.orgId ? { orgId: session.user.orgId } : {}) })
         .sort({ createdAt: -1 })
-        .limit(30)
+        .limit(50)
         .lean();
 
     const unreadCount = notifications.filter((n: any) => !n.read).length;
@@ -162,4 +177,15 @@ export async function markAllNotificationsRead() {
     const filter: any = { userId, read: false };
     if (session.user.orgId) filter.orgId = session.user.orgId;
     await Notification.updateMany(filter, { $set: { read: true } });
+}
+
+// ─── Delete all notifications ─────────────────────────────────────────────────
+export async function deleteAllNotifications() {
+    const session = await auth();
+    if (!session) return;
+    await dbConnect();
+    const userId = (session.user as any).id;
+    const filter: any = { userId };
+    if (session.user.orgId) filter.orgId = session.user.orgId;
+    await Notification.deleteMany(filter);
 }

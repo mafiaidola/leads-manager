@@ -2,8 +2,8 @@
  * @route GET /api/notifications/stream
  * @description Server-Sent Events (SSE) endpoint for real-time notifications.
  *
- * Polls MongoDB every 10s for unread notifications. Auto-closes after 55s
- * (under Vercel's 60s limit) — client EventSource auto-reconnects.
+ * Polls MongoDB every 10s for notifications (unread + recent read).
+ * Auto-closes after 55s (under Vercel's 60s limit) — client EventSource auto-reconnects.
  * Org-scoped and user-scoped via session.
  */
 import { auth } from "@/auth";
@@ -51,17 +51,21 @@ export async function GET() {
                 if (isClosed) return;
                 try {
                     await dbConnect();
-                    const filter: any = { userId, read: false };
+                    const filter: any = { userId };
                     if (orgId) filter.orgId = orgId;
-                    const unread = await Notification.find(filter)
+
+                    // Get all notifications (unread + recent read), limited to 50
+                    const allNotifications = await Notification.find(filter)
                         .sort({ createdAt: -1 })
-                        .limit(20)
+                        .limit(50)
                         .lean();
+
+                    const unreadCount = allNotifications.filter((n: any) => !n.read).length;
 
                     send({
                         type: "notifications",
-                        count: unread.length,
-                        notifications: unread.map((n: any) => ({
+                        count: unreadCount,
+                        notifications: allNotifications.map((n: any) => ({
                             _id: n._id.toString(),
                             type: n.type,
                             title: n.title,

@@ -5,18 +5,33 @@
  * Features:
  * - Org-scoped via `orgId`
  * - User-targeted via `userId`
- * - Six notification types: new_lead, lead_assigned, status_changed,
- *   follow_up_due, lead_restored, lead_deleted
+ * - 11 notification types covering all lead lifecycle events
  * - Optional `leadId` reference for deep-linking
  * - `read` boolean for unread badge count
  * - Feeds the real-time SSE notification stream
  */
 import mongoose, { Schema, Document } from "mongoose";
 
+export const NOTIFICATION_TYPES = [
+    "new_lead",
+    "lead_assigned",
+    "lead_updated",
+    "status_changed",
+    "lead_transferred",
+    "follow_up_due",
+    "lead_restored",
+    "lead_deleted",
+    "bulk_status_change",
+    "bulk_assignment",
+    "bulk_deleted",
+] as const;
+
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
 export interface INotification extends Document {
     orgId: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
-    type: "new_lead" | "lead_assigned" | "status_changed" | "follow_up_due" | "lead_restored" | "lead_deleted";
+    type: NotificationType;
     title: string;
     message: string;
     leadId?: mongoose.Types.ObjectId;
@@ -30,7 +45,7 @@ const NotificationSchema = new Schema<INotification>(
         userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
         type: {
             type: String,
-            enum: ["new_lead", "lead_assigned", "status_changed", "follow_up_due", "lead_restored", "lead_deleted"],
+            enum: NOTIFICATION_TYPES,
             required: true,
         },
         title: { type: String, required: true },
