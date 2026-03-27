@@ -263,16 +263,18 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
     const canChangeStatus = isAdmin || (isSales && lead.assignedTo?._id === userId);
 
     const handleExport = useCallback(() => {
+        // Build label lookups
+        const statusLabel = (statuses as any[]).find((s: any) => s.key === currentStatus)?.label || currentStatus;
+        const sourceLabel = (settings?.sources || []).find((s: any) => s.key === lead.source)?.label || lead.source || "";
+        const productLabel = (settings?.products || []).find((p: any) => p.key === lead.product)?.label || lead.product || "";
         const data = {
             Name: lead.name,
-            Company: lead.company || "",
             Phone: lead.phone || "",
             Email: lead.email || "",
-            Status: currentStatus,
-            Source: lead.source || "",
-            Product: lead.product || "",
+            Status: statusLabel,
+            Source: sourceLabel,
+            Product: productLabel,
             Value: lead.value ? `${lead.currency} ${lead.value}` : "",
-            Tags: (lead.tags || []).join(", "),
             Description: lead.description || "",
             "Assigned To": assignedName,
             Created: formatDate(lead.createdAt),

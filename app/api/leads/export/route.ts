@@ -66,15 +66,29 @@ export async function GET(req: NextRequest) {
             .sort({ createdAt: -1 })
             .lean();
 
+        // Build lookup maps for human-readable labels
+        const statusMap: Record<string, string> = {};
+        const sourceMap: Record<string, string> = {};
+        const productMap: Record<string, string> = {};
+        if ((org as any)?.settings?.statuses) {
+            (org as any).settings.statuses.forEach((s: any) => { statusMap[s.key] = s.label; });
+        }
+        if ((org as any)?.settings?.sources) {
+            (org as any).settings.sources.forEach((s: any) => { sourceMap[s.key] = s.label; });
+        }
+        if ((org as any)?.settings?.products) {
+            (org as any).settings.products.forEach((s: any) => { productMap[s.key] = s.label; });
+        }
+
         const rows = leads.map((lead: any, idx: number) => ({
             "#": lead.serialNumber || idx + 1,
             "Name": lead.name || "",
             "Email": lead.email || "",
             "Phone": lead.phone || "",
             "Country Code": lead.countryCode || "",
-            "Status": lead.status || "",
-            "Source": lead.source || "",
-            "Product": lead.product || "",
+            "Status": statusMap[lead.status] || lead.status || "",
+            "Source": sourceMap[lead.source] || lead.source || "",
+            "Product": productMap[lead.product] || lead.product || "",
             "Value": lead.value || "",
             "Currency": lead.currency || "AED",
             "Description": lead.description || "",
