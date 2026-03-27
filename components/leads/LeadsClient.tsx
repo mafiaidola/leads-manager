@@ -73,7 +73,7 @@ export function LeadsClient({
     const [transferUserId, setTransferUserId] = useState("");
     const [isTransferOpen, setIsTransferOpen] = useState(false);
 
-    const isAdmin = currentUserRole === 'ADMIN';
+    const isAdmin = currentUserRole === 'ADMIN' || !!isSuperAdmin;
     const isMarketing = currentUserRole === 'MARKETING';
     const isSales = currentUserRole === 'SALES';
     const canAddLead = isAdmin || isMarketing;

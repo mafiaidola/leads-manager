@@ -22,9 +22,10 @@ export async function GET(req: NextRequest) {
         return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // RBAC: Only Admin can export leads
+    // RBAC: Only Admin/SuperAdmin can export leads
     const userRole = (session.user as any).role;
-    if (userRole !== "ADMIN") {
+    const userIsSuperAdmin = !!(session.user as any).isSuperAdmin;
+    if (userRole !== "ADMIN" && !userIsSuperAdmin) {
         return new NextResponse("Forbidden — only Admins can export leads", { status: 403 });
     }
 
