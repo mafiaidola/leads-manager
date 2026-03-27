@@ -340,6 +340,7 @@ export function AttendanceClient({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <select
+                            title="Select month"
                             value={selectedMonth}
                             onChange={(e) => fetchMonthlySummary(Number(e.target.value), selectedYear)}
                             className="rounded-xl border border-white/10 bg-card/40 backdrop-blur-xl px-3 py-2 text-sm"
@@ -351,6 +352,7 @@ export function AttendanceClient({
                             ))}
                         </select>
                         <select
+                            title="Select year"
                             value={selectedYear}
                             onChange={(e) => fetchMonthlySummary(selectedMonth, Number(e.target.value))}
                             className="rounded-xl border border-white/10 bg-card/40 backdrop-blur-xl px-3 py-2 text-sm"
@@ -527,6 +529,7 @@ export function AttendanceClient({
                                 <div className="space-y-2">
                                     <Label className="text-xs font-bold uppercase tracking-wider">Timezone</Label>
                                     <select
+                                        title="Select timezone"
                                         value={schedule.timezone}
                                         onChange={(e) => setSchedule((prev: any) => ({ ...prev, timezone: e.target.value }))}
                                         className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm"
