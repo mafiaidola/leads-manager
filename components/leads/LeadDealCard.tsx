@@ -13,9 +13,11 @@ import { Badge } from "@/components/ui/badge";
 interface LeadDealCardProps {
     lead: any;
     formatDate: (dateStr: string) => string;
+    sourceLabelMap?: Record<string, string>;
+    productLabelMap?: Record<string, string>;
 }
 
-export const LeadDealCard = React.memo(function LeadDealCard({ lead, formatDate }: LeadDealCardProps) {
+export const LeadDealCard = React.memo(function LeadDealCard({ lead, formatDate, sourceLabelMap = {}, productLabelMap = {} }: LeadDealCardProps) {
     return (
         <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
             <CardHeader className="pb-3">
@@ -34,13 +36,13 @@ export const LeadDealCard = React.memo(function LeadDealCard({ lead, formatDate 
                 {lead.source && (
                     <div className="flex justify-between items-center p-2.5 rounded-xl bg-white/5">
                         <span className="text-xs text-muted-foreground">Source</span>
-                        <Badge variant="outline" className="rounded-full text-xs border-white/10">{lead.source}</Badge>
+                        <Badge variant="outline" className="rounded-full text-xs border-white/10">{sourceLabelMap[lead.source] || lead.source}</Badge>
                     </div>
                 )}
                 {lead.product && (
                     <div className="flex justify-between items-center p-2.5 rounded-xl bg-white/5">
                         <span className="text-xs text-muted-foreground">Product</span>
-                        <span className="text-sm font-medium">{lead.product}</span>
+                        <span className="text-sm font-medium">{productLabelMap[lead.product] || lead.product}</span>
                     </div>
                 )}
                 {lead.lastContactAt && (

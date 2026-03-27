@@ -318,17 +318,25 @@ export async function updateLeadStatus(id: string, newStatus: string) {
         lead.updatedBy = new mongoose.Types.ObjectId(session.user.id);
         await lead.save();
 
+        // Resolve status labels from org settings
+        const Organization = (await import("@/models/Organization")).default;
+        const org = await Organization.findById(session.user.orgId).select("settings.statuses").lean();
+        const statusList = (org as any)?.settings?.statuses || [];
+        const labelOf = (key: string) => statusList.find((s: any) => s.key === key)?.label || key;
+        const oldLabel = labelOf(oldStatus);
+        const newLabel = labelOf(newStatus);
+
         await LeadNote.create({
             orgId: session.user.orgId,
             leadId: new mongoose.Types.ObjectId(id),
             authorId: new mongoose.Types.ObjectId(session.user.id),
             authorRole: session.user.role,
             type: NOTE_TYPES.STATUS_CHANGE,
-            message: `Status changed from ${oldStatus} to ${newStatus}`,
+            message: `Status changed from ${oldLabel} to ${newLabel}`,
             meta: { fromStatus: oldStatus, toStatus: newStatus },
         });
 
-        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, `Status changed from ${oldStatus} to ${newStatus}`);
+        logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, `Status changed from ${oldLabel} to ${newLabel}`);
 
         // Notify admins + assigned user about status change
         getAdminUserIds().then((adminIds) => {
@@ -337,7 +345,7 @@ export async function updateLeadStatus(id: string, newStatus: string) {
                 userIds: targets.filter(uid => uid !== session.user.id),
                 type: "status_changed",
                 title: "Lead Status Changed",
-                message: `${session.user.name} changed "${lead.name}" from ${oldStatus} → ${newStatus}.`,
+                message: `${session.user.name} changed "${lead.name}" from ${oldLabel} → ${newLabel}.`,
                 leadId: id,
             });
         }).catch(console.error);

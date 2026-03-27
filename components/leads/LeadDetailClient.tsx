@@ -139,6 +139,24 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
         });
         return map;
     }, [settings?.statuses]);
+
+    // Build label lookup maps from settings (key → human label)
+    const statusLabelMap = useMemo(() => {
+        const map: Record<string, string> = {};
+        (settings?.statuses || []).forEach((s: any) => { if (s.key && s.label) map[s.key] = s.label; });
+        return map;
+    }, [settings?.statuses]);
+    const sourceLabelMap = useMemo(() => {
+        const map: Record<string, string> = {};
+        (settings?.sources || []).forEach((s: any) => { if (s.key && s.label) map[s.key] = s.label; });
+        return map;
+    }, [settings?.sources]);
+    const productLabelMap = useMemo(() => {
+        const map: Record<string, string> = {};
+        (settings?.products || []).forEach((p: any) => { if (p.key && p.label) map[p.key] = p.label; });
+        return map;
+    }, [settings?.products]);
+    const getLabel = useCallback((key: string, map: Record<string, string>) => map[key] || key, []);
     const getStatusChipClass = useCallback((status: string) => STATUS_COLORS[status] || "bg-primary/15 text-primary border-primary/30", []);
     const getStatusChipStyle = useCallback((status: string): React.CSSProperties => {
         const hex = statusColorMap[status];
@@ -165,7 +183,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
         startTransition(async () => {
             const result = await updateLeadStatus(lead._id, newStatus);
             if (result?.success) {
-                toast({ title: `Status changed to ${newStatus}` });
+                toast({ title: `Status changed to ${statusLabelMap[newStatus] || newStatus}` });
                 router.refresh();
             } else {
                 setCurrentStatus(lead.status);
@@ -366,18 +384,18 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                         {canChangeStatus ? (
                             <Select value={currentStatus} onValueChange={handleStatusChange}>
                                 <SelectTrigger
-                                    className={cn("w-[140px] rounded-full border font-semibold text-xs h-8 status-chip-dynamic", !statusColorMap[currentStatus] && (STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30"))}
+                                    className={cn("w-[220px] rounded-full border font-semibold text-xs h-8 status-chip-dynamic", !statusColorMap[currentStatus] && (STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30"))}
                                     style={getStatusChipStyle(currentStatus)}
                                 >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                    {statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    {statuses.map(s => <SelectItem key={s} value={s}>{statusLabelMap[s] || s}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         ) : (
                             <Badge className={cn("rounded-full font-semibold text-xs px-3 py-1 status-chip-dynamic", !statusColorMap[currentStatus] && (STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30"))} style={getStatusChipStyle(currentStatus)}>
-                                {currentStatus}
+                                {statusLabelMap[currentStatus] || currentStatus}
                             </Badge>
                         )}
                     </div>
@@ -409,7 +427,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                 <FadeIn delay={0.1} className="lg:col-span-1 space-y-6">
                     <LeadContactCard lead={lead} />
 
-                    <LeadDealCard lead={lead} formatDate={formatDate} />
+                    <LeadDealCard lead={lead} formatDate={formatDate} sourceLabelMap={sourceLabelMap} productLabelMap={productLabelMap} />
 
                     {/* Tags */}
                     {lead.tags && lead.tags.length > 0 && (
