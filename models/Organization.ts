@@ -141,6 +141,14 @@ const OrganizationSchema = new Schema<IOrganization>(
                 onAssigned: { type: Boolean, default: true },
                 onStatusChange: { type: Boolean, default: false },
             },
+            workSchedule: {
+                enabled: { type: Boolean, default: false },
+                startTime: { type: String, default: "09:00" }, // HH:mm
+                endTime: { type: String, default: "17:00" },   // HH:mm
+                gracePeriodMinutes: { type: Number, default: 15 },
+                workDays: { type: [Number], default: [1, 2, 3, 4, 5] }, // 0=Sun, 1=Mon...6=Sat
+                timezone: { type: String, default: "Asia/Dubai" },
+            },
         },
     },
     { timestamps: true }

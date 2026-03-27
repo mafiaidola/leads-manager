@@ -47,6 +47,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             users={serializedUsers}
             userRole={session.user.role}
             userId={session.user.id}
+            isSuperAdmin={!!(session.user as any).isSuperAdmin}
             changeHistory={changeHistory}
         />
     );

@@ -15,14 +15,12 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 
 interface EditFormState {
     name: string;
-    company: string;
     email: string;
     phone: string;
     source: string;
     product: string;
     value: string;
     description: string;
-    tags: string;
 }
 
 interface LeadEditDialogProps {
@@ -53,15 +51,9 @@ export const LeadEditDialog = React.memo(function LeadEditDialog({
                     <DialogTitle>Edit Lead</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-2">
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
+                    <div className="space-y-1.5">
                             <Label className="text-xs">Name *</Label>
                             <Input value={editForm.name} onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))} className="rounded-xl border-white/10 bg-black/20" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs">Company</Label>
-                            <Input value={editForm.company} onChange={e => setEditForm(prev => ({ ...prev, company: e.target.value }))} className="rounded-xl border-white/10 bg-black/20" />
-                        </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
@@ -95,15 +87,9 @@ export const LeadEditDialog = React.memo(function LeadEditDialog({
                             </Select>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
+                    <div className="space-y-1.5">
                             <Label className="text-xs">Value</Label>
                             <Input type="number" value={editForm.value} onChange={e => setEditForm(prev => ({ ...prev, value: e.target.value }))} className="rounded-xl border-white/10 bg-black/20" placeholder="0" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs">Tags (comma separated)</Label>
-                            <Input value={editForm.tags} onChange={e => setEditForm(prev => ({ ...prev, tags: e.target.value }))} className="rounded-xl border-white/10 bg-black/20" placeholder="tag1, tag2" />
-                        </div>
                     </div>
                     <div className="space-y-1.5">
                         <Label className="text-xs">Description</Label>

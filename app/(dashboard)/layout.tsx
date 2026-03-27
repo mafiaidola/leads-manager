@@ -20,6 +20,7 @@ import Organization from "@/models/Organization";
 import { ToastHistoryPanel } from "@/components/ui/ToastHistoryPanel";
 import { PresenceIndicator } from "@/components/ui/PresenceIndicator";
 import { SessionTimeoutWarning } from "@/components/session/SessionTimeoutWarning";
+import { AttendanceTracker } from "@/components/attendance/AttendanceTracker";
 
 export default async function DashboardLayout({
     children,
@@ -133,6 +134,7 @@ export default async function DashboardLayout({
                 </div>
                 <ToastHistoryPanel />
                 <SessionTimeoutWarning />
+                <AttendanceTracker />
             </main>
         </div>
     );

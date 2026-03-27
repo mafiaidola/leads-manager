@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut, Shield } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut, Shield, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { handleSignOut } from "@/lib/actions/auth";
 
@@ -32,6 +32,13 @@ const allRoutes = [
         icon: BarChart3,
         href: "/reports",
         color: "text-pink-700",
+        roles: ["ADMIN"],
+    },
+    {
+        label: "Attendance",
+        icon: ClipboardCheck,
+        href: "/attendance",
+        color: "text-emerald-500",
         roles: ["ADMIN"],
     },
     {

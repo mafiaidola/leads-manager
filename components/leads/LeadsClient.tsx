@@ -21,7 +21,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { deleteLead, toggleStarLead, bulkUpdateStatus, bulkAssign, bulkSoftDelete, transferLead, restoreLead, permanentDeleteLead } from "@/lib/actions/leads";
 import { EditLeadDialog } from "@/components/leads/EditLeadDialog";
-import { QuickStatsBar } from "@/components/leads/QuickStatsBar";
 import dynamic from "next/dynamic";
 import { ImportDialog } from "@/components/leads/ImportDialog";
 
@@ -308,14 +307,6 @@ export function LeadsClient({
                 </div>
             )}
 
-            {!isTrashView && (
-                <QuickStatsBar
-                    stats={stats}
-                    settings={settings}
-                    currentStatus={searchParams.get("status")}
-                    onStatusClick={handleStatusFilter}
-                />
-            )}
 
             <LeadsToolbar
                 settings={settings}

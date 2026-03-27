@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
     ArrowLeft, Building2, Phone, Star, StarOff,
-    Calendar, Clock, MessageSquare, PhoneCall, Video, Send, Users, MoreHorizontal,
+    Calendar, Clock, MessageSquare, Video, Send, Users, MoreHorizontal,
     Plus, AlertCircle, Briefcase, Tag,
     Sparkles, Pencil, Trash2, Download,
 } from "lucide-react";
@@ -41,7 +41,6 @@ import { FadeIn } from "@/components/dashboard/DashboardAnimations";
 
 // Action type options
 const ACTION_TYPES = [
-    { value: "CALL", label: "Phone Call", icon: PhoneCall },
     { value: "MEETING", label: "Meeting", icon: Video },
     { value: "EMAIL", label: "Email", icon: Send },
     { value: "FOLLOW_UP", label: "Follow Up", icon: Clock },
@@ -68,7 +67,7 @@ function getTimelineIcon(kind: string, type: string) {
     }
     // action
     switch (type) {
-        case "CALL": return <PhoneCall className="h-4 w-4" />;
+        case "CALL": return <Phone className="h-4 w-4" />;
         case "MEETING": return <Video className="h-4 w-4" />;
         case "EMAIL": return <Send className="h-4 w-4" />;
         case "FOLLOW_UP": return <Clock className="h-4 w-4" />;
@@ -106,10 +105,11 @@ interface LeadDetailClientProps {
     users?: any[];
     userRole: string;
     userId: string;
+    isSuperAdmin?: boolean;
     changeHistory?: any[];
 }
 
-export default function LeadDetailClient({ lead, notes, actions, statuses, sources, settings, users, userRole, userId, changeHistory = [] }: LeadDetailClientProps) {
+export default function LeadDetailClient({ lead, notes, actions, statuses, sources, settings, users, userRole, userId, isSuperAdmin, changeHistory = [] }: LeadDetailClientProps) {
     const router = useRouter();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
@@ -149,14 +149,12 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
     const [showEdit, setShowEdit] = useState(false);
     const [editForm, setEditForm] = useState({
         name: lead.name || "",
-        company: lead.company || "",
         email: lead.email || "",
         phone: lead.phone || "",
         source: lead.source || "",
         product: lead.product || "",
         value: lead.value?.toString() || "",
         description: lead.description || "",
-        tags: (lead.tags || []).join(", "),
     });
 
     // Delete confirmation
@@ -221,14 +219,12 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
         const formData = new FormData();
         formData.set("id", lead._id);
         formData.set("name", editForm.name);
-        formData.set("company", editForm.company);
         formData.set("email", editForm.email);
         formData.set("phone", editForm.phone);
         formData.set("source", editForm.source);
         formData.set("product", editForm.product);
         formData.set("value", editForm.value);
         formData.set("description", editForm.description);
-        formData.set("tags", editForm.tags);
         formData.set("status", currentStatus);
         startTransition(async () => {
             const result = await updateLead(null, formData);
@@ -258,7 +254,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
     const assignedName = lead.assignedTo?.name || "Unassigned";
 
     // RBAC: determine what this user can do
-    const isAdmin = userRole === "ADMIN";
+    const isAdmin = userRole === "ADMIN" || !!isSuperAdmin;
     const isMarketing = userRole === "MARKETING";
     const isSales = userRole === "SALES";
     const canEdit = isAdmin || (isSales && lead.assignedTo?._id === userId);
@@ -337,9 +333,11 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                                 <Pencil className="h-3.5 w-3.5" /> Edit
                             </Button>
                         )}
+                        {isAdmin && (
                         <Button variant="outline" size="sm" className="rounded-full border-white/10 gap-1.5" onClick={handleExport}>
                             <Download className="h-3.5 w-3.5" /> Export
                         </Button>
+                        )}
                         {canDelete && (
                         <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
                             <AlertDialogTrigger asChild>
@@ -484,13 +482,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                                 <Plus className="h-4 w-4" /> Log Action
                             </Button>
                         )}
-                        {lead.phone && (
-                            <a href={`tel:${lead.phone}`}>
-                                <Button variant="outline" className="rounded-full border-white/10 bg-card/40 backdrop-blur-xl gap-1.5 hover:bg-blue-500/10 hover:border-blue-500/30 hover:text-blue-400 transition-all">
-                                    <PhoneCall className="h-4 w-4" /> Call
-                                </Button>
-                            </a>
-                        )}
+
                         {lead.phone && (
                             <a href={`https://wa.me/${lead.phone}`} target="_blank" rel="noopener noreferrer">
                                 <Button variant="outline" className="rounded-full border-white/10 bg-card/40 backdrop-blur-xl gap-1.5 hover:bg-green-500/10 hover:border-green-500/30 hover:text-green-400 transition-all">

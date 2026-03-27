@@ -7,6 +7,7 @@ import User from "@/models/User";
 import Organization from "@/models/Organization";
 import bcrypt from "bcryptjs";
 import { checkRateLimit, resetRateLimit } from "@/lib/utils/rateLimiter";
+import { recordLogin } from "@/lib/actions/attendance";
 
 declare module "next-auth" {
     interface Session {
@@ -122,6 +123,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                                 details: `${superAdmin.name} (SuperAdmin) logged into ${org.name}`,
                             });
                         } catch { /* silent */ }
+                        // Record attendance
+                        try { await recordLogin(superAdmin._id.toString(), org._id.toString(), superAdmin.name); } catch { /* silent */ }
                         return {
                             id: superAdmin._id.toString(),
                             name: superAdmin.name,
@@ -175,6 +178,9 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                                 details: `${user.name} logged in`,
                             });
                         } catch (e) { /* silent – don't block login */ }
+
+                        // Record attendance
+                        try { await recordLogin(user._id.toString(), org._id.toString(), user.name); } catch { /* silent */ }
 
                         return {
                             id: user._id.toString(),
