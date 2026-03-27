@@ -31,3 +31,5 @@ export {
     addNote,
     addLeadAction,
 } from "./notes";
+
+export { getLeadChangeHistory } from "@/lib/utils/trackChanges";

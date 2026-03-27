@@ -571,7 +571,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                     />
 
                     {/* Field Change History — Admin/SuperAdmin only */}
-                    {(userRole === "ADMIN" || (lead as any).isSuperAdmin) && changeHistory.length > 0 && (
+                    {(userRole === "ADMIN" || (lead as any).isSuperAdmin) && (
                         <FieldChangeHistory changes={changeHistory} />
                     )}
                 </FadeIn>
