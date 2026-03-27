@@ -3,16 +3,15 @@
  * @description Interactive attendance dashboard for admins.
  *
  * Features:
- * - Daily view: who logged in, login/logout times, status badges
- * - Monthly summary: table with total days, late count, avg hours
- * - Work schedule settings: start/end time, grace period, work days
- * - Export to CSV
+ * - Daily view: who logged in, login/logout times, status badges, absent employees
+ * - Monthly summary: table with total days, late count, avg hours, attendance rate
+ * - Work schedule settings: start/end time, grace period, work days, holidays
+ * - Export to CSV (daily + monthly)
  * - Date picker for daily view, month/year picker for summary
  */
 "use client";
 
 import React, { useState, useCallback, useTransition, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,11 +22,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     CalendarDays, Clock, Download, Settings2, Users,
     CheckCircle2, AlertTriangle, XCircle, LogIn, LogOut,
-    TrendingUp, Timer,
+    TrendingUp, Timer, Plus, Trash2, CalendarOff, BarChart3,
+    UserX, PartyPopper,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { getAttendanceLogs, getAttendanceSummary, updateWorkSchedule } from "@/lib/actions/attendance";
+import {
+    getAttendanceLogs, getAttendanceSummary, updateWorkSchedule,
+    addHoliday, removeHoliday,
+} from "@/lib/actions/attendance";
 
 interface AttendanceClientProps {
     initialLogs: any[];
@@ -69,7 +72,6 @@ export function AttendanceClient({
     initialMonth,
     initialYear,
 }: AttendanceClientProps) {
-    const router = useRouter();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
 
@@ -90,7 +92,12 @@ export function AttendanceClient({
         gracePeriodMinutes: 15,
         workDays: [1, 2, 3, 4, 5],
         timezone: "Asia/Dubai",
+        holidays: [],
     });
+
+    // Holiday form state
+    const [newHolidayDate, setNewHolidayDate] = useState("");
+    const [newHolidayName, setNewHolidayName] = useState("");
 
     // ─── Fetch daily logs ──────────────────────────────────────────────
     const fetchDailyLogs = useCallback(async (date: string) => {
@@ -123,18 +130,60 @@ export function AttendanceClient({
         });
     }, [schedule, toast]);
 
+    // ─── Add Holiday ───────────────────────────────────────────────────
+    const handleAddHoliday = useCallback(async () => {
+        if (!newHolidayDate || !newHolidayName.trim()) {
+            toast({ title: "Please enter both date and name", variant: "destructive" });
+            return;
+        }
+        startTransition(async () => {
+            const result = await addHoliday({ date: newHolidayDate, name: newHolidayName.trim() });
+            if (result.success) {
+                setSchedule((prev: any) => ({
+                    ...prev,
+                    holidays: [...(prev.holidays || []), { date: newHolidayDate, name: newHolidayName.trim() }],
+                }));
+                setNewHolidayDate("");
+                setNewHolidayName("");
+                toast({ title: "Holiday added" });
+            }
+        });
+    }, [newHolidayDate, newHolidayName, toast]);
+
+    // ─── Remove Holiday ────────────────────────────────────────────────
+    const handleRemoveHoliday = useCallback(async (date: string) => {
+        startTransition(async () => {
+            const result = await removeHoliday(date);
+            if (result.success) {
+                setSchedule((prev: any) => ({
+                    ...prev,
+                    holidays: (prev.holidays || []).filter((h: any) => h.date !== date),
+                }));
+                toast({ title: "Holiday removed" });
+            }
+        });
+    }, [toast]);
+
     // ─── Export CSV ─────────────────────────────────────────────────────
     const handleExportDaily = useCallback(() => {
-        const headers = ["Name", "Date", "Check In", "Check Out", "Duration", "Status", "Login Count"];
+        const headers = ["Name", "Date", "Check In", "Check Out", "Duration (min)", "Status", "Login Count", "IP Address"];
         const rows = dailyLogs.map((log: any) => [
             log.userName,
             log.date,
             formatTime(log.firstLogin),
             formatTime(log.lastLogout),
-            formatDuration(log.totalMinutes),
+            log.totalMinutes || 0,
             log.status,
             log.loginCount,
+            log.ipAddress || "",
         ]);
+        // Add absent employees
+        const loggedUserIds = new Set(dailyLogs.map((l: any) => l.userId));
+        orgUsers.forEach((u: any) => {
+            if (!loggedUserIds.has(u._id)) {
+                rows.push([u.name, selectedDate, "", "", 0, "ABSENT", 0, ""]);
+            }
+        });
         const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
@@ -144,17 +193,24 @@ export function AttendanceClient({
         a.click();
         URL.revokeObjectURL(url);
         toast({ title: "Attendance exported" });
-    }, [dailyLogs, selectedDate, toast]);
+    }, [dailyLogs, orgUsers, selectedDate, toast]);
 
     const handleExportMonthly = useCallback(() => {
-        const headers = ["Name", "Total Days", "Late Days", "Early Leave", "Avg Hours/Day"];
-        const rows = monthlySummary.map((u: any) => [
-            u.userName,
-            u.totalDays,
-            u.lateDays,
-            u.earlyLeaveDays,
-            formatDuration(u.avgMinutes),
-        ]);
+        const headers = ["Name", "Total Days", "On Time", "Late Days", "Early Leave", "Attendance Rate", "Avg Hours/Day"];
+        const workDaysInMonth = getWorkDaysInMonth(selectedMonth, selectedYear, schedule.workDays, schedule.holidays);
+        const rows = monthlySummary.map((u: any) => {
+            const onTime = u.totalDays - u.lateDays - u.earlyLeaveDays;
+            const rate = workDaysInMonth > 0 ? Math.round((u.totalDays / workDaysInMonth) * 100) : 0;
+            return [
+                u.userName,
+                u.totalDays,
+                onTime,
+                u.lateDays,
+                u.earlyLeaveDays,
+                `${rate}%`,
+                formatDuration(u.avgMinutes),
+            ];
+        });
         const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
@@ -164,7 +220,7 @@ export function AttendanceClient({
         a.click();
         URL.revokeObjectURL(url);
         toast({ title: "Monthly report exported" });
-    }, [monthlySummary, selectedMonth, selectedYear, toast]);
+    }, [monthlySummary, selectedMonth, selectedYear, schedule, toast]);
 
     // ─── Stats cards ───────────────────────────────────────────────────
     const dailyStats = useMemo(() => {
@@ -172,8 +228,31 @@ export function AttendanceClient({
         const late = dailyLogs.filter((l: any) => l.status === "LATE").length;
         const earlyLeave = dailyLogs.filter((l: any) => l.status === "EARLY_LEAVE").length;
         const absent = orgUsers.length - dailyLogs.length;
-        return { present, late, earlyLeave, absent: Math.max(0, absent), total: dailyLogs.length };
+        const totalWorkMinutes = dailyLogs.reduce((sum: number, l: any) => sum + (l.totalMinutes || 0), 0);
+        const avgWorkMinutes = dailyLogs.length > 0 ? Math.round(totalWorkMinutes / dailyLogs.length) : 0;
+        return { present, late, earlyLeave, absent: Math.max(0, absent), total: dailyLogs.length, avgWorkMinutes };
     }, [dailyLogs, orgUsers]);
+
+    // Absent employees list
+    const absentEmployees = useMemo(() => {
+        const loggedUserIds = new Set(dailyLogs.map((l: any) => l.userId));
+        return orgUsers.filter((u: any) => !loggedUserIds.has(u._id));
+    }, [dailyLogs, orgUsers]);
+
+    // Monthly stats
+    const monthlyStats = useMemo(() => {
+        const workDaysInMonth = getWorkDaysInMonth(selectedMonth, selectedYear, schedule.workDays, schedule.holidays);
+        return { workDaysInMonth };
+    }, [selectedMonth, selectedYear, schedule]);
+
+    // Check if selected date is a holiday
+    const isHoliday = useMemo(() => {
+        return (schedule.holidays || []).some((h: any) => h.date === selectedDate);
+    }, [schedule.holidays, selectedDate]);
+
+    const holidayName = useMemo(() => {
+        return (schedule.holidays || []).find((h: any) => h.date === selectedDate)?.name || "";
+    }, [schedule.holidays, selectedDate]);
 
     return (
         <Tabs defaultValue="daily" className="space-y-6">
@@ -207,8 +286,19 @@ export function AttendanceClient({
                     </Button>
                 </div>
 
+                {/* Holiday Banner */}
+                {isHoliday && (
+                    <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500/15 to-orange-500/10 border border-amber-500/20">
+                        <PartyPopper className="h-5 w-5 text-amber-500 flex-shrink-0" />
+                        <div>
+                            <p className="text-sm font-bold text-amber-400">Holiday — {holidayName}</p>
+                            <p className="text-xs text-muted-foreground">This day is marked as a holiday for the organization</p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Quick Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl border-t-4 border-t-emerald-500">
                         <CardContent className="pt-4 pb-3 px-4">
                             <div className="flex items-center justify-between">
@@ -253,6 +343,17 @@ export function AttendanceClient({
                             </div>
                         </CardContent>
                     </Card>
+                    <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl border-t-4 border-t-blue-500">
+                        <CardContent className="pt-4 pb-3 px-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Avg Work</p>
+                                    <p className="text-lg font-black text-blue-500">{formatDuration(dailyStats.avgWorkMinutes)}</p>
+                                </div>
+                                <Timer className="h-8 w-8 text-blue-500/20" />
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Daily Attendance Table */}
@@ -264,7 +365,7 @@ export function AttendanceClient({
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        {dailyLogs.length === 0 ? (
+                        {dailyLogs.length === 0 && absentEmployees.length === 0 ? (
                             <div className="p-8 text-center text-muted-foreground">
                                 <CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-30" />
                                 <p className="font-medium">No attendance records for this date</p>
@@ -280,6 +381,7 @@ export function AttendanceClient({
                                             <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Check Out</th>
                                             <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Duration</th>
                                             <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Logins</th>
+                                            <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">IP</th>
                                             <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</th>
                                         </tr>
                                     </thead>
@@ -319,6 +421,11 @@ export function AttendanceClient({
                                                     </td>
                                                     <td className="px-4 py-4 text-sm text-center">{log.loginCount}</td>
                                                     <td className="px-4 py-4">
+                                                        <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px] block">
+                                                            {log.ipAddress || "—"}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-4">
                                                         <Badge variant="outline" className={cn("gap-1 rounded-lg", config.color)}>
                                                             <StatusIcon className="h-3 w-3" />
                                                             {config.label}
@@ -327,6 +434,37 @@ export function AttendanceClient({
                                                 </tr>
                                             );
                                         })}
+                                        {/* Absent Employees */}
+                                        {absentEmployees.map((user: any) => (
+                                            <tr key={`absent-${user._id}`} className="border-b border-white/5 bg-red-500/[0.02]">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-9 w-9 rounded-xl bg-red-500/10 flex items-center justify-center">
+                                                            <span className="text-sm font-bold text-red-400">
+                                                                {user.name?.charAt(0)?.toUpperCase() || "?"}
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-medium text-sm">{user.name}</span>
+                                                            <Badge variant="outline" className="ml-2 text-[10px] h-4 px-1 bg-white/5 text-muted-foreground">
+                                                                {user.role}
+                                                            </Badge>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4 text-muted-foreground/40 text-sm">—</td>
+                                                <td className="px-4 py-4 text-muted-foreground/40 text-sm">—</td>
+                                                <td className="px-4 py-4 text-muted-foreground/40 text-sm">—</td>
+                                                <td className="px-4 py-4 text-muted-foreground/40 text-sm text-center">0</td>
+                                                <td className="px-4 py-4 text-muted-foreground/40 text-sm">—</td>
+                                                <td className="px-4 py-4">
+                                                    <Badge variant="outline" className="gap-1 rounded-lg bg-red-500/15 text-red-500 border-red-500/30">
+                                                        <UserX className="h-3 w-3" />
+                                                        Absent
+                                                    </Badge>
+                                                </td>
+                                            </tr>
+                                        ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -368,6 +506,62 @@ export function AttendanceClient({
                     </Button>
                 </div>
 
+                {/* Monthly Overview Stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl border-t-4 border-t-primary">
+                        <CardContent className="pt-4 pb-3 px-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Work Days</p>
+                                    <p className="text-2xl font-black text-primary">{monthlyStats.workDaysInMonth}</p>
+                                </div>
+                                <CalendarDays className="h-8 w-8 text-primary/20" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl border-t-4 border-t-emerald-500">
+                        <CardContent className="pt-4 pb-3 px-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Employees</p>
+                                    <p className="text-2xl font-black text-emerald-500">{monthlySummary.length}</p>
+                                </div>
+                                <Users className="h-8 w-8 text-emerald-500/20" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl border-t-4 border-t-amber-500">
+                        <CardContent className="pt-4 pb-3 px-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Late</p>
+                                    <p className="text-2xl font-black text-amber-500">
+                                        {monthlySummary.reduce((sum: number, u: any) => sum + u.lateDays, 0)}
+                                    </p>
+                                </div>
+                                <AlertTriangle className="h-8 w-8 text-amber-500/20" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl border-t-4 border-t-blue-500">
+                        <CardContent className="pt-4 pb-3 px-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Avg Rate</p>
+                                    <p className="text-2xl font-black text-blue-500">
+                                        {monthlySummary.length > 0 && monthlyStats.workDaysInMonth > 0
+                                            ? Math.round(
+                                                monthlySummary.reduce((sum: number, u: any) => sum + u.totalDays, 0) /
+                                                (monthlySummary.length * monthlyStats.workDaysInMonth) * 100
+                                            ) : 0}%
+                                    </p>
+                                </div>
+                                <BarChart3 className="h-8 w-8 text-blue-500/20" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
                 <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl overflow-hidden">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -391,49 +585,76 @@ export function AttendanceClient({
                                             <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">On Time</th>
                                             <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Late</th>
                                             <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Early Leave</th>
+                                            <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Rate</th>
                                             <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Avg Hours/Day</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {monthlySummary.map((user: any) => (
-                                            <tr key={user.userId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                                                            <span className="text-sm font-bold text-primary">
-                                                                {user.userName?.charAt(0)?.toUpperCase() || "?"}
-                                                            </span>
+                                        {monthlySummary.map((user: any) => {
+                                            const onTime = user.totalDays - user.lateDays - user.earlyLeaveDays;
+                                            const rate = monthlyStats.workDaysInMonth > 0
+                                                ? Math.round((user.totalDays / monthlyStats.workDaysInMonth) * 100)
+                                                : 0;
+                                            return (
+                                                <tr key={user.userId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                                                                <span className="text-sm font-bold text-primary">
+                                                                    {user.userName?.charAt(0)?.toUpperCase() || "?"}
+                                                                </span>
+                                                            </div>
+                                                            <span className="font-medium text-sm">{user.userName}</span>
                                                         </div>
-                                                        <span className="font-medium text-sm">{user.userName}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-4 text-center">
-                                                    <span className="font-bold text-lg">{user.totalDays}</span>
-                                                </td>
-                                                <td className="px-4 py-4 text-center">
-                                                    <Badge variant="outline" className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30 rounded-lg">
-                                                        {user.totalDays - user.lateDays - user.earlyLeaveDays}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-4 py-4 text-center">
-                                                    {user.lateDays > 0 ? (
-                                                        <Badge variant="outline" className="bg-amber-500/15 text-amber-500 border-amber-500/30 rounded-lg">
-                                                            {user.lateDays}
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="font-bold text-lg">{user.totalDays}</span>
+                                                        <span className="text-xs text-muted-foreground">/{monthlyStats.workDaysInMonth}</span>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <Badge variant="outline" className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30 rounded-lg">
+                                                            {onTime}
                                                         </Badge>
-                                                    ) : <span className="text-muted-foreground">0</span>}
-                                                </td>
-                                                <td className="px-4 py-4 text-center">
-                                                    {user.earlyLeaveDays > 0 ? (
-                                                        <Badge variant="outline" className="bg-orange-500/15 text-orange-500 border-orange-500/30 rounded-lg">
-                                                            {user.earlyLeaveDays}
-                                                        </Badge>
-                                                    ) : <span className="text-muted-foreground">0</span>}
-                                                </td>
-                                                <td className="px-4 py-4 text-center">
-                                                    <span className="font-mono text-sm">{formatDuration(user.avgMinutes)}</span>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        {user.lateDays > 0 ? (
+                                                            <Badge variant="outline" className="bg-amber-500/15 text-amber-500 border-amber-500/30 rounded-lg">
+                                                                {user.lateDays}
+                                                            </Badge>
+                                                        ) : <span className="text-muted-foreground">0</span>}
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        {user.earlyLeaveDays > 0 ? (
+                                                            <Badge variant="outline" className="bg-orange-500/15 text-orange-500 border-orange-500/30 rounded-lg">
+                                                                {user.earlyLeaveDays}
+                                                            </Badge>
+                                                        ) : <span className="text-muted-foreground">0</span>}
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className={cn(
+                                                                "font-bold text-sm",
+                                                                rate >= 90 ? "text-emerald-500" : rate >= 70 ? "text-amber-500" : "text-red-500"
+                                                            )}>
+                                                                {rate}%
+                                                            </span>
+                                                            <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={cn(
+                                                                        "h-full rounded-full transition-all duration-500",
+                                                                        rate >= 90 ? "bg-emerald-500" : rate >= 70 ? "bg-amber-500" : "bg-red-500"
+                                                                    )}
+                                                                    style={{ width: `${Math.min(rate, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        <span className="font-mono text-sm">{formatDuration(user.avgMinutes)}</span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
@@ -553,7 +774,128 @@ export function AttendanceClient({
                         </Button>
                     </CardContent>
                 </Card>
+
+                {/* Holidays / Days Off Management */}
+                <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl">
+                    <CardHeader>
+                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                            <CalendarOff className="h-5 w-5 text-amber-500" />
+                            Holidays & Days Off
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                            Add official holidays and days off. Employees will not be marked as absent on these dates.
+                        </p>
+
+                        {/* Add Holiday Form */}
+                        <div className="flex flex-col sm:flex-row items-end gap-3 p-4 rounded-2xl border border-white/10 bg-white/5">
+                            <div className="space-y-2 flex-1 w-full sm:w-auto">
+                                <Label className="text-xs font-bold uppercase tracking-wider">Date</Label>
+                                <Input
+                                    type="date"
+                                    value={newHolidayDate}
+                                    onChange={(e) => setNewHolidayDate(e.target.value)}
+                                    className="rounded-xl border-white/10 bg-black/20"
+                                />
+                            </div>
+                            <div className="space-y-2 flex-1 w-full sm:w-auto">
+                                <Label className="text-xs font-bold uppercase tracking-wider">Holiday Name</Label>
+                                <Input
+                                    value={newHolidayName}
+                                    onChange={(e) => setNewHolidayName(e.target.value)}
+                                    placeholder="e.g. National Day"
+                                    className="rounded-xl border-white/10 bg-black/20"
+                                />
+                            </div>
+                            <Button
+                                onClick={handleAddHoliday}
+                                disabled={isPending || !newHolidayDate || !newHolidayName.trim()}
+                                className="rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-bold gap-1.5 w-full sm:w-auto"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Add Holiday
+                            </Button>
+                        </div>
+
+                        {/* Holiday List */}
+                        {(schedule.holidays || []).length > 0 ? (
+                            <div className="space-y-2">
+                                {(schedule.holidays || [])
+                                    .sort((a: any, b: any) => a.date.localeCompare(b.date))
+                                    .map((holiday: any) => {
+                                        const isPast = new Date(holiday.date) < new Date(new Date().toISOString().split("T")[0]);
+                                        return (
+                                            <div
+                                                key={holiday.date}
+                                                className={cn(
+                                                    "flex items-center justify-between px-4 py-3 rounded-xl border transition-colors",
+                                                    isPast
+                                                        ? "border-white/5 bg-white/[0.02] opacity-60"
+                                                        : "border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                                                        <PartyPopper className="h-5 w-5 text-amber-500" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-sm">{holiday.name}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {new Date(holiday.date + "T00:00:00").toLocaleDateString("en-US", {
+                                                                weekday: "long",
+                                                                month: "long",
+                                                                day: "numeric",
+                                                                year: "numeric",
+                                                            })}
+                                                            {isPast && <span className="ml-2 text-muted-foreground/50">(Past)</span>}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleRemoveHoliday(holiday.date)}
+                                                    disabled={isPending}
+                                                    className="h-8 w-8 p-0 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        ) : (
+                            <div className="p-6 text-center text-muted-foreground rounded-xl border border-dashed border-white/10">
+                                <CalendarOff className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                                <p className="text-sm font-medium">No holidays configured</p>
+                                <p className="text-xs mt-1">Add holidays above to exclude them from attendance calculations</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </TabsContent>
         </Tabs>
     );
+}
+
+// ─── Helper: count work days in a given month ──────────────────────────────────
+function getWorkDaysInMonth(
+    month: number,
+    year: number,
+    workDays: number[],
+    holidays: { date: string; name: string }[] = []
+): number {
+    const holidayDates = new Set(holidays.map(h => h.date));
+    let count = 0;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(year, month - 1, d);
+        const dayOfWeek = date.getDay();
+        const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        if (workDays.includes(dayOfWeek) && !holidayDates.has(dateStr)) {
+            count++;
+        }
+    }
+    return count;
 }

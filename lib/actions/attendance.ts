@@ -250,6 +250,7 @@ export async function updateWorkSchedule(data: {
     gracePeriodMinutes: number;
     workDays: number[];
     timezone: string;
+    holidays?: { date: string; name: string }[];
 }) {
     const session = await auth();
     if (!session?.user) return { success: false, message: "Unauthorized" };
@@ -269,6 +270,56 @@ export async function updateWorkSchedule(data: {
         return { success: true };
     } catch (err) {
         console.error("updateWorkSchedule error:", err);
+        return { success: false, message: "Server error" };
+    }
+}
+
+// ─── Add Holiday (Admin) ─────────────────────────────────────────────────────
+
+export async function addHoliday(holiday: { date: string; name: string }) {
+    const session = await auth();
+    if (!session?.user) return { success: false, message: "Unauthorized" };
+
+    const role = (session.user as any).role;
+    const isSuperAdmin = !!(session.user as any).isSuperAdmin;
+    if (role !== "ADMIN" && !isSuperAdmin) return { success: false, message: "Forbidden" };
+
+    try {
+        await dbConnect();
+        const orgId = (session.user as any).orgId;
+        await Organization.findByIdAndUpdate(orgId, {
+            $addToSet: {
+                "settings.workSchedule.holidays": holiday,
+            },
+        });
+        return { success: true };
+    } catch (err) {
+        console.error("addHoliday error:", err);
+        return { success: false, message: "Server error" };
+    }
+}
+
+// ─── Remove Holiday (Admin) ──────────────────────────────────────────────────
+
+export async function removeHoliday(date: string) {
+    const session = await auth();
+    if (!session?.user) return { success: false, message: "Unauthorized" };
+
+    const role = (session.user as any).role;
+    const isSuperAdmin = !!(session.user as any).isSuperAdmin;
+    if (role !== "ADMIN" && !isSuperAdmin) return { success: false, message: "Forbidden" };
+
+    try {
+        await dbConnect();
+        const orgId = (session.user as any).orgId;
+        await Organization.findByIdAndUpdate(orgId, {
+            $pull: {
+                "settings.workSchedule.holidays": { date },
+            },
+        });
+        return { success: true };
+    } catch (err) {
+        console.error("removeHoliday error:", err);
         return { success: false, message: "Server error" };
     }
 }
