@@ -76,6 +76,13 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // 🔒 Only ADMIN or SuperAdmin can delete blobs
+        const role = (session.user as any).role;
+        const isSuperAdmin = (session.user as any).isSuperAdmin;
+        if (role !== USER_ROLES.ADMIN && !isSuperAdmin) {
+            return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+        }
+
         const { url } = await req.json();
         if (!url) {
             return NextResponse.json({ error: "No URL provided" }, { status: 400 });

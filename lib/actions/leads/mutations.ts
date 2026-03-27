@@ -105,27 +105,21 @@ export async function createLead(prevState: any, formData: FormData) {
         await dbConnect();
         const newLead = await Lead.create({
             orgId,
-            ...rest,
+            name: rest.name,
+            email: rest.email,
+            phone: rest.phone,
             countryCode: rest.countryCode || "971",
+            status: rest.status,
+            source: rest.source,
+            product: rest.product,
+            value: rest.value,
+            description: rest.description,
             followUpDate: rest.followUpDate ? new Date(rest.followUpDate) : undefined,
             assignedTo: assignedTo || await resolveAutoAssignment(orgId),
-            address: {
-                addressLine: rest.address,
-                city: rest.city,
-                state: rest.state,
-                country: rest.country || "UAE",
-                zipCode: rest.zipCode
-            },
-            website: rest.website,
-            description: rest.description,
-            product: rest.product,
-            tags: tagList,
             createdBy: new mongoose.Types.ObjectId(session.user.id),
             updatedBy: new mongoose.Types.ObjectId(session.user.id),
             contactedToday: rawFormData.contactedToday === "on",
             public: rawFormData.public === "on",
-            defaultLanguage: rest.defaultLanguage || "System Default",
-            position: rest.position,
             customFields: rawFormData.customFields ? JSON.parse(rawFormData.customFields as string) : {},
         });
 
@@ -252,18 +246,7 @@ export async function updateLead(prevState: any, formData: FormData) {
         // For Sales, assignedTo stays unchanged
 
         lead.value = rest.value;
-        lead.website = rest.website;
-        lead.address = {
-            addressLine: rest.address,
-            city: rest.city,
-            state: rest.state,
-            country: rest.country || "UAE",
-            zipCode: rest.zipCode
-        };
-        lead.defaultLanguage = rest.defaultLanguage || "System Default";
-        lead.position = rest.position;
         lead.description = rest.description;
-        lead.tags = tagList;
         lead.public = rawFormData.public === "on";
         lead.contactedToday = rawFormData.contactedToday === "on";
         lead.followUpDate = rest.followUpDate ? new Date(rest.followUpDate) : undefined;

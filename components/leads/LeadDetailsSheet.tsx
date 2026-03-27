@@ -49,7 +49,7 @@ import {
     Zap,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import WhatsAppSendDialog from "@/components/whatsapp/WhatsAppSendDialog";
+
 import { formatPhoneDisplay } from "@/lib/constants/countryCodes";
 
 interface LeadDetailsSheetProps {
@@ -64,7 +64,7 @@ const ACTION_TYPE_CONFIG: Record<string, { label: string; icon: any; color: stri
     MEETING: { label: "Meeting", icon: Video, color: "text-blue-500" },
     EMAIL: { label: "Email", icon: AtSign, color: "text-purple-500" },
     FOLLOW_UP: { label: "Follow Up", icon: Clock, color: "text-amber-500" },
-    WHATSAPP: { label: "WhatsApp", icon: MessageCircle, color: "text-emerald-500" },
+
     OTHER: { label: "Other", icon: Zap, color: "text-gray-400" },
 };
 
@@ -79,7 +79,7 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
     const [actionType, setActionType] = useState("CALL");
     const [actionDesc, setActionDesc] = useState("");
     const [actionOutcome, setActionOutcome] = useState("");
-    const [showWADialog, setShowWADialog] = useState(false);
+
 
     const isMarketing = currentUserRole === "MARKETING";
     const canEdit = !isMarketing; // Admin + Sales can add notes, change status, add actions
@@ -214,23 +214,11 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                 {/* Header Info */}
                                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
                                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                                        {data.lead.name}
+                                        {data.lead.name || "Unnamed Lead"}
                                         {data.lead.serialNumber && (
                                             <Badge variant="outline" className="font-mono text-[10px] border-primary/30 text-primary/70 px-1.5">#{data.lead.serialNumber}</Badge>
                                         )}
                                     </h2>
-                                    <p className="text-sm text-primary font-medium">{data.lead.position || "Contact Person"}</p>
-                                    <div className="flex items-center space-x-2 text-muted-foreground mt-2">
-                                        <Building2 className="h-4 w-4" />
-                                        <span className="text-sm">{data.lead.company || "No Company"}</span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mt-4">
-                                        {data.lead.tags?.map((tag: string) => (
-                                            <Badge key={tag} variant="secondary" className="bg-primary/10 text-primary border-none text-[10px]">
-                                                #{tag}
-                                            </Badge>
-                                        ))}
-                                    </div>
                                 </div>
 
                                 {/* Quick Actions / Status */}
@@ -306,82 +294,18 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                                 </div>
                                             </div>
                                             {data.lead.phone && (
-                                                <div className="flex items-center gap-1.5">
-                                                    <a
-                                                        href={`https://wa.me/${data.lead.phone?.replace(/[^0-9]/g, "")}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="h-8 px-3 rounded-lg bg-green-500 text-white text-xs font-bold flex items-center gap-1.5 hover:bg-green-600 transition-colors"
-                                                    >
-                                                        WhatsApp
-                                                    </a>
-                                                    <button
-                                                        onClick={() => setShowWADialog(true)}
-                                                        className="h-8 px-2.5 rounded-lg bg-green-700 text-white text-xs font-bold flex items-center gap-1 hover:bg-green-800 transition-colors"
-                                                        title="Send via WhatsApp Cloud API"
-                                                    >
-                                                        <MessageCircle className="h-3.5 w-3.5" />
-                                                        API
-                                                    </button>
-                                                </div>
+                                                <a
+                                                    href={`https://wa.me/${data.lead.phone?.replace(/[^0-9]/g, "")}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="h-8 px-3 rounded-lg bg-green-500 text-white text-xs font-bold flex items-center gap-1.5 hover:bg-green-600 transition-colors"
+                                                >
+                                                    <MessageCircle className="h-3.5 w-3.5" />
+                                                    WhatsApp
+                                                </a>
                                             )}
                                         </div>
 
-                                        {data.lead.website ? (
-                                            <a href={data.lead.website} target="_blank" rel="noopener noreferrer" className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-                                                <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center mr-3 text-purple-500">
-                                                    <Globe className="h-4 w-4" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Website / URL</span>
-                                                    <span className="text-sm font-medium truncate max-w-[250px]">{data.lead.website}</span>
-                                                </div>
-                                                <ExternalLink className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            </a>
-                                        ) : (
-                                            <div className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5">
-                                                <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center mr-3 text-purple-500">
-                                                    <Globe className="h-4 w-4" />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Website / URL</span>
-                                                    <span className="text-sm font-medium text-muted-foreground">No Website</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Location Details */}
-                                <div className="space-y-4">
-                                    <h3 className="text-xs font-bold uppercase tracking-widest text-primary/80 flex items-center gap-2">
-                                        <MapPinned className="h-3.5 w-3.5" />
-                                        Location & Preferences
-                                    </h3>
-                                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-4">
-                                        <div className="flex items-start">
-                                            <MapPin className="h-4 w-4 mr-3 mt-1 text-primary/60" />
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-medium">{data.lead.address?.addressLine || "No Address Line"}</span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {[data.lead.address?.city, data.lead.address?.state, data.lead.address?.country].filter(Boolean).join(", ") || "No location details"}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4 pt-2">
-                                            <div className="flex items-center text-xs">
-                                                <Languages className="h-3.5 w-3.5 mr-2 text-primary/60" />
-                                                <span className="text-muted-foreground mr-1">Language:</span>
-                                                <span className="font-semibold">{data.lead.defaultLanguage || "English"}</span>
-                                            </div>
-                                            <div className="flex items-center text-xs">
-                                                <Globe2 className="h-3.5 w-3.5 mr-2 text-primary/60" />
-                                                <span className="text-muted-foreground mr-1">Visibility:</span>
-                                                <Badge variant="outline" className="text-[10px] h-5 py-0 border-white/10 uppercase">
-                                                    {data.lead.public ? "Public" : "Private"}
-                                                </Badge>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -694,16 +618,6 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                 </div>
             </SheetContent>
 
-            {/* WhatsApp Send Dialog */}
-            {data && (
-                <WhatsAppSendDialog
-                    open={showWADialog}
-                    onOpenChange={setShowWADialog}
-                    leadId={leadId || ""}
-                    leadName={data.lead?.name || ""}
-                    leadPhone={data.lead?.phone}
-                />
-            )}
         </Sheet>
     );
 }

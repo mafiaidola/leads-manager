@@ -10,12 +10,11 @@ import Organization from "@/models/Organization";
 import bcryptjs from "bcryptjs";
 
 export async function GET(request: NextRequest) {
-    // Security: Only allow seeding in development, or with a secret token in production
-    const isDev = process.env.NODE_ENV === "development";
+    // Security: Always require SEED_SECRET — even in development
     const seedSecret = process.env.SEED_SECRET?.trim();
     const providedSecret = request.nextUrl.searchParams.get("secret")?.trim();
 
-    if (!isDev && (!seedSecret || providedSecret !== seedSecret)) {
+    if (!seedSecret || providedSecret !== seedSecret) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
