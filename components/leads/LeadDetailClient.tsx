@@ -45,7 +45,6 @@ const ACTION_TYPES = [
     { value: "MEETING", label: "Meeting", icon: Video },
     { value: "EMAIL", label: "Email", icon: Send },
     { value: "FOLLOW_UP", label: "Follow Up", icon: Clock },
-    { value: "WHATSAPP", label: "WhatsApp", icon: MessageSquare },
     { value: "OTHER", label: "Other", icon: MoreHorizontal },
 ];
 

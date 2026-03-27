@@ -13,15 +13,12 @@ const TRACKED_FIELDS: Record<string, string> = {
     name: "Name",
     email: "Email",
     phone: "Phone",
-    company: "Company",
     status: "Status",
     source: "Source",
     value: "Deal Value",
-    currency: "Currency",
     notes: "Notes",
     assignedTo: "Assigned To",
     followUpDate: "Follow-up Date",
-    tags: "Tags",
     priority: "Priority",
 };
 

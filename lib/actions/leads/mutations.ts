@@ -29,7 +29,6 @@ import Organization from "@/models/Organization";
 
 const LeadSchema = z.object({
     name: z.string().optional(),
-    company: z.string().optional(),
     email: z.string().email().optional().or(z.literal("")),
     phone: z.string().regex(/^\d*$/, "Phone number must contain only digits").optional(),
     countryCode: z.string().optional(),
@@ -38,16 +37,7 @@ const LeadSchema = z.object({
     product: z.string().optional(),
     assignedTo: z.string().optional(),
     value: z.coerce.number().optional(),
-    website: z.string().optional(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    country: z.string().optional(),
-    zipCode: z.string().optional(),
-    position: z.string().optional(),
-    defaultLanguage: z.string().optional(),
     description: z.string().optional(),
-    tags: z.string().optional(), // Comma separated
     public: z.string().optional(), // Checkbox
     contactedToday: z.string().optional(), // Checkbox
     followUpDate: z.string().optional(), // ISO date string
@@ -87,8 +77,8 @@ export async function createLead(prevState: any, formData: FormData) {
         return { message: "Invalid fields", errors: validatedFields.error.flatten(), success: false };
     }
 
-    const { tags, assignedTo, ...rest } = validatedFields.data;
-    const tagList = tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+    const { assignedTo, ...rest } = validatedFields.data;
+
 
     // Duplication Check
     if (rest.phone) {
@@ -183,8 +173,8 @@ export async function updateLead(prevState: any, formData: FormData) {
         return { message: "Invalid fields", errors: validatedFields.error.flatten(), success: false };
     }
 
-    const { tags, assignedTo, ...rest } = validatedFields.data;
-    const tagList = tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+    const { assignedTo, ...rest } = validatedFields.data;
+
 
     try {
         await dbConnect();
@@ -220,18 +210,15 @@ export async function updateLead(prevState: any, formData: FormData) {
             if (o !== n) changes.push(`${label}: ${o || "(empty)"} → ${n || "(empty)"}`);
         };
         trackField("Name", lead.name, rest.name);
-        trackField("Company", lead.company, rest.company);
         trackField("Email", lead.email, rest.email);
         trackField("Phone", lead.phone, rest.phone);
         trackField("Status", lead.status, rest.status);
         trackField("Source", lead.source, rest.source);
         trackField("Product", lead.product, rest.product);
         trackField("Value", lead.value, rest.value);
-        trackField("Website", lead.website, rest.website);
 
         // Update fields
         lead.name = rest.name || lead.name || "";
-        lead.company = rest.company;
         lead.email = rest.email;
         lead.phone = rest.phone;
         lead.countryCode = rest.countryCode || lead.countryCode || "971";
