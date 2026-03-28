@@ -68,6 +68,7 @@ const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
     ADMIN:     { label: "Admin",     color: "bg-violet-500/15 text-violet-400 border-violet-500/30" },
     MARKETING: { label: "Marketing", color: "bg-teal-500/15 text-teal-400 border-teal-500/30" },
     SALES:     { label: "Sales",     color: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
+    IQA:       { label: "IQA",       color: "bg-orange-500/15 text-orange-400 border-orange-500/30" },
 };
 
 // getPasswordStrength imported from @/lib/utils/passwordStrength
@@ -360,6 +361,7 @@ export function TeamTab({
                                         </SelectItem>
                                         <SelectItem value="MARKETING">Marketing</SelectItem>
                                         <SelectItem value="SALES">Sales</SelectItem>
+                                        <SelectItem value="IQA">IQA</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -450,6 +452,7 @@ export function TeamTab({
                                     <SelectItem value="ADMIN">Admin</SelectItem>
                                     <SelectItem value="MARKETING">Marketing</SelectItem>
                                     <SelectItem value="SALES">Sales</SelectItem>
+                                    <SelectItem value="IQA">IQA</SelectItem>
                                 </SelectContent>
                             </Select>
 
@@ -567,6 +570,7 @@ export function TeamTab({
                                         </SelectItem>
                                         <SelectItem value="MARKETING">Marketing</SelectItem>
                                         <SelectItem value="SALES">Sales</SelectItem>
+                                        <SelectItem value="IQA">IQA</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -15,7 +15,7 @@ import React, { useState, useTransition, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-    ArrowLeft, Building2, Phone, Star, StarOff,
+    ArrowLeft, Building2, Phone, Star, StarOff, ArrowRightLeft,
     Calendar, Clock, MessageSquare, Video, Send, Users, MoreHorizontal,
     Plus, AlertCircle, Briefcase, Tag,
     Sparkles, Pencil, Trash2, Download,
@@ -30,12 +30,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { updateLeadStatus, addNote, addLeadAction, toggleStarLead, deleteLead } from "@/lib/actions/leads";
+import { updateLeadStatus, addNote, addLeadAction, toggleStarLead, deleteLead, transferLead } from "@/lib/actions/leads";
 import { updateLead } from "@/lib/actions/leads";
 import { LeadContactCard } from "./LeadContactCard";
 import { LeadDealCard } from "./LeadDealCard";
 import { LeadTimeline } from "./LeadTimeline";
 import { LeadEditDialog } from "@/components/leads/LeadEditDialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { FieldChangeHistory } from "@/components/leads/FieldChangeHistory";
 import { FadeIn } from "@/components/dashboard/DashboardAnimations";
 
@@ -127,6 +129,10 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
     // Action form
     const [actionForm, setActionForm] = useState({ type: "CALL", description: "", outcome: "" });
     const [isAddingAction, setIsAddingAction] = useState(false);
+
+    // Reassign dialog state
+    const [showReassign, setShowReassign] = useState(false);
+    const [reassignUserId, setReassignUserId] = useState("");
 
     // Status
     const [currentStatus, setCurrentStatus] = useState(lead.status);
@@ -275,10 +281,11 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
     const isAdmin = userRole === "ADMIN" || !!isSuperAdmin;
     const isMarketing = userRole === "MARKETING";
     const isSales = userRole === "SALES";
-    const canEdit = isAdmin || (isSales && lead.assignedTo?._id === userId);
-    const canDelete = isAdmin;
-    const canAddNote = isAdmin || (isSales && lead.assignedTo?._id === userId);
-    const canChangeStatus = isAdmin || (isSales && lead.assignedTo?._id === userId);
+    const isIQA = userRole === "IQA";
+    const canEdit = !isIQA && (isAdmin || (isSales && lead.assignedTo?._id === userId));
+    const canDelete = isAdmin && !isIQA;
+    const canAddNote = !isIQA && (isAdmin || (isSales && lead.assignedTo?._id === userId));
+    const canChangeStatus = !isIQA && (isAdmin || (isSales && lead.assignedTo?._id === userId));
 
     const handleExport = useCallback(() => {
         // Build label lookups
@@ -351,6 +358,11 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                         {canEdit && (
                             <Button variant="outline" size="sm" className="rounded-full border-white/10 gap-1.5" onClick={() => setShowEdit(true)}>
                                 <Pencil className="h-3.5 w-3.5" /> Edit
+                            </Button>
+                        )}
+                        {isAdmin && !isIQA && users && users.length > 0 && (
+                            <Button variant="outline" size="sm" className="rounded-full border-white/10 gap-1.5" onClick={() => setShowReassign(true)}>
+                                <ArrowRightLeft className="h-3.5 w-3.5" /> Reassign
                             </Button>
                         )}
                         {isAdmin && (
@@ -598,6 +610,62 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                 onSave={handleEditSave}
                 isPending={isPending}
             />
+
+            {/* ── Reassign Dialog ──────────────────────────────────────── */}
+            <Dialog open={showReassign} onOpenChange={setShowReassign}>
+                <DialogContent className="rounded-3xl border-white/10 bg-card/95 backdrop-blur-xl max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <ArrowRightLeft className="h-4 w-4" /> Reassign Lead
+                        </DialogTitle>
+                        <DialogDescription>
+                            Transfer <strong>{lead.name}</strong> to a different team member.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        <Label className="text-xs text-muted-foreground">Assign to</Label>
+                        <Select value={reassignUserId} onValueChange={setReassignUserId}>
+                            <SelectTrigger className="rounded-xl border-white/10 bg-black/20">
+                                <SelectValue placeholder="Select user…" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                                {(users || []).map((u: any) => (
+                                    <SelectItem key={u._id} value={u._id}>
+                                        <span className="flex items-center gap-2">
+                                            {u.name}
+                                            {u._id === lead.assignedTo?._id && (
+                                                <Badge variant="outline" className="text-[9px] h-4 px-1 text-amber-400 border-amber-400/30">Current</Badge>
+                                            )}
+                                        </span>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowReassign(false)} className="rounded-xl border-white/10">Cancel</Button>
+                        <Button
+                            disabled={isPending || !reassignUserId || reassignUserId === lead.assignedTo?._id}
+                            onClick={() => {
+                                startTransition(async () => {
+                                    const res = await transferLead(lead._id, reassignUserId);
+                                    if (res.success) {
+                                        toast({ title: "✅ Lead reassigned" });
+                                        setShowReassign(false);
+                                        setReassignUserId("");
+                                        router.refresh();
+                                    } else {
+                                        toast({ title: res.message || "Failed to reassign", variant: "destructive" });
+                                    }
+                                });
+                            }}
+                            className="rounded-xl bg-primary font-bold"
+                        >
+                            {isPending ? "Reassigning…" : "Reassign"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

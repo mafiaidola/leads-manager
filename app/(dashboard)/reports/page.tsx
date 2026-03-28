@@ -11,7 +11,7 @@ import ReportsWrapper from "@/components/reports/ReportsWrapper";
 
 export default async function ReportsPage() {
     const session = await auth();
-    if (!session || session.user.role !== "ADMIN") {
+    if (!session || (session.user.role !== "ADMIN" && session.user.role !== "IQA")) {
         redirect("/");
     }
 

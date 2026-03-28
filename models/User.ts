@@ -3,7 +3,7 @@
  * @description Mongoose schema for application users.
  *
  * Features:
- * - Three roles: ADMIN, MARKETING, SALES (enforced by `enum` at DB level)
+ * - Four roles: ADMIN, MARKETING, SALES, IQA (enforced by `enum` at DB level)
  * - `isSuperAdmin` flag for cross-organisation access
  * - bcrypt password hash storage (`passwordHash`)
  * - Unique `username` per system, unique `email` per org (compound index)
@@ -16,6 +16,7 @@ export const USER_ROLES = {
     ADMIN: "ADMIN",
     MARKETING: "MARKETING",
     SALES: "SALES",
+    IQA: "IQA",
 } as const;
 
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];

@@ -32,6 +32,7 @@ export interface LeadsToolbarProps {
     searchParams: ReadonlyURLSearchParams;
     isAdmin: boolean;
     isMarketing: boolean;
+    isIQA?: boolean;
     canAddLead: boolean;
     canSeeAssignment: boolean;
     isStarredView: boolean;
@@ -65,7 +66,7 @@ export interface LeadsToolbarProps {
 
 export const LeadsToolbar = React.memo(function LeadsToolbar({
     settings, users, searchParams,
-    isAdmin, isMarketing, canAddLead, canSeeAssignment,
+    isAdmin, isMarketing, isIQA, canAddLead, canSeeAssignment,
     isStarredView, isTrashView, isOverdueView, activeTag, allTags,
     viewMode, selectedIds, bulkStatusOpen, bulkAssignOpen,
     onViewModeChange, onViewToggle, onSearch, onStatusFilter, onSourceFilter,
@@ -236,7 +237,7 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
             </div>
 
             {/* Secondary filter row: Assignee + Value range */}
-            {!isTrashView && (isAdmin || isMarketing) && (
+            {!isTrashView && (isAdmin || isMarketing || isIQA) && (
                 <div className="flex flex-wrap items-center gap-2">
                     <Select value={searchParams.get("assignedTo") || "all"} onValueChange={onAssigneeFilter}>
                         <SelectTrigger className="w-[160px] rounded-xl border-white/10 bg-white/5 h-8 text-xs">

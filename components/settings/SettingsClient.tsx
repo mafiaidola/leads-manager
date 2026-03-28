@@ -242,7 +242,7 @@ export function SettingsClient({
     }, [setTheme, toast]);
 
     // Roles
-    const builtinRoles = ["ADMIN", "MARKETING", "SALES"];
+    const builtinRoles = ["ADMIN", "MARKETING", "SALES", "IQA"];
     const allRoles = useMemo(() => [...builtinRoles, ...customRoles.map((r: any) => r.name)], [customRoles]);
 
     return (
@@ -398,7 +398,7 @@ export function SettingsClient({
                                     <div key={role} className="p-4 rounded-2xl bg-white/5 border border-white/10">
                                         <div className="font-bold text-sm mb-2">{role}</div>
                                         <div className="text-[10px] text-muted-foreground">
-                                            {role === 'ADMIN' ? 'Full access to everything' : role === 'MARKETING' ? 'Create, edit, assign leads' : 'View & manage assigned leads'}
+                                            {role === 'ADMIN' ? 'Full access to everything' : role === 'MARKETING' ? 'Create, edit, assign leads' : role === 'IQA' ? 'Read-only leads, reports & quality' : 'View & manage assigned leads'}
                                         </div>
                                     </div>
                                 ))}

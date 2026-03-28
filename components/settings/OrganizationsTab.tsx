@@ -941,6 +941,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                                         <SelectItem value="ADMIN">Admin</SelectItem>
                                                                         <SelectItem value="MARKETING">Marketing</SelectItem>
                                                                         <SelectItem value="SALES">Sales</SelectItem>
+                                                                        <SelectItem value="IQA">IQA</SelectItem>
                                                                     </SelectContent>
                                                                 </Select>
                                                             </div>
@@ -987,6 +988,7 @@ export function OrganizationsTab({ orgs: initialOrgs, currentOrgId }: { orgs: Or
                                                                                 <SelectItem value="ADMIN">Admin</SelectItem>
                                                                                 <SelectItem value="MARKETING">Marketing</SelectItem>
                                                                                 <SelectItem value="SALES">Sales</SelectItem>
+                                                                                <SelectItem value="IQA">IQA</SelectItem>
                                                                             </SelectContent>
                                                                         </Select>
                                                                     )}
@@ -1277,6 +1279,7 @@ function RoleBadge({ role }: { role: string }) {
         ADMIN: "bg-violet-500/10 text-violet-400 border-violet-500/20",
         MARKETING: "bg-teal-500/10 text-teal-400 border-teal-500/20",
         SALES: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+        IQA: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     };
     return (
         <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${map[role] || "bg-gray-500/10 text-gray-400 border-gray-500/20"}`}>

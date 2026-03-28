@@ -75,6 +75,7 @@ export function LeadsClient({
     const isAdmin = currentUserRole === 'ADMIN' || !!isSuperAdmin;
     const isMarketing = currentUserRole === 'MARKETING';
     const isSales = currentUserRole === 'SALES';
+    const isIQA = currentUserRole === 'IQA';
     const canAddLead = isAdmin || isMarketing;
     const canSeeAssignment = isAdmin || isMarketing;
 
@@ -314,6 +315,7 @@ export function LeadsClient({
                 searchParams={searchParams}
                 isAdmin={isAdmin}
                 isMarketing={isMarketing}
+                isIQA={isIQA}
                 canAddLead={canAddLead}
                 canSeeAssignment={canSeeAssignment}
                 isStarredView={isStarredView}
@@ -367,6 +369,7 @@ export function LeadsClient({
                     isAdmin={isAdmin}
                     isMarketing={isMarketing}
                     isSales={isSales}
+                    isIQA={isIQA}
                     canSeeAssignment={canSeeAssignment}
                     isTrashView={isTrashView}
                     isStarredView={isStarredView}

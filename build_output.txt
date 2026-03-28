@@ -1,0 +1,45 @@
+﻿Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  ┬╖ optimizePackageImports
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 23.4s
+  Running TypeScript ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/12) ...
+  Generating static pages using 3 workers (3/12) 
+  Generating static pages using 3 workers (6/12) 
+  Generating static pages using 3 workers (9/12) 
+Γ£ô Generating static pages using 3 workers (12/12) in 411.8ms
+  Finalizing page optimization ...
+
+Route (app)
+Γöî ╞Æ /
+Γö£ ╞Æ /_not-found
+Γö£ ╞Æ /additional-leads
+Γö£ ╞Æ /api/attendance/logout
+Γö£ ╞Æ /api/auth/[...nextauth]
+Γö£ ╞Æ /api/backup
+Γö£ ╞Æ /api/cron/backup
+Γö£ ╞Æ /api/leads/export
+Γö£ ╞Æ /api/notifications/stream
+Γö£ ╞Æ /api/organizations/public
+Γö£ ╞Æ /api/promote-super
+Γö£ ╞Æ /api/reset-password
+Γö£ ╞Æ /api/seed
+Γö£ ╞Æ /api/upload
+Γö£ ╞Æ /attendance
+Γö£ ╞Æ /audit
+Γö£ ╞Æ /leads
+Γö£ ╞Æ /leads/[id]
+Γö£ ╞Æ /login
+Γö£ ╞Æ /quality
+Γö£ ╞Æ /reports
+Γöö ╞Æ /settings
+
+
+╞Æ Proxy (Middleware)
+
+╞Æ  (Dynamic)  server-rendered on demand
+

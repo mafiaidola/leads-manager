@@ -37,6 +37,7 @@ export interface LeadsTableViewProps {
     isAdmin: boolean;
     isMarketing: boolean;
     isSales: boolean;
+    isIQA?: boolean;
     canSeeAssignment: boolean;
     isTrashView: boolean;
     isStarredView: boolean;
@@ -63,7 +64,7 @@ function SortIcon({ field, currentSort, currentDir }: { field: string; currentSo
 
 export const LeadsTableView = React.memo(function LeadsTableView({
     leads, settings, currentUserId, currentSort, currentDir,
-    selectedIds, isAdmin, isMarketing, isSales, canSeeAssignment,
+    selectedIds, isAdmin, isMarketing, isSales, isIQA, canSeeAssignment,
     isTrashView, isStarredView, isOverdueView, now,
     onSort, onStar, onSelect, onSelectAll, onLeadClick,
     onEdit, onDelete, onTransfer, onRestore, onPermanentDelete,
@@ -345,17 +346,17 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                                             <>
                                                                 <DropdownMenuItem onClick={() => onLeadClick(lead._id)} className="cursor-pointer">View details</DropdownMenuItem>
                                                                 <DropdownMenuSeparator className="bg-white/5" />
-                                                                {(isAdmin || isSales) && (
+                                                                {(isAdmin || isSales) && !isIQA && (
                                                                     <DropdownMenuItem onClick={() => onEdit(lead)} className="cursor-pointer flex items-center gap-2">
                                                                         <Pencil className="h-4 w-4" /> Edit Lead
                                                                     </DropdownMenuItem>
                                                                 )}
-                                                                {canSeeAssignment && (
+                                                                {canSeeAssignment && !isIQA && (
                                                                     <DropdownMenuItem onClick={() => onTransfer(lead._id)} className="cursor-pointer flex items-center gap-2">
                                                                         <ArrowRightLeft className="h-4 w-4" /> Transfer Lead
                                                                     </DropdownMenuItem>
                                                                 )}
-                                                                {isAdmin && (
+                                                                {isAdmin && !isIQA && (
                                                                     <DropdownMenuItem onClick={() => onDelete(lead._id)}
                                                                         className="cursor-pointer text-destructive focus:text-destructive flex items-center gap-2">
                                                                         <Trash2 className="h-4 w-4" /> Delete Lead

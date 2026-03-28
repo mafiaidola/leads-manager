@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut, Shield, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut, Shield, ClipboardCheck, SearchCheck, NotebookPen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { handleSignOut } from "@/lib/actions/auth";
 
@@ -18,28 +18,42 @@ const allRoutes = [
         icon: LayoutDashboard,
         href: "/",
         color: "text-sky-500",
-        roles: ["ADMIN", "MARKETING", "SALES"],
+        roles: ["ADMIN", "MARKETING", "SALES", "IQA"],
     },
     {
         label: "Leads",
         icon: Users,
         href: "/leads",
         color: "text-violet-500",
-        roles: ["ADMIN", "MARKETING", "SALES"],
+        roles: ["ADMIN", "MARKETING", "SALES", "IQA"],
+    },
+    {
+        label: "Additional Leads",
+        icon: NotebookPen,
+        href: "/additional-leads",
+        color: "text-cyan-500",
+        roles: ["ADMIN", "MARKETING", "SALES", "IQA"],
     },
     {
         label: "Reports",
         icon: BarChart3,
         href: "/reports",
         color: "text-pink-700",
-        roles: ["ADMIN"],
+        roles: ["ADMIN", "IQA"],
+    },
+    {
+        label: "Quality",
+        icon: SearchCheck,
+        href: "/quality",
+        color: "text-orange-500",
+        roles: ["ADMIN", "IQA"],
     },
     {
         label: "Attendance",
         icon: ClipboardCheck,
         href: "/attendance",
         color: "text-emerald-500",
-        roles: ["ADMIN"],
+        roles: ["ADMIN", "IQA"],
     },
     {
         label: "Audit Log",

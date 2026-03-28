@@ -261,7 +261,7 @@ export default async function DashboardPage() {
                         </div>
                     </div>
                 </FadeIn>
-                {(session?.user?.role === "ADMIN" || isSuperAdmin) && (
+                {(session?.user?.role === "ADMIN" || session?.user?.role === "IQA" || isSuperAdmin) && (
                 <div className="lg:col-span-3 flex flex-col gap-6">
                     <FadeIn delay={640}>
                         <RecentLeads leads={stats.recentLeads} />

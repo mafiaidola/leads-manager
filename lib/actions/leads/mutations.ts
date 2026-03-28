@@ -22,7 +22,7 @@ import { z } from "zod";
 import mongoose from "mongoose";
 import { logAudit } from "@/lib/actions/audit";
 import { AUDIT_ACTIONS, ENTITY_TYPES } from "@/models/AuditLog";
-import { createNotification, getAdminUserIds } from "@/lib/actions/notifications";
+import { createNotification, getAdminUserIds, getMarketingUserIds } from "@/lib/actions/notifications";
 import { getAutoAssignee } from "@/lib/utils/autoAssignment";
 import { trackLeadChanges } from "@/lib/utils/trackChanges";
 import Organization from "@/models/Organization";
@@ -338,9 +338,9 @@ export async function updateLeadStatus(id: string, newStatus: string) {
 
         logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.LEAD, id, `Status changed from ${oldLabel} to ${newLabel}`);
 
-        // Notify admins + assigned user about status change
-        getAdminUserIds().then((adminIds) => {
-            const targets = [...new Set([...adminIds, ...(lead.assignedTo ? [lead.assignedTo.toString()] : [])])];
+        // Notify admins + marketing + assigned user about status change
+        Promise.all([getAdminUserIds(), getMarketingUserIds()]).then(([adminIds, marketingIds]) => {
+            const targets = [...new Set([...adminIds, ...marketingIds, ...(lead.assignedTo ? [lead.assignedTo.toString()] : [])])];
             createNotification({
                 userIds: targets.filter(uid => uid !== session.user.id),
                 type: "status_changed",
