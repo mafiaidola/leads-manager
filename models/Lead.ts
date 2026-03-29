@@ -31,6 +31,9 @@ export interface ILead {
     status: string;
     source?: string;
     product?: string;
+    productPrice?: number;
+    customPrice?: number;
+    subTotal?: number;
     assignedTo?: mongoose.Types.ObjectId;
     address: {
         addressLine?: string;
@@ -71,6 +74,9 @@ const LeadSchema = new Schema<ILead>(
         status: { type: String, required: true, index: true },
         source: String,
         product: String,
+        productPrice: Number,
+        customPrice: Number,
+        subTotal: Number,
         assignedTo: { type: Schema.Types.ObjectId, ref: "User", index: true },
         address: {
             addressLine: String,

@@ -175,6 +175,23 @@ export function LeadsClient({
         router.replace(`/leads?${params.toString()}`);
     }, [searchParams, router]);
 
+    const handleDateRange = useCallback((preset: string, from?: string, to?: string) => {
+        const params = new URLSearchParams(searchParams);
+        if (preset === "all") {
+            params.delete("dateRange"); params.delete("dateFrom"); params.delete("dateTo");
+        } else {
+            params.set("dateRange", preset);
+            if (preset === "custom") {
+                if (from) params.set("dateFrom", from); else params.delete("dateFrom");
+                if (to) params.set("dateTo", to); else params.delete("dateTo");
+            } else {
+                params.delete("dateFrom"); params.delete("dateTo");
+            }
+        }
+        params.delete("page");
+        router.replace(`/leads?${params.toString()}`);
+    }, [searchParams, router]);
+
     const handleDelete = useCallback(async () => {
         if (!leadToDelete) return;
         const result = await deleteLead(leadToDelete);
@@ -338,6 +355,7 @@ export function LeadsClient({
                 onValueRange={handleValueRange}
                 onExport={handleExport}
                 onCreatedByFilter={handleCreatedByFilter}
+                onDateRange={handleDateRange}
                 onImportOpen={() => setIsImportOpen(true)}
                 onBulkStatusOpen={setBulkStatusOpen}
                 onBulkAssignOpen={setBulkAssignOpen}

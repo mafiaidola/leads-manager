@@ -198,9 +198,14 @@ export function SettingsClient({
     const handleStatusChange = useCallback((index: number, field: string, value: string) => {
         setStatuses(prev => {
             const newStatuses = [...prev];
-            const updated: any = { ...newStatuses[index], [field]: value };
+            const updated: any = { ...newStatuses[index] };
             if (field === 'label') {
+                updated.label = value;
                 updated.key = value.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+            } else if (field === 'isSaleStatus') {
+                updated.isSaleStatus = value === "true";
+            } else {
+                updated[field] = value;
             }
             newStatuses[index] = updated;
             return newStatuses;

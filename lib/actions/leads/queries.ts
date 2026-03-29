@@ -292,6 +292,50 @@ export async function getLeads(searchParams: any) {
             query.followUpDate = { $lte: new Date(), $ne: null };
         }
 
+        // Date range filter
+        if (searchParams.dateRange && searchParams.dateRange !== "all") {
+            const now = new Date();
+            let dateFrom: Date | undefined;
+            let dateTo: Date | undefined;
+
+            switch (searchParams.dateRange) {
+                case "today": {
+                    dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    dateTo = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+                    break;
+                }
+                case "week": {
+                    const day = now.getDay();
+                    dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+                    dateTo = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (6 - day), 23, 59, 59, 999);
+                    break;
+                }
+                case "month": {
+                    dateFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+                    dateTo = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                    break;
+                }
+                case "year": {
+                    dateFrom = new Date(now.getFullYear(), 0, 1);
+                    dateTo = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                    break;
+                }
+                case "custom": {
+                    if (searchParams.dateFrom) dateFrom = new Date(searchParams.dateFrom);
+                    if (searchParams.dateTo) {
+                        dateTo = new Date(searchParams.dateTo);
+                        dateTo.setHours(23, 59, 59, 999);
+                    }
+                    break;
+                }
+            }
+            if (dateFrom || dateTo) {
+                query.createdAt = {};
+                if (dateFrom) query.createdAt.$gte = dateFrom;
+                if (dateTo) query.createdAt.$lte = dateTo;
+            }
+        }
+
         const page = Number(searchParams.page) || 1;
         const limit = 50;
         const skip = (page - 1) * limit;
@@ -352,6 +396,9 @@ export async function getLeads(searchParams: any) {
                 status: l.status,
                 source: l.source || null,
                 product: l.product || null,
+                productPrice: l.productPrice ?? null,
+                customPrice: l.customPrice ?? null,
+                subTotal: l.subTotal ?? null,
                 description: l.description || null,
                 public: l.public || false,
                 contactedToday: l.contactedToday || false,
@@ -517,6 +564,9 @@ export async function getLeadDetails(id: string) {
                 source: l.source || null,
                 status: l.status || null,
                 product: l.product || null,
+                productPrice: l.productPrice ?? null,
+                customPrice: l.customPrice ?? null,
+                subTotal: l.subTotal ?? null,
                 description: l.description || null,
                 value: l.value ?? null,
                 currency: l.currency || "USD",

@@ -16,7 +16,7 @@ import { getDashboardStats } from "@/lib/actions/dashboard";
 import { getSettings } from "@/lib/actions/settings";
 import { getUsers } from "@/lib/actions/users";
 import { cn } from "@/lib/utils";
-import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText, FileDown, Filter, CalendarDays, X, Building2 } from "lucide-react";
+import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText, FileDown, Filter, CalendarDays, X, Building2, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -119,6 +119,8 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
     })), [data?.monthlyTrends, monthlyLeadTarget]);
 
     // Export handlers
+    const currency = data?.defaultCurrency || settings?.defaultCurrency || "AED";
+
     const handleExportCSV = useCallback(() => {
         if (!data) return;
         const rows = [
@@ -127,6 +129,7 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
             ["New Leads (30d)", data.newLeadsLast30Days],
             ["Customers Won", data.customers],
             ["Conversion Rate", `${conversionRate}%`],
+            ["Total Revenue", `${(data.totalRevenue || 0).toLocaleString()} ${currency}`],
             ["Monthly Lead Target", monthlyLeadTarget],
             ["Monthly Conversion Target", monthlyConversionTarget],
             [""],
@@ -138,6 +141,9 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
             [""],
             ["Source", "Count"],
             ...data.leadsBySource.map((s: any) => [s.source || "Unknown", s.count]),
+            [""],
+            ["Agent", "Total Leads", "Won", "Win Rate", `Revenue (${currency})`],
+            ...(data.agentLeaderboard || []).map((a: any) => [a.agentName, a.total, a.won, `${a.total > 0 ? Math.round((a.won / a.total) * 100) : 0}%`, (a.revenue || 0).toLocaleString()]),
         ];
         const csv = rows.map(r => Array.isArray(r) ? r.join(",") : "").join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
@@ -148,17 +154,19 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
         a.click();
         URL.revokeObjectURL(url);
         toast({ title: "Report exported as CSV" });
-    }, [data, conversionRate, monthlyLeadTarget, monthlyConversionTarget, toast]);
+    }, [data, conversionRate, monthlyLeadTarget, monthlyConversionTarget, currency, toast]);
 
     const handleExportJSON = useCallback(() => {
         if (!data) return;
         const report = {
             exportedAt: new Date().toISOString(),
+            currency,
             summary: {
                 totalLeads: data.totalLeads,
                 newLeads30d: data.newLeadsLast30Days,
                 customers: data.customers,
                 conversionRate: `${conversionRate}%`,
+                totalRevenue: data.totalRevenue || 0,
             },
             goals: {
                 monthlyLeadTarget,
@@ -170,6 +178,13 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
             monthlyTrends: data.monthlyTrends,
             leadsByStatus: data.leadsByStatus,
             leadsBySource: data.leadsBySource,
+            agentPerformance: (data.agentLeaderboard || []).map((a: any) => ({
+                agent: a.agentName,
+                role: a.agentRole,
+                totalLeads: a.total,
+                won: a.won,
+                revenue: a.revenue || 0,
+            })),
         };
         const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -179,7 +194,7 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
         a.click();
         URL.revokeObjectURL(url);
         toast({ title: "Report exported as JSON" });
-    }, [data, conversionRate, monthlyLeadTarget, monthlyConversionTarget, currentMonthLeads, leadGoalPercent, convGoalPercent, toast]);
+    }, [data, conversionRate, monthlyLeadTarget, monthlyConversionTarget, currentMonthLeads, leadGoalPercent, convGoalPercent, currency, toast]);
 
     const handleExportPDF = useCallback(async () => {
         if (!reportRef.current || isExportingPDF) return;
@@ -346,7 +361,7 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
             </div>
 
             {/* KPI Cards */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
                 <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl border-t-4 border-t-violet-500">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Total Leads</CardTitle>
@@ -391,6 +406,16 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                     <CardContent>
                         <div className="text-4xl font-bold">{conversionRate}%</div>
                         <p className="text-[10px] text-muted-foreground mt-2 font-medium">Lead → Customer rate</p>
+                    </CardContent>
+                </Card>
+                <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl border-t-4 border-t-cyan-500">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
+                        <div className="p-2 bg-cyan-500/10 rounded-xl"><DollarSign className="h-4 w-4 text-cyan-500" /></div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold">{(data.totalRevenue || 0).toLocaleString()} <span className="text-lg text-muted-foreground">{currency}</span></div>
+                        <p className="text-[10px] text-cyan-400 mt-2 font-medium">From closed sales</p>
                     </CardContent>
                 </Card>
             </div>
@@ -559,6 +584,9 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                                                     <span className="text-muted-foreground">{agent.total} leads</span>
                                                     <span className="text-emerald-400 font-semibold">{agent.won} won</span>
                                                     <span className={`font-bold ${pct >= 50 ? 'text-emerald-400' : pct >= 25 ? 'text-amber-400' : 'text-muted-foreground'}`}>{pct}%</span>
+                                                    {(agent.revenue || 0) > 0 && (
+                                                        <span className="text-cyan-400 font-semibold">{(agent.revenue || 0).toLocaleString()} {currency}</span>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">

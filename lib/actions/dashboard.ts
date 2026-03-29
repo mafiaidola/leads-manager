@@ -4,7 +4,7 @@
  *
  * Exports:
  * - `getDashboardStats` — aggregated stats (total, by-status, conversion rate,
- *   recent leads, recent activity, monthly trends, goal progress)
+ *   recent leads, recent activity, monthly trends, goal progress, revenue)
  *
  * Uses `Promise.all` for parallel fetching.
  * SuperAdmin gets cross-org analytics via `getCrossOrgStats`.
@@ -16,6 +16,7 @@ import dbConnect from "@/lib/db";
 import Lead from "@/models/Lead";
 import LeadNote from "@/models/LeadNote";
 import { USER_ROLES } from "@/models/User";
+import Organization from "@/models/Organization";
 import mongoose from "mongoose";
 
 export async function getDashboardStats(
@@ -29,6 +30,15 @@ export async function getDashboardStats(
 
     try {
         await dbConnect();
+
+        // Fetch org settings for dynamic sale status detection
+        const org = await Organization.findById(session.user.orgId)
+            .select("settings.statuses settings.defaultCurrency")
+            .lean() as any;
+        const saleStatusKeys: string[] = (org?.settings?.statuses || [])
+            .filter((s: any) => s.isSaleStatus)
+            .map((s: any) => s.key);
+        const defaultCurrency = org?.settings?.defaultCurrency || "AED";
 
         const matchStage: any = { deletedAt: null, orgId: new mongoose.Types.ObjectId(session.user.orgId as string) };
         if (session.user.role === USER_ROLES.SALES) {
@@ -50,10 +60,13 @@ export async function getDashboardStats(
             const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
             matchStage.createdAt = { $gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000) };
         }
-        // Marketing and Admin see all leads (soft-deleted excluded)
+
+        // Build customers match — dynamically from isSaleStatus
+        const customerMatch = saleStatusKeys.length > 0
+            ? { ...matchStage, status: { $in: saleStatusKeys } }
+            : { ...matchStage, status: { $regex: /customer|won|order/i } };
 
         // Pre-fetch lead IDs for Sales role activity filtering
-        // (hoisted out of Promise.all to avoid nested sequential await)
         const leadIdsForActivity =
             session.user.role === USER_ROLES.SALES
                 ? await Lead.find(matchStage).distinct("_id")
@@ -69,7 +82,8 @@ export async function getDashboardStats(
             recentLeads,
             monthlyTrends,
             recentActivity,
-            agentLeaderboard
+            agentLeaderboard,
+            totalRevenueAgg,
         ] = await Promise.all([
             Lead.countDocuments(matchStage),
             Lead.aggregate([
@@ -84,10 +98,7 @@ export async function getDashboardStats(
                 ...matchStage,
                 createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
             }),
-            Lead.countDocuments({
-                ...matchStage,
-                status: { $regex: /customer/i },
-            }),
+            Lead.countDocuments(customerMatch),
             // Leads by Source
             Lead.aggregate([
                 { $match: matchStage },
@@ -117,7 +128,7 @@ export async function getDashboardStats(
                 .populate("leadId", "name")
                 .populate("authorId", "name")
                 .lean(),
-            // Agent Leaderboard
+            // Agent Leaderboard with revenue
             Lead.aggregate([
                 { $match: matchStage },
                 {
@@ -126,14 +137,28 @@ export async function getDashboardStats(
                         total: { $sum: 1 },
                         won: {
                             $sum: {
-                                $cond: [{
-                                    $regexMatch: { input: { $toLower: { $ifNull: ["$status", ""] } }, regex: "won|customer" }
-                                }, 1, 0]
+                                $cond: [
+                                    saleStatusKeys.length > 0
+                                        ? { $in: ["$status", saleStatusKeys] }
+                                        : { $regexMatch: { input: { $toLower: { $ifNull: ["$status", ""] } }, regex: "won|customer|order" } },
+                                    1, 0
+                                ]
+                            }
+                        },
+                        revenue: {
+                            $sum: {
+                                $cond: [
+                                    saleStatusKeys.length > 0
+                                        ? { $in: ["$status", saleStatusKeys] }
+                                        : { $regexMatch: { input: { $toLower: { $ifNull: ["$status", ""] } }, regex: "won|customer|order" } },
+                                    { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] },
+                                    0
+                                ]
                             }
                         }
                     }
                 },
-                { $sort: { total: -1 } },
+                { $sort: { won: -1, total: -1 } },
                 { $limit: 10 },
                 {
                     $lookup: {
@@ -149,11 +174,24 @@ export async function getDashboardStats(
                         _id: 1,
                         total: 1,
                         won: 1,
+                        revenue: 1,
                         agentName: { $ifNull: ["$agent.name", "Unassigned"] },
                         agentRole: { $ifNull: ["$agent.role", "UNASSIGNED"] }
                     }
                 }
-            ])
+            ]),
+            // Total Revenue from sale-status leads
+            Lead.aggregate([
+                { $match: customerMatch },
+                {
+                    $group: {
+                        _id: null,
+                        total: {
+                            $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] }
+                        }
+                    }
+                }
+            ]),
         ]);
 
         return {
@@ -192,10 +230,14 @@ export async function getDashboardStats(
                 agentRole: item.agentRole,
                 total: item.total,
                 won: item.won,
+                revenue: item.revenue || 0,
             })),
+            totalRevenue: totalRevenueAgg[0]?.total || 0,
+            defaultCurrency,
         };
     } catch (error) {
         console.error("getDashboardStats error:", error);
         return null;
     }
 }
+

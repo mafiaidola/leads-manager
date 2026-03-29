@@ -34,7 +34,12 @@ export function ProductsTab({
                 <CardDescription className="text-muted-foreground/80">Manage the offerings your leads are interested in.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 mb-1">
+                    <span className="flex-1">Product Name</span>
+                    <span className="w-28 text-right">Price</span>
+                    <span className="w-9" />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-1">
                     {products.map((product, index) => (
                         <div key={index} className="flex items-center gap-2 group bg-white/5 p-3 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
                             <div className="flex-1">
@@ -45,7 +50,23 @@ export function ProductsTab({
                                         newProducts[index] = { ...product, label: e.target.value, key: e.target.value.toLowerCase().replace(/\s/g, '_') };
                                         onProductsChange(newProducts);
                                     }}
+                                    placeholder="Product name"
                                     className="h-9 rounded-xl border-white/10 bg-black/20"
+                                />
+                            </div>
+                            <div className="w-28 flex-shrink-0">
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={product.price ?? ""}
+                                    onChange={(e) => {
+                                        const newProducts = [...products];
+                                        newProducts[index] = { ...product, price: e.target.value ? parseFloat(e.target.value) : undefined };
+                                        onProductsChange(newProducts);
+                                    }}
+                                    placeholder="Price"
+                                    className="h-9 rounded-xl border-white/10 bg-black/20 text-right font-mono text-sm"
                                 />
                             </div>
                             <Button variant="ghost" size="icon" onClick={() => {
@@ -58,7 +79,7 @@ export function ProductsTab({
                         </div>
                     ))}
                 </div>
-                <Button onClick={() => onProductsChange([...products, { key: `product_${Date.now()}`, label: "New Product" }])} variant="outline" size="sm" className="rounded-xl border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors">
+                <Button onClick={() => onProductsChange([...products, { key: `product_${Date.now()}`, label: "New Product", price: 0 }])} variant="outline" size="sm" className="rounded-xl border-white/10 hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors">
                     Add New Product
                 </Button>
                 <div className="pt-6 border-t border-white/5 flex gap-3">

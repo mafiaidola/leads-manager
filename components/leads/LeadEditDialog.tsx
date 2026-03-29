@@ -21,6 +21,7 @@ interface EditFormState {
     product: string;
     value: string;
     description: string;
+    customPrice: string;
 }
 
 interface LeadEditDialogProps {
@@ -29,7 +30,7 @@ interface LeadEditDialogProps {
     editForm: EditFormState;
     setEditForm: React.Dispatch<React.SetStateAction<EditFormState>>;
     sources: string[];
-    products?: { key: string; label: string }[];
+    products?: { key: string; label: string; price?: number }[];
     onSave: () => void;
     isPending: boolean;
 }
@@ -82,11 +83,51 @@ export const LeadEditDialog = React.memo(function LeadEditDialog({
                                 <SelectTrigger className="rounded-xl border-white/10 bg-black/20"><SelectValue placeholder="Select" /></SelectTrigger>
                                 <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
                                     <SelectItem value="__none">None</SelectItem>
-                                    {products?.map(p => <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>)}
+                                    {products?.map(p => <SelectItem key={p.key} value={p.key}>{p.label}{p.price ? ` — ${p.price.toLocaleString()}` : ""}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
+                    {/* ── Pricing Section ── */}
+                    {(() => {
+                        const selectedProd = products?.find(p => p.key === editForm.product);
+                        const prodPrice = selectedProd?.price ?? 0;
+                        const custPrice = parseFloat(editForm.customPrice) || 0;
+                        const diff = custPrice - prodPrice;
+                        return (
+                            <div className="space-y-3 p-3 bg-white/[0.03] rounded-xl border border-white/5">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pricing</p>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-muted-foreground">Product Price</Label>
+                                        <div className="h-9 px-3 rounded-xl border border-white/10 bg-black/30 flex items-center font-mono text-sm text-emerald-400">
+                                            {prodPrice > 0 ? prodPrice.toLocaleString() : "—"}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-muted-foreground">Custom Price</Label>
+                                        <Input
+                                            type="number" min="0" step="0.01"
+                                            value={editForm.customPrice}
+                                            onChange={e => setEditForm(prev => ({ ...prev, customPrice: e.target.value }))}
+                                            className="rounded-xl border-white/10 bg-black/20 font-mono text-sm"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-muted-foreground">Sub Total</Label>
+                                        <div className={`h-9 px-3 rounded-xl border border-white/10 bg-black/30 flex items-center font-mono text-sm font-bold ${
+                                            diff > 0 ? "text-emerald-400" : diff < 0 ? "text-red-400" : "text-muted-foreground"
+                                        }`}>
+                                            {custPrice > 0 || prodPrice > 0 ? (
+                                                <>{diff > 0 ? "+" : ""}{diff.toLocaleString()}</>
+                                            ) : "—"}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
                     <div className="space-y-1.5">
                             <Label className="text-xs">Value</Label>
                             <Input type="number" value={editForm.value} onChange={e => setEditForm(prev => ({ ...prev, value: e.target.value }))} className="rounded-xl border-white/10 bg-black/20" placeholder="0" />

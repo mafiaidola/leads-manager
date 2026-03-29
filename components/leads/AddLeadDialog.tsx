@@ -308,7 +308,10 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                 <FormField
                                     control={form.control}
                                     name="product"
-                                    render={({ field }) => (
+                                    render={({ field }) => {
+                                        const selectedProduct = settings?.products?.find((p: any) => p.key === field.value);
+                                        const pPrice = selectedProduct?.price ?? 0;
+                                        return (
                                         <FormItem>
                                             <FormLabel>Product/Interest</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -319,13 +322,21 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                                 </FormControl>
                                                 <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
                                                     {settings?.products?.map((p: any) => (
-                                                        <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+                                                        <SelectItem key={p.key} value={p.key}>
+                                                            {p.label}{p.price ? ` — ${p.price.toLocaleString()} ${currency}` : ""}
+                                                        </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
+                                            {pPrice > 0 && (
+                                                <p className="text-xs text-emerald-400 mt-1">
+                                                    Product Price: <span className="font-bold font-mono">{pPrice.toLocaleString()} {currency}</span>
+                                                </p>
+                                            )}
                                             <FormMessage />
                                         </FormItem>
-                                    )}
+                                        );
+                                    }}
                                 />
                             </div>
                         </div>

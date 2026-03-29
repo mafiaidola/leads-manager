@@ -179,6 +179,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
         product: lead.product || "",
         value: lead.value?.toString() || "",
         description: lead.description || "",
+        customPrice: lead.customPrice?.toString() || "",
     });
 
     // Delete confirmation
@@ -247,6 +248,13 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
         formData.set("phone", editForm.phone);
         formData.set("source", editForm.source);
         formData.set("product", editForm.product);
+        // Pricing: look up product price from settings, calculate subTotal
+        const selectedProd = settings?.products?.find((p: any) => p.key === editForm.product);
+        const prodPrice = selectedProd?.price ?? 0;
+        const custPrice = parseFloat(editForm.customPrice) || 0;
+        formData.set("productPrice", prodPrice.toString());
+        formData.set("customPrice", custPrice.toString());
+        formData.set("subTotal", (custPrice - prodPrice).toString());
         formData.set("value", editForm.value);
         formData.set("description", editForm.description);
         formData.set("status", currentStatus);

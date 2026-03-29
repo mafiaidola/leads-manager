@@ -16,6 +16,7 @@ export interface IOrgStatus {
     key: string;
     label: string;
     color: string;
+    isSaleStatus?: boolean;
 }
 
 export interface IOrgSource {
@@ -26,6 +27,7 @@ export interface IOrgSource {
 export interface IOrgProduct {
     key: string;
     label: string;
+    price?: number;
 }
 
 export interface IOrgCustomField {
@@ -106,6 +108,7 @@ const OrganizationSchema = new Schema<IOrganization>(
                     key: { type: String, required: true },
                     label: { type: String, required: true },
                     color: { type: String, default: "gray" },
+                    isSaleStatus: { type: Boolean, default: false },
                 },
             ],
             sources: [
@@ -118,6 +121,7 @@ const OrganizationSchema = new Schema<IOrganization>(
                 {
                     key: { type: String, required: true },
                     label: { type: String, required: true },
+                    price: { type: Number },
                 },
             ],
             customFields: [

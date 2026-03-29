@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
-import { Search, FileUp, Download, Trash2, Filter, Star, LayoutGrid, Table2, Users2, Bell, FileSpreadsheet, FileText, UserPlus } from "lucide-react";
+import { Search, FileUp, Download, Trash2, Filter, Star, LayoutGrid, Table2, Users2, Bell, FileSpreadsheet, FileText, UserPlus, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
@@ -55,6 +55,7 @@ export interface LeadsToolbarProps {
     onValueRange: (min: string, max: string) => void;
     onExport: (format: string) => void;
     onCreatedByFilter: (role: string) => void;
+    onDateRange: (preset: string, from?: string, to?: string) => void;
     onImportOpen: () => void;
     onBulkStatusOpen: (open: boolean) => void;
     onBulkAssignOpen: (open: boolean) => void;
@@ -71,7 +72,7 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
     viewMode, selectedIds, bulkStatusOpen, bulkAssignOpen,
     onViewModeChange, onViewToggle, onSearch, onStatusFilter, onSourceFilter,
     onAssigneeFilter, onTagFilter, onOverdueFilter, onValueRange,
-    onExport, onCreatedByFilter, onImportOpen, onBulkStatusOpen, onBulkAssignOpen,
+    onExport, onCreatedByFilter, onDateRange, onImportOpen, onBulkStatusOpen, onBulkAssignOpen,
     onBulkStatus, onBulkAssign, onBulkDelete, onClearSelection,
 }: LeadsToolbarProps) {
     return (
@@ -283,6 +284,39 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
                             <SelectItem value="SALES">Sales</SelectItem>
                         </SelectContent>
                     </Select>
+
+                    {/* Date Range Filter */}
+                    <Select value={searchParams.get("dateRange") || "all"} onValueChange={(v) => onDateRange(v)}>
+                        <SelectTrigger className="w-[145px] rounded-xl border-white/10 bg-white/5 h-8 text-xs">
+                            <CalendarDays className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                            <SelectValue placeholder="Date Range" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
+                            <SelectItem value="all">All Time</SelectItem>
+                            <SelectItem value="today">Today</SelectItem>
+                            <SelectItem value="week">This Week</SelectItem>
+                            <SelectItem value="month">This Month</SelectItem>
+                            <SelectItem value="year">This Year</SelectItem>
+                            <SelectItem value="custom">Custom Range</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    {searchParams.get("dateRange") === "custom" && (
+                        <div className="flex items-center gap-1.5">
+                            <Input
+                                type="date"
+                                defaultValue={searchParams.get("dateFrom") || ""}
+                                onChange={(e) => onDateRange("custom", e.target.value, searchParams.get("dateTo") || "")}
+                                className="w-[130px] h-8 text-xs rounded-xl border-white/10 bg-white/5"
+                            />
+                            <span className="text-xs text-muted-foreground">–</span>
+                            <Input
+                                type="date"
+                                defaultValue={searchParams.get("dateTo") || ""}
+                                onChange={(e) => onDateRange("custom", searchParams.get("dateFrom") || "", e.target.value)}
+                                className="w-[130px] h-8 text-xs rounded-xl border-white/10 bg-white/5"
+                            />
+                        </div>
+                    )}
                 </div>
             )}
 

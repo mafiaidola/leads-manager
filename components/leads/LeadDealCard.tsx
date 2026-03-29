@@ -45,6 +45,32 @@ export const LeadDealCard = React.memo(function LeadDealCard({ lead, formatDate,
                         <span className="text-sm font-medium">{productLabelMap[lead.product] || lead.product}</span>
                     </div>
                 )}
+                {/* Pricing Breakdown */}
+                {(lead.productPrice != null || lead.customPrice != null) && (
+                    <div className="space-y-1.5 p-3 rounded-xl bg-gradient-to-br from-white/[0.04] to-white/[0.02] border border-white/5">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pricing</p>
+                        {lead.productPrice != null && (
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-muted-foreground">Product Price</span>
+                                <span className="text-sm font-mono text-emerald-400">{lead.currency} {Number(lead.productPrice).toLocaleString()}</span>
+                            </div>
+                        )}
+                        {lead.customPrice != null && (
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-muted-foreground">Custom Price</span>
+                                <span className="text-sm font-mono font-bold">{lead.currency} {Number(lead.customPrice).toLocaleString()}</span>
+                            </div>
+                        )}
+                        {lead.subTotal != null && lead.subTotal !== 0 && (
+                            <div className="flex justify-between items-center pt-1.5 border-t border-white/5">
+                                <span className="text-xs text-muted-foreground">Difference</span>
+                                <span className={`text-sm font-mono font-bold ${lead.subTotal > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                    {lead.subTotal > 0 ? "+" : ""}{lead.currency} {Number(lead.subTotal).toLocaleString()}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
                 {lead.lastContactAt && (
                     <div className="flex justify-between items-center p-2.5 rounded-xl bg-white/5">
                         <span className="text-xs text-muted-foreground">Last Contact</span>

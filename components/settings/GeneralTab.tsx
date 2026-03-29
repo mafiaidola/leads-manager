@@ -157,6 +157,24 @@ export function GeneralTab({
                                     </StatusColorBox>
                                 </div>
 
+                                {/* Sale Status Toggle */}
+                                <div className="w-16 space-y-1 flex-shrink-0">
+                                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">Sale</Label>
+                                    <button
+                                        type="button"
+                                        onClick={() => onStatusChange(index, "isSaleStatus", status.isSaleStatus ? "" : "true")}
+                                        className={cn(
+                                            "w-full h-9 rounded-xl border text-[10px] font-bold uppercase transition-all",
+                                            status.isSaleStatus
+                                                ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30"
+                                                : "border-white/10 bg-black/20 text-muted-foreground/50 hover:bg-white/10"
+                                        )}
+                                        title="Mark this status as a completed sale (counts in revenue reports)"
+                                    >
+                                        {status.isSaleStatus ? "✓ Yes" : "No"}
+                                    </button>
+                                </div>
+
                                 {/* Remove */}
                                 <Button
                                     variant="ghost" size="icon"

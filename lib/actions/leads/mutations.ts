@@ -37,6 +37,9 @@ const LeadSchema = z.object({
     product: z.string().optional(),
     assignedTo: z.string().optional(),
     value: z.coerce.number().optional(),
+    productPrice: z.coerce.number().optional(),
+    customPrice: z.coerce.number().optional(),
+    subTotal: z.coerce.number().optional(),
     description: z.string().optional(),
     public: z.string().optional(), // Checkbox
     contactedToday: z.string().optional(), // Checkbox
@@ -103,6 +106,9 @@ export async function createLead(prevState: any, formData: FormData) {
             source: rest.source,
             product: rest.product,
             value: rest.value,
+            productPrice: rest.productPrice,
+            customPrice: rest.customPrice,
+            subTotal: rest.subTotal,
             description: rest.description,
             followUpDate: rest.followUpDate ? new Date(rest.followUpDate) : undefined,
             assignedTo: assignedTo || await resolveAutoAssignment(orgId),
@@ -225,6 +231,9 @@ export async function updateLead(prevState: any, formData: FormData) {
         lead.status = rest.status;
         lead.source = rest.source;
         lead.product = rest.product;
+        lead.productPrice = rest.productPrice;
+        lead.customPrice = rest.customPrice;
+        lead.subTotal = rest.subTotal;
 
         // Sales users cannot change assignment
         if (session.user.role === USER_ROLES.ADMIN) {
