@@ -24,15 +24,19 @@ export const AUDIT_ACTIONS = {
     RESTORE: "RESTORE",
     BULK_UPDATE: "BULK_UPDATE",
     BULK_DELETE: "BULK_DELETE",
+    SUBMIT: "SUBMIT",
+    APPROVE: "APPROVE",
+    REJECT: "REJECT",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
 export const ENTITY_TYPES = {
     LEAD: "lead",
+    ADDITIONAL_LEAD: "additional_lead",
     USER: "user",
     SETTINGS: "settings",
-    ORGANIZATION: "organization",  // Added: org lifecycle mutations
+    ORGANIZATION: "organization",
 } as const;
 
 export type EntityType = (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES];

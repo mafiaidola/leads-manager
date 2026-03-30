@@ -7,7 +7,7 @@
  * - `getAdditionalLeadStats` — counts by submission status
  * - `createAdditionalLead` — any user creates their own lead
  * - `updateAdditionalLead` — owner can edit draft/rejected leads
- * - `deleteAdditionalLead` — owner soft-deletes
+ * - `deleteAdditionalLead` — admin-only soft-delete
  * - `submitAdditionalLead` — user submits for admin review
  * - `reviewAdditionalLead` — admin accepts/rejects with notes
  */
@@ -22,6 +22,7 @@ import { revalidatePath } from "next/cache";
 import mongoose from "mongoose";
 import { serialize } from "@/lib/serialize";
 import { createNotification, getAdminUserIds } from "@/lib/actions/notifications";
+import { logAudit } from "@/lib/actions/audit";
 
 // ─── Get Additional Leads ────────────────────────────────────────────────────
 export async function getAdditionalLeads(filters?: {
@@ -137,6 +138,10 @@ export async function createAdditionalLead(data: {
             submissionStatus: "draft",
         });
 
+        // Audit log
+        logAudit("CREATE", "additional_lead", lead._id.toString(),
+            `Created additional lead: "${data.name}"`).catch(console.error);
+
         // Notify admins that a user added a new additional lead
         getAdminUserIds().then((adminIds) => {
             createNotification({
@@ -195,6 +200,11 @@ export async function updateAdditionalLead(id: string, data: Record<string, any>
         });
 
         await lead.save();
+
+        // Audit log
+        logAudit("UPDATE", "additional_lead", id,
+            `Updated additional lead: "${lead.name}"`).catch(console.error);
+
         revalidatePath("/additional-leads");
         return { message: "Lead updated", success: true };
     } catch (error) {
@@ -203,13 +213,20 @@ export async function updateAdditionalLead(id: string, data: Record<string, any>
     }
 }
 
-// ─── Delete Additional Lead ──────────────────────────────────────────────────
+// ─── Delete Additional Lead (Admin only) ─────────────────────────────────────
 export async function deleteAdditionalLead(id: string) {
     const session = await auth();
     if (!session) return { message: "Unauthorized", success: false };
 
     try {
         await dbConnect();
+        const isAdmin = session.user.role === USER_ROLES.ADMIN || !!(session.user as any).isSuperAdmin;
+
+        // Only admins can delete additional leads
+        if (!isAdmin) {
+            return { message: "Only admins can delete additional leads", success: false };
+        }
+
         const lead = await AdditionalLead.findOne({
             _id: id,
             orgId: session.user.orgId,
@@ -217,15 +234,12 @@ export async function deleteAdditionalLead(id: string) {
 
         if (!lead) return { message: "Lead not found", success: false };
 
-        const isAdmin = session.user.role === USER_ROLES.ADMIN;
-        const isOwner = lead.ownerId.toString() === session.user.id;
-
-        if (!isAdmin && !isOwner) {
-            return { message: "Unauthorized", success: false };
-        }
-
         lead.deletedAt = new Date();
         await lead.save();
+
+        // Audit log
+        logAudit("DELETE", "additional_lead", id,
+            `Deleted additional lead: "${lead.name}"`).catch(console.error);
 
         revalidatePath("/additional-leads");
         return { message: "Lead deleted", success: true };
@@ -255,6 +269,10 @@ export async function submitAdditionalLead(id: string) {
         lead.submissionStatus = "pending";
         lead.submittedAt = new Date();
         await lead.save();
+
+        // Audit log
+        logAudit("SUBMIT", "additional_lead", id,
+            `Submitted additional lead for review: "${lead.name}"`).catch(console.error);
 
         // Notify admins
         getAdminUserIds().then((adminIds) => {
@@ -300,7 +318,7 @@ export async function reviewAdditionalLead(
         if (notes) additionalLead.reviewNotes = notes;
 
         if (action === "approve") {
-            // Create a real Lead from additional lead data
+            // Create a real Lead from additional lead data — marked as from Additional
             const realLead = await Lead.create({
                 orgId: additionalLead.orgId,
                 name: additionalLead.name,
@@ -314,12 +332,18 @@ export async function reviewAdditionalLead(
                 currency: additionalLead.currency,
                 description: additionalLead.description,
                 createdBy: additionalLead.ownerId,
-                assignedTo: additionalLead.ownerId, // Assign to the creator
+                assignedTo: additionalLead.ownerId,
+                isFromAdditional: true,
+                additionalLeadId: additionalLead._id,
             });
 
             additionalLead.submissionStatus = "approved";
             additionalLead.convertedLeadId = realLead._id;
             await additionalLead.save();
+
+            // Audit: approve
+            logAudit("APPROVE", "additional_lead", id,
+                `Approved additional lead: "${additionalLead.name}" → created Lead #${realLead.serialNumber}`).catch(console.error);
 
             // Notify the owner
             createNotification({
@@ -333,6 +357,10 @@ export async function reviewAdditionalLead(
             additionalLead.submissionStatus = "rejected";
             await additionalLead.save();
 
+            // Audit: reject
+            logAudit("REJECT", "additional_lead", id,
+                `Rejected additional lead: "${additionalLead.name}"${notes ? `. Reason: ${notes}` : ""}`).catch(console.error);
+
             // Notify the owner
             createNotification({
                 userIds: [additionalLead.ownerId.toString()],
@@ -345,6 +373,8 @@ export async function reviewAdditionalLead(
 
         revalidatePath("/additional-leads");
         revalidatePath("/leads");
+        revalidatePath("/reports");
+        revalidatePath("/quality");
         return {
             message: action === "approve" ? "Lead approved and added to system" : "Lead rejected",
             success: true,

@@ -51,6 +51,8 @@ export interface ILead {
     starred: mongoose.Types.ObjectId[];
     deletedAt?: Date | null;
     customFields: Record<string, any>;
+    isFromAdditional: boolean;
+    additionalLeadId?: mongoose.Types.ObjectId;
     createdBy: mongoose.Types.ObjectId;
     updatedBy?: mongoose.Types.ObjectId;
     createdAt: Date;
@@ -94,6 +96,8 @@ const LeadSchema = new Schema<ILead>(
         starred: [{ type: Schema.Types.ObjectId, ref: "User" }],
         deletedAt: { type: Date, default: null },
         customFields: { type: Schema.Types.Mixed, default: {} },
+        isFromAdditional: { type: Boolean, default: false },
+        additionalLeadId: { type: Schema.Types.ObjectId, ref: "AdditionalLead" },
         createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
         updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
     },

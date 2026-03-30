@@ -87,6 +87,9 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                         <div className="flex items-center gap-1.5">
                                             {lead.serialNumber && <span className="text-[10px] font-mono text-primary/60">#{lead.serialNumber}</span>}
                                             <span className="font-semibold text-sm text-foreground truncate">{lead.name}</span>
+                                            {lead.isFromAdditional && (
+                                                <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-[8px] px-1 py-0 h-3.5">📋</Badge>
+                                            )}
                                             {isOverdue && <span className="text-amber-400 text-xs">🔔</span>}
                                         </div>
                                         {lead.company && <div className="text-xs text-muted-foreground truncate">{lead.company}</div>}
@@ -234,6 +237,9 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                             <Link href={`/leads/${lead._id}`} className="group/name">
                                                 <div className="text-base text-foreground group-hover/name:text-primary transition-colors flex items-center gap-1.5">
                                                     {lead.name}
+                                                    {lead.isFromAdditional && (
+                                                        <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-[9px] px-1.5 py-0 h-4">📋 Additional</Badge>
+                                                    )}
                                                     {lead.followUpDate && new Date(lead.followUpDate) <= now && (
                                                         <span title={`Follow-up: ${new Date(lead.followUpDate).toLocaleDateString()}`} className="text-amber-400 text-sm">🔔</span>
                                                     )}
