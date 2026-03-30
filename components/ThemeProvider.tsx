@@ -48,16 +48,12 @@ export function ThemeProvider({
     initialTheme?: Theme;
 }) {
     const [theme, setThemeState] = useState<Theme>(initialTheme);
-    const [mode, setModeState] = useState<Mode>("dark");
-    const [resolvedMode, setResolvedMode] = useState<"dark" | "light">("dark");
+    const [mode, setModeState] = useState<Mode>("light");
+    const [resolvedMode, setResolvedMode] = useState<"dark" | "light">("light");
 
-    // Initialize from localStorage
+    // Initialize mode from localStorage (theme comes from server via initialTheme)
     useEffect(() => {
-        const savedTheme = localStorage.getItem("color-theme") as Theme | null;
         const savedMode = localStorage.getItem("appearance-mode") as Mode | null;
-        if (savedTheme && ["violet", "ocean", "emerald"].includes(savedTheme)) {
-            setThemeState(savedTheme);
-        }
         if (savedMode && ["dark", "light", "system"].includes(savedMode)) {
             setModeState(savedMode);
         }
@@ -107,9 +103,13 @@ export function ThemeProvider({
         return () => mq.removeEventListener("change", handler);
     }, [mode]);
 
+    // Update theme when server prop changes (admin changes theme)
+    useEffect(() => {
+        setThemeState(initialTheme);
+    }, [initialTheme]);
+
     const setTheme = useCallback((t: Theme) => {
         setThemeState(t);
-        localStorage.setItem("color-theme", t);
     }, []);
 
     const setMode = useCallback((m: Mode) => {

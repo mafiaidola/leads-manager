@@ -94,37 +94,42 @@ export const LeadEditDialog = React.memo(function LeadEditDialog({
                         const prodPrice = selectedProd?.price ?? 0;
                         const custPrice = parseFloat(editForm.customPrice) || 0;
                         const diff = custPrice - prodPrice;
+                        const pct = prodPrice > 0 ? ((diff / prodPrice) * 100).toFixed(1) : "0";
                         return (
-                            <div className="space-y-3 p-3 bg-white/[0.03] rounded-xl border border-white/5">
+                            <div className="space-y-3 p-3 bg-black/5 dark:bg-white/[0.03] rounded-xl border border-black/5 dark:border-white/5">
                                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pricing</p>
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
-                                        <Label className="text-[10px] text-muted-foreground">Product Price</Label>
-                                        <div className="h-9 px-3 rounded-xl border border-white/10 bg-black/30 flex items-center font-mono text-sm text-emerald-400">
+                                        <Label className="text-[10px] text-muted-foreground">Original Price</Label>
+                                        <div className="h-9 px-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-black/30 flex items-center font-mono text-sm text-emerald-600 dark:text-emerald-400">
                                             {prodPrice > 0 ? prodPrice.toLocaleString() : "—"}
                                         </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-[10px] text-muted-foreground">Custom Price</Label>
+                                        <Label className="text-[10px] text-muted-foreground">Your Price</Label>
                                         <Input
                                             type="number" min="0" step="0.01"
                                             value={editForm.customPrice}
                                             onChange={e => setEditForm(prev => ({ ...prev, customPrice: e.target.value }))}
-                                            className="rounded-xl border-white/10 bg-black/20 font-mono text-sm"
+                                            className="rounded-xl border-black/10 dark:border-white/10 bg-white dark:bg-black/20 font-mono text-sm"
                                             placeholder="0"
                                         />
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[10px] text-muted-foreground">Sub Total</Label>
-                                        <div className={`h-9 px-3 rounded-xl border border-white/10 bg-black/30 flex items-center font-mono text-sm font-bold ${
-                                            diff > 0 ? "text-emerald-400" : diff < 0 ? "text-red-400" : "text-muted-foreground"
-                                        }`}>
-                                            {custPrice > 0 || prodPrice > 0 ? (
-                                                <>{diff > 0 ? "+" : ""}{diff.toLocaleString()}</>
-                                            ) : "—"}
+                                </div>
+                                {/* Difference display */}
+                                {custPrice > 0 && prodPrice > 0 && (
+                                    <div className={`flex items-center justify-between p-2 rounded-lg ${diff > 0 ? "bg-emerald-500/10" : diff < 0 ? "bg-red-500/10" : "bg-gray-500/10"}`}>
+                                        <span className="text-xs text-muted-foreground">Difference</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-sm font-mono font-bold ${diff > 0 ? "text-emerald-600 dark:text-emerald-400" : diff < 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
+                                                {diff > 0 ? "▲ +" : diff < 0 ? "▼ " : ""}{diff.toLocaleString()}
+                                            </span>
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${diff > 0 ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : diff < 0 ? "bg-red-500/20 text-red-600 dark:text-red-400" : "bg-gray-500/20"}`}>
+                                                {diff > 0 ? "+" : ""}{pct}%
+                                            </span>
                                         </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         );
                     })()}

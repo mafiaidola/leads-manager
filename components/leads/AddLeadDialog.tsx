@@ -52,6 +52,7 @@ const formSchema = z.object({
     product: z.string().optional(),
     assignedTo: z.string().optional(),
     value: z.any().optional(),
+    customPrice: z.any().optional(),
     description: z.string().optional(),
     public: z.boolean(),
     contactedToday: z.boolean(),
@@ -79,6 +80,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
             product: "",
             assignedTo: "",
             value: 0,
+            customPrice: "",
             description: "",
             public: false,
             contactedToday: false,
@@ -100,6 +102,10 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
             return;
         }
 
+        // Resolve productPrice from the selected product
+        const selectedProd = settings?.products?.find((p: any) => p.key === values.product);
+        const productPrice = selectedProd?.price ?? 0;
+
         const formData = new FormData();
         Object.entries(values).forEach(([key, value]) => {
             if (key === 'public' || key === 'contactedToday') {
@@ -112,6 +118,10 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                 formData.append(key, String(value ?? ""));
             }
         });
+
+        // Append pricing fields
+        if (productPrice > 0) formData.set('productPrice', String(productPrice));
+        if (values.customPrice) formData.set('customPrice', String(values.customPrice));
 
         // Add custom fields
         if (Object.keys(customFieldValues).length > 0) {
@@ -328,16 +338,64 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                            {pPrice > 0 && (
-                                                <p className="text-xs text-emerald-400 mt-1">
-                                                    Product Price: <span className="font-bold font-mono">{pPrice.toLocaleString()} {currency}</span>
-                                                </p>
-                                            )}
                                             <FormMessage />
                                         </FormItem>
                                         );
                                     }}
                                 />
+
+                                {/* ── Pricing Comparison Widget ── */}
+                                {(() => {
+                                    const selProd = settings?.products?.find((p: any) => p.key === form.watch("product"));
+                                    const origPrice = selProd?.price ?? 0;
+                                    const custPrice = parseFloat(form.watch("customPrice")) || 0;
+                                    const diff = custPrice - origPrice;
+                                    const pct = origPrice > 0 ? ((diff / origPrice) * 100).toFixed(1) : "0";
+                                    if (!form.watch("product") || origPrice <= 0) return null;
+                                    return (
+                                        <div className="space-y-3 p-3 bg-white/[0.03] rounded-xl border border-white/5">
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pricing</p>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] text-muted-foreground">Original Price</label>
+                                                    <div className="h-9 px-3 rounded-xl border border-white/10 bg-black/30 flex items-center font-mono text-sm text-emerald-400">
+                                                        {origPrice.toLocaleString()} {currency}
+                                                    </div>
+                                                </div>
+                                                <FormField
+                                                    control={form.control}
+                                                    name="customPrice"
+                                                    render={({ field }) => (
+                                                        <FormItem className="space-y-1">
+                                                            <label className="text-[10px] text-muted-foreground">Your Selling Price</label>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="number" min="0" step="0.01"
+                                                                    placeholder="0"
+                                                                    className="rounded-xl border-white/10 bg-black/20 font-mono text-sm"
+                                                                    {...field}
+                                                                />
+                                                            </FormControl>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                            {custPrice > 0 && origPrice > 0 && (
+                                                <div className={`flex items-center justify-between p-2 rounded-lg ${diff > 0 ? "bg-emerald-500/10" : diff < 0 ? "bg-red-500/10" : "bg-gray-500/10"}`}>
+                                                    <span className="text-xs text-muted-foreground">Difference</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-sm font-mono font-bold ${diff > 0 ? "text-emerald-400" : diff < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+                                                            {diff > 0 ? "▲ +" : diff < 0 ? "▼ " : ""}{diff.toLocaleString()} {currency}
+                                                        </span>
+                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${diff > 0 ? "bg-emerald-500/20 text-emerald-400" : diff < 0 ? "bg-red-500/20 text-red-400" : "bg-gray-500/20"}`}>
+                                                            {diff > 0 ? "+" : ""}{pct}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
 

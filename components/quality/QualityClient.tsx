@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
     AlertTriangle, Clock, Target, UserCheck, Users, Search,
     Download, ChevronRight, TrendingDown, TrendingUp, Timer,
+    DollarSign, BadgeDollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAbandonedLeads, getInactiveUsers, getTargetProgress, getUserPerformance } from "@/lib/actions/quality";
+import { getDashboardStats } from "@/lib/actions/dashboard";
 import { useRouter } from "next/navigation";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -25,6 +27,7 @@ const TABS = [
     { key: "inactive", label: "Inactive Users", icon: Clock, color: "text-amber-400" },
     { key: "targets", label: "Target Tracking", icon: Target, color: "text-emerald-400" },
     { key: "performance", label: "User Performance", icon: UserCheck, color: "text-blue-400" },
+    { key: "salesPerf", label: "Sales Performance", icon: DollarSign, color: "text-cyan-400" },
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];
@@ -50,6 +53,9 @@ export default function QualityClient({ settings, users }: QualityClientProps) {
     // Performance state
     const [perfUserId, setPerfUserId] = useState("");
     const [perfData, setPerfData] = useState<any>(null);
+
+    // Sales Performance state
+    const [salesPerfData, setSalesPerfData] = useState<any>(null);
 
     // ─── Data fetchers ───────────────────────────────────────────────────────
     const loadAbandoned = useCallback(() => {
@@ -80,6 +86,13 @@ export default function QualityClient({ settings, users }: QualityClientProps) {
             setPerfData(data);
         });
     }, [perfUserId]);
+
+    const loadSalesPerf = useCallback(() => {
+        startTransition(async () => {
+            const data = await getDashboardStats("all");
+            setSalesPerfData(data);
+        });
+    }, []);
 
     // Status label resolver
     const statusLabel = useCallback((key: string) => {
@@ -550,6 +563,134 @@ export default function QualityClient({ settings, users }: QualityClientProps) {
                                 </div>
                             </div>
                         )}
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* ─── Tab 5: Sales Performance ─────────────────────────────── */}
+            {activeTab === "salesPerf" && (
+                <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                    <DollarSign className="h-5 w-5 text-cyan-400" />
+                                    Sales Performance
+                                </CardTitle>
+                                <CardDescription>Agent pricing accuracy and revenue analysis</CardDescription>
+                            </div>
+                            <Button
+                                onClick={loadSalesPerf}
+                                disabled={isPending}
+                                className="rounded-xl bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/30 h-9"
+                                size="sm"
+                            >
+                                <Search className="h-3.5 w-3.5 mr-1.5" />
+                                {isPending ? "Loading…" : "Analyze"}
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {!salesPerfData ? (
+                            <div className="text-center py-16 text-muted-foreground">
+                                <DollarSign className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                                <p className="text-sm">Click <strong>Analyze</strong> to view sales performance</p>
+                            </div>
+                        ) : (() => {
+                            const agents = salesPerfData.agentRevenueDetails || [];
+                            const currency = salesPerfData.defaultCurrency || "AED";
+                            const totalOriginal = salesPerfData.totalOriginalRevenue || 0;
+                            const totalActual = salesPerfData.totalRevenue || 0;
+                            const totalPL = totalActual - totalOriginal;
+                            const totalMargin = totalOriginal > 0 ? ((totalPL / totalOriginal) * 100).toFixed(1) : '0.0';
+                            if (agents.length === 0) return (
+                                <div className="text-center py-16 text-muted-foreground">
+                                    <DollarSign className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                                    <p className="text-sm">No sales data yet. Sales are recorded when leads reach a sale status.</p>
+                                </div>
+                            );
+                            return (
+                                <div className="space-y-6">
+                                    {/* Summary KPIs */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+                                            <BadgeDollarSign className="h-5 w-5 mx-auto mb-2 text-blue-400" />
+                                            <div className="text-xl font-extrabold">{totalOriginal.toLocaleString()}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Original Revenue ({currency})</div>
+                                        </div>
+                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+                                            <DollarSign className="h-5 w-5 mx-auto mb-2 text-cyan-400" />
+                                            <div className="text-xl font-extrabold">{totalActual.toLocaleString()}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Actual Revenue ({currency})</div>
+                                        </div>
+                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+                                            <TrendingUp className={`h-5 w-5 mx-auto mb-2 ${totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`} />
+                                            <div className={`text-xl font-extrabold ${totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                {totalPL >= 0 ? '+' : ''}{totalPL.toLocaleString()}
+                                            </div>
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Total Profit/Loss</div>
+                                        </div>
+                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+                                            <Target className={`h-5 w-5 mx-auto mb-2 ${parseFloat(totalMargin) >= 0 ? 'text-violet-400' : 'text-orange-400'}`} />
+                                            <div className={`text-2xl font-extrabold ${parseFloat(totalMargin) >= 0 ? 'text-violet-400' : 'text-orange-400'}`}>
+                                                {parseFloat(totalMargin) >= 0 ? '+' : ''}{totalMargin}%
+                                            </div>
+                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Overall Margin</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Agent Ranking */}
+                                    <div>
+                                        <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
+                                            <ChevronRight className="h-4 w-4 text-cyan-400" />
+                                            Agent Pricing Accuracy
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {agents.map((agent: any, i: number) => {
+                                                const margin = agent.originalRevenue > 0
+                                                    ? ((agent.profitLoss / agent.originalRevenue) * 100).toFixed(1)
+                                                    : '0.0';
+                                                const isProfit = agent.profitLoss >= 0;
+                                                const medals = ['🥇', '🥈', '🥉'];
+                                                const medal = medals[i] || `#${i + 1}`;
+                                                return (
+                                                    <div key={i} className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
+                                                        <span className="text-xl w-8 text-center">{medal}</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-semibold text-sm">{agent.agentName}</span>
+                                                                    <Badge variant="outline" className="text-[9px] h-4 px-1.5">{agent.agentRole}</Badge>
+                                                                </div>
+                                                                <div className="flex items-center gap-3 text-xs">
+                                                                    <span className="text-muted-foreground">{agent.leadsSold} sales</span>
+                                                                    <span className="text-muted-foreground font-mono">{agent.originalRevenue.toLocaleString()} → {agent.actualRevenue.toLocaleString()}</span>
+                                                                    <span className={`font-bold ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                        {isProfit ? '+' : ''}{agent.profitLoss.toLocaleString()}
+                                                                    </span>
+                                                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isProfit ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                                                                        {isProfit ? '▲' : '▼'}{isProfit ? '+' : ''}{margin}%
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={cn(
+                                                                        "h-full rounded-full transition-all duration-500",
+                                                                        isProfit ? 'bg-emerald-400' : 'bg-red-400'
+                                                                    )}
+                                                                    style={{ width: `${Math.min(100, Math.max(4, Math.abs(parseFloat(margin))))}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </CardContent>
                 </Card>
             )}

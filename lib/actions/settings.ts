@@ -88,11 +88,11 @@ export async function updateSettings(data: {
         const org = await Organization.findById(session.user.orgId);
         if (!org) return { error: "Organization not found" };
 
-        if (data.statuses) org.settings.statuses = data.statuses;
-        if (data.sources) org.settings.sources = data.sources;
-        if (data.products) org.settings.products = data.products;
-        if (data.customFields) org.settings.customFields = data.customFields;
-        if (data.customRoles) org.settings.customRoles = data.customRoles;
+        if (data.statuses !== undefined) org.settings.statuses = data.statuses;
+        if (data.sources !== undefined) org.settings.sources = data.sources;
+        if (data.products !== undefined) org.settings.products = data.products;
+        if (data.customFields !== undefined) org.settings.customFields = data.customFields;
+        if (data.customRoles !== undefined) org.settings.customRoles = data.customRoles;
 
         await org.save();
         logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.SETTINGS, org._id.toString(), "Updated general settings (statuses, sources, products, custom fields, roles)");
@@ -100,9 +100,9 @@ export async function updateSettings(data: {
         revalidatePath("/leads");
         revalidatePath("/");
         return { message: "Settings updated successfully", success: true };
-    } catch (error) {
-        console.error("updateSettings error:", error);
-        return { error: "Failed to update settings" };
+    } catch (error: any) {
+        console.error("updateSettings error:", error?.message || error);
+        return { error: error?.message || "Failed to update settings" };
     }
 }
 
@@ -123,26 +123,38 @@ export async function updateBranding(data: {
     try {
         await dbConnect();
         const org = await Organization.findById(session.user.orgId);
-        if (!org) return { error: "Organization not found" };
+        if (!org) {
+            console.error("updateBranding: Organization not found for orgId:", session.user.orgId);
+            return { error: "Organization not found" };
+        }
 
         // Ensure branding subdocument exists (for orgs created before this field was added)
         if (!org.branding) {
             org.branding = { appName: "Leads Mgr", accentColor: "#8b5cf6", logoUrl: "", loginTheme: "aurora" };
         }
 
-        if (data.appName !== undefined) org.branding.appName = data.appName;
+        if (data.appName !== undefined) {
+            org.branding.appName = data.appName;
+            // Also sync the top-level org.name so login dropdown reflects the appName
+            org.name = data.appName;
+        }
         if (data.accentColor !== undefined) org.branding.accentColor = data.accentColor;
         if (data.logoUrl !== undefined) org.branding.logoUrl = data.logoUrl;
         if (data.loginTheme !== undefined) org.branding.loginTheme = data.loginTheme;
 
         await org.save();
         logAudit(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.SETTINGS, org._id.toString(), `Updated branding: ${data.appName || ""} accent=${data.accentColor || ""}`);
+        // Revalidate all routes that display branding or theme
         revalidatePath("/settings");
         revalidatePath("/");
+        revalidatePath("/leads");
+        revalidatePath("/reports");
+        revalidatePath("/login");
+        revalidatePath("/quality");
         return { message: "Branding updated successfully", success: true };
-    } catch (error) {
-        console.error("updateBranding error:", error);
-        return { error: "Failed to update branding" };
+    } catch (error: any) {
+        console.error("updateBranding error:", error?.message || error);
+        return { error: error?.message || "Failed to update branding" };
     }
 }
 
@@ -188,8 +200,14 @@ export async function updateTheme(theme: "violet" | "ocean" | "emerald") {
     try {
         await dbConnect();
         await Organization.findByIdAndUpdate(session.user.orgId, { theme });
+        // Revalidate all routes so every user picks up the new theme on next page load
         revalidatePath("/settings");
         revalidatePath("/");
+        revalidatePath("/leads");
+        revalidatePath("/reports");
+        revalidatePath("/quality");
+        revalidatePath("/audit");
+        revalidatePath("/attendance");
         return { message: "Theme updated successfully", success: true };
     } catch (error) {
         console.error("updateTheme error:", error);

@@ -34,17 +34,21 @@ export default async function DashboardLayout({
 
     // Fetch org branding for sidebar
     let orgBranding: { appName?: string; logoUrl?: string; accentColor?: string } = {};
+    let orgTheme: "violet" | "ocean" | "emerald" = "violet";
     try {
         const orgId = (session.user as any)?.orgId;
         if (orgId) {
             await dbConnect();
-            const org = await Organization.findById(orgId).select("branding").lean();
+            const org = await Organization.findById(orgId).select("branding theme").lean();
             if (org?.branding) {
                 orgBranding = {
                     appName: org.branding.appName,
                     logoUrl: org.branding.logoUrl,
                     accentColor: org.branding.accentColor,
                 };
+            }
+            if (org?.theme) {
+                orgTheme = org.theme as "violet" | "ocean" | "emerald";
             }
         }
     } catch (e) {

@@ -173,10 +173,15 @@ export function SettingsClient({
         });
         if (result?.success) {
             toast({ title: "Settings saved" });
+            // Update snapshot to prevent false unsaved-changes warnings
+            initialSnapshot.current = JSON.stringify({
+                statuses, sources, products, branding, notifPrefs, goals, currentTheme, customRoles,
+            });
+            router.refresh();
         } else {
             toast({ title: result?.error || "Error saving settings", variant: "destructive" });
         }
-    }, [statuses, sources, products, customFields, customRoles, toast]);
+    }, [statuses, sources, products, customFields, customRoles, toast, branding, notifPrefs, goals, currentTheme, router]);
 
     // ✅ Drag-reorder callback for GeneralTab statuses
     const handleReorderStatuses = useCallback((reordered: any[]) => {
@@ -184,7 +189,8 @@ export function SettingsClient({
     }, []);
 
     const handleAddStatus = useCallback(() => {
-        setStatuses(prev => [...prev, { key: "new_status", label: "New Status", color: "#8b5cf6" }]);
+        const key = `status_${Date.now()}`;
+        setStatuses(prev => [...prev, { key, label: "New Status", color: "#8b5cf6", isSaleStatus: false }]);
     }, []);
 
     const handleRemoveStatus = useCallback((index: number) => {
@@ -201,7 +207,9 @@ export function SettingsClient({
             const updated: any = { ...newStatuses[index] };
             if (field === 'label') {
                 updated.label = value;
-                updated.key = value.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                const derivedKey = value.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                // Only update key if the derived key is non-empty; otherwise keep existing
+                if (derivedKey) updated.key = derivedKey;
             } else if (field === 'isSaleStatus') {
                 updated.isSaleStatus = value === "true";
             } else {
@@ -217,10 +225,12 @@ export function SettingsClient({
         const result = await updateBranding(branding);
         if (result?.success) {
             toast({ title: result?.message || "Branding updated" });
+            // Force layout refresh so sidebar name/logo updates immediately
+            router.refresh();
         } else {
             toast({ title: result?.error || result?.message || "Error saving branding", variant: "destructive" });
         }
-    }, [branding, toast]);
+    }, [branding, toast, router]);
 
     const handleSaveGoals = useCallback(async () => {
         const result = await updateGoals(goals);
@@ -241,10 +251,12 @@ export function SettingsClient({
         const result = await updateTheme(theme);
         if (result?.success) {
             toast({ title: `Theme changed to ${theme === "violet" ? "Violet Noir" : theme === "ocean" ? "Ocean Blue" : "Emerald Forest"}` });
+            // Force layout refresh so the theme propagates org-wide
+            router.refresh();
         } else {
             toast({ title: result?.message || "Error", variant: "destructive" });
         }
-    }, [setTheme, toast]);
+    }, [setTheme, toast, router]);
 
     // Roles
     const builtinRoles = ["ADMIN", "MARKETING", "SALES", "IQA"];

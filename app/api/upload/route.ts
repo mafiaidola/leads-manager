@@ -3,7 +3,6 @@
  * @route DELETE /api/upload — delete a blob by URL
  * @description File upload endpoint for org branding logos.
  */
-"use server";
 
 import { NextRequest, NextResponse } from "next/server";
 import { put, del } from "@vercel/blob";

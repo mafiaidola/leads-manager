@@ -126,7 +126,7 @@ export function Sidebar({ className, userRole, orgBranding, isSuperAdmin }: { cl
 
 
                 {/* Logout Area */}
-                <div className="mt-auto pt-4 border-t border-white/10">
+                <div className="mt-auto pt-4 border-t border-black/10 dark:border-white/10">
                     <form action={handleSignOut}>
                         <button className="flex items-center w-full p-3 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-colors">
                             <LogOut className="h-5 w-5 mr-3" />

@@ -84,6 +84,9 @@ export async function getDashboardStats(
             recentActivity,
             agentLeaderboard,
             totalRevenueAgg,
+            agentRevenueDetails,
+            revenueByMonth,
+            totalOriginalRevenueAgg,
         ] = await Promise.all([
             Lead.countDocuments(matchStage),
             Lead.aggregate([
@@ -192,6 +195,71 @@ export async function getDashboardStats(
                     }
                 }
             ]),
+            // ── Detailed Revenue Analytics ──
+            // Per-agent revenue breakdown: original vs actual
+            Lead.aggregate([
+                { $match: customerMatch },
+                {
+                    $group: {
+                        _id: "$assignedTo",
+                        leadsSold: { $sum: 1 },
+                        originalRevenue: { $sum: { $ifNull: ["$productPrice", 0] } },
+                        actualRevenue: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } },
+                        profitLoss: {
+                            $sum: {
+                                $subtract: [
+                                    { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] },
+                                    { $ifNull: ["$productPrice", 0] }
+                                ]
+                            }
+                        },
+                    }
+                },
+                { $sort: { actualRevenue: -1 } },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "agent"
+                    }
+                },
+                { $unwind: { path: "$agent", preserveNullAndEmptyArrays: true } },
+                {
+                    $project: {
+                        _id: 1,
+                        leadsSold: 1,
+                        originalRevenue: 1,
+                        actualRevenue: 1,
+                        profitLoss: 1,
+                        agentName: { $ifNull: ["$agent.name", "Unassigned"] },
+                        agentRole: { $ifNull: ["$agent.role", "UNASSIGNED"] },
+                    }
+                }
+            ]),
+            // Monthly revenue trend: original vs actual
+            Lead.aggregate([
+                { $match: customerMatch },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+                        count: { $sum: 1 },
+                        originalRevenue: { $sum: { $ifNull: ["$productPrice", 0] } },
+                        actualRevenue: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } },
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]),
+            // Total original revenue (for comparison)
+            Lead.aggregate([
+                { $match: customerMatch },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: { $ifNull: ["$productPrice", 0] } }
+                    }
+                }
+            ]),
         ]);
 
         return {
@@ -233,7 +301,39 @@ export async function getDashboardStats(
                 revenue: item.revenue || 0,
             })),
             totalRevenue: totalRevenueAgg[0]?.total || 0,
+            totalOriginalRevenue: totalOriginalRevenueAgg[0]?.total || 0,
             defaultCurrency,
+            agentRevenueDetails: agentRevenueDetails.map((item: any) => ({
+                agentName: item.agentName,
+                agentRole: item.agentRole,
+                leadsSold: item.leadsSold,
+                originalRevenue: item.originalRevenue || 0,
+                actualRevenue: item.actualRevenue || 0,
+                profitLoss: item.profitLoss || 0,
+            })),
+            revenueByMonth: (() => {
+                const raw = revenueByMonth.map((item: any) => ({
+                    name: item._id,
+                    count: item.count,
+                    originalRevenue: item.originalRevenue || 0,
+                    actualRevenue: item.actualRevenue || 0,
+                }));
+                // Fill missing months with 0 for the last 6 months
+                const months: { name: string; count: number; originalRevenue: number; actualRevenue: number }[] = [];
+                const now = new Date();
+                for (let i = 5; i >= 0; i--) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                    const found = raw.find((r) => r.name === key);
+                    months.push({
+                        name: key,
+                        count: found?.count || 0,
+                        originalRevenue: found?.originalRevenue || 0,
+                        actualRevenue: found?.actualRevenue || 0,
+                    });
+                }
+                return months;
+            })(),
         };
     } catch (error) {
         console.error("getDashboardStats error:", error);

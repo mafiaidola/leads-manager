@@ -47,28 +47,37 @@ export const LeadDealCard = React.memo(function LeadDealCard({ lead, formatDate,
                 )}
                 {/* Pricing Breakdown */}
                 {(lead.productPrice != null || lead.customPrice != null) && (
-                    <div className="space-y-1.5 p-3 rounded-xl bg-gradient-to-br from-white/[0.04] to-white/[0.02] border border-white/5">
+                    <div className="space-y-1.5 p-3 rounded-xl bg-gradient-to-br from-white/[0.04] to-white/[0.02] dark:from-white/[0.04] dark:to-white/[0.02] border border-black/5 dark:border-white/5">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Pricing</p>
                         {lead.productPrice != null && (
                             <div className="flex justify-between items-center">
-                                <span className="text-xs text-muted-foreground">Product Price</span>
-                                <span className="text-sm font-mono text-emerald-400">{lead.currency} {Number(lead.productPrice).toLocaleString()}</span>
+                                <span className="text-xs text-muted-foreground">Original Price</span>
+                                <span className="text-sm font-mono text-emerald-500 dark:text-emerald-400">{lead.currency} {Number(lead.productPrice).toLocaleString()}</span>
                             </div>
                         )}
                         {lead.customPrice != null && (
                             <div className="flex justify-between items-center">
-                                <span className="text-xs text-muted-foreground">Custom Price</span>
+                                <span className="text-xs text-muted-foreground">Your Price</span>
                                 <span className="text-sm font-mono font-bold">{lead.currency} {Number(lead.customPrice).toLocaleString()}</span>
                             </div>
                         )}
-                        {lead.subTotal != null && lead.subTotal !== 0 && (
-                            <div className="flex justify-between items-center pt-1.5 border-t border-white/5">
-                                <span className="text-xs text-muted-foreground">Difference</span>
-                                <span className={`text-sm font-mono font-bold ${lead.subTotal > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                                    {lead.subTotal > 0 ? "+" : ""}{lead.currency} {Number(lead.subTotal).toLocaleString()}
-                                </span>
-                            </div>
-                        )}
+                        {lead.productPrice != null && lead.customPrice != null && lead.productPrice > 0 && (() => {
+                            const diff = Number(lead.customPrice) - Number(lead.productPrice);
+                            const pct = ((diff / Number(lead.productPrice)) * 100).toFixed(1);
+                            return diff !== 0 ? (
+                                <div className="flex justify-between items-center pt-1.5 border-t border-black/5 dark:border-white/5">
+                                    <span className="text-xs text-muted-foreground">Difference</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-sm font-mono font-bold ${diff > 0 ? "text-emerald-500 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
+                                            {diff > 0 ? "▲" : "▼"} {diff > 0 ? "+" : ""}{lead.currency} {Math.abs(diff).toLocaleString()}
+                                        </span>
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${diff > 0 ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" : "bg-red-500/10 text-red-500 dark:text-red-400"}`}>
+                                            {diff > 0 ? "+" : ""}{pct}%
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : null;
+                        })()}
                     </div>
                 )}
                 {lead.lastContactAt && (

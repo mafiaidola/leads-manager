@@ -16,7 +16,7 @@ import { getDashboardStats } from "@/lib/actions/dashboard";
 import { getSettings } from "@/lib/actions/settings";
 import { getUsers } from "@/lib/actions/users";
 import { cn } from "@/lib/utils";
-import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText, FileDown, Filter, CalendarDays, X, Building2, DollarSign } from "lucide-react";
+import { Users, TrendingUp, Target, ArrowUpRight, ArrowDownRight, Minus, FileSpreadsheet, FileText, FileDown, Filter, CalendarDays, X, Building2, DollarSign, BarChart3, PiggyBank, BadgeDollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -602,6 +602,185 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                         </div>
                     </CardContent>
                 </Card>
+            )}
+
+            {/* ═══ Revenue Intelligence Section ═══ */}
+            {(data.totalRevenue > 0 || data.totalOriginalRevenue > 0) && (
+                <>
+                    {/* Revenue KPI Cards */}
+                    <div className="pt-4">
+                        <h3 className="text-xl font-bold flex items-center gap-2 mb-4">
+                            <span className="w-1.5 h-5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full" />
+                            Revenue Intelligence
+                        </h3>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-4">
+                        <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 border-t-blue-500">
+                            <CardContent className="pt-5 pb-4">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-medium text-muted-foreground">Original Revenue</span>
+                                    <div className="p-1.5 bg-blue-500/10 rounded-lg"><BadgeDollarSign className="h-3.5 w-3.5 text-blue-500" /></div>
+                                </div>
+                                <div className="text-2xl font-bold">{(data.totalOriginalRevenue || 0).toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span></div>
+                                <p className="text-[10px] text-muted-foreground mt-1">Expected from product prices</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 border-t-cyan-500">
+                            <CardContent className="pt-5 pb-4">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-medium text-muted-foreground">Actual Revenue</span>
+                                    <div className="p-1.5 bg-cyan-500/10 rounded-lg"><DollarSign className="h-3.5 w-3.5 text-cyan-500" /></div>
+                                </div>
+                                <div className="text-2xl font-bold">{(data.totalRevenue || 0).toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span></div>
+                                <p className="text-[10px] text-cyan-400 mt-1">What was actually sold for</p>
+                            </CardContent>
+                        </Card>
+                        {(() => {
+                            const pl = (data.totalRevenue || 0) - (data.totalOriginalRevenue || 0);
+                            const isProfit = pl > 0;
+                            return (
+                                <Card className={`rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 ${isProfit ? 'border-t-emerald-500' : 'border-t-red-500'}`}>
+                                    <CardContent className="pt-5 pb-4">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-xs font-medium text-muted-foreground">Profit / Loss</span>
+                                            <div className={`p-1.5 rounded-lg ${isProfit ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                                                <PiggyBank className={`h-3.5 w-3.5 ${isProfit ? 'text-emerald-500' : 'text-red-500'}`} />
+                                            </div>
+                                        </div>
+                                        <div className={`text-2xl font-bold ${isProfit ? 'text-emerald-500' : 'text-red-400'}`}>
+                                            {isProfit ? '+' : ''}{pl.toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span>
+                                        </div>
+                                        <p className={`text-[10px] mt-1 ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            {isProfit ? 'Above original pricing' : 'Below original pricing'}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })()}
+                        {(() => {
+                            const origRev = data.totalOriginalRevenue || 0;
+                            const margin = origRev > 0 ? (((data.totalRevenue || 0) - origRev) / origRev * 100).toFixed(1) : '0.0';
+                            const isPositive = parseFloat(margin) >= 0;
+                            return (
+                                <Card className={`rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 ${isPositive ? 'border-t-violet-500' : 'border-t-orange-500'}`}>
+                                    <CardContent className="pt-5 pb-4">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-xs font-medium text-muted-foreground">Margin</span>
+                                            <div className={`p-1.5 rounded-lg ${isPositive ? 'bg-violet-500/10' : 'bg-orange-500/10'}`}>
+                                                <BarChart3 className={`h-3.5 w-3.5 ${isPositive ? 'text-violet-500' : 'text-orange-500'}`} />
+                                            </div>
+                                        </div>
+                                        <div className={`text-4xl font-bold ${isPositive ? 'text-violet-400' : 'text-orange-400'}`}>
+                                            {isPositive ? '+' : ''}{margin}%
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground mt-1">Overall pricing efficiency</p>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })()}
+                    </div>
+
+                    {/* Revenue Trend: Original vs Actual */}
+                    {data.revenueByMonth && data.revenueByMonth.length > 0 && (
+                        <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                    <span className="w-1.5 h-5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full" />
+                                    Revenue Trend: Original vs Actual
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="h-[350px] pt-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <ComposedChart data={data.revenueByMonth}>
+                                        <defs>
+                                            <linearGradient id="origRevGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4} />
+                                                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                                            </linearGradient>
+                                            <linearGradient id="actRevGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.4} />
+                                                <stop offset="100%" stopColor="#06b6d4" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                                        <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'currentColor', opacity: 0.5 }} />
+                                        <YAxis fontSize={10} tickLine={false} axisLine={false} tick={{ fill: 'currentColor', opacity: 0.5 }} />
+                                        <Tooltip contentStyle={{ backgroundColor: 'rgba(23, 23, 23, 0.9)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }} itemStyle={{ color: '#fff' }} labelStyle={{ color: '#aaa', fontSize: 11 }} />
+                                        <Legend />
+                                        <Area type="monotone" dataKey="originalRevenue" name={`Original (${currency})`} stroke="#3b82f6" strokeWidth={2} fill="url(#origRevGradient)" dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }} />
+                                        <Area type="monotone" dataKey="actualRevenue" name={`Actual (${currency})`} stroke="#06b6d4" strokeWidth={2.5} fill="url(#actRevGradient)" dot={{ r: 4, fill: '#06b6d4', strokeWidth: 0 }} />
+                                    </ComposedChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Agent Sales Performance Table */}
+                    {data.agentRevenueDetails && data.agentRevenueDetails.length > 0 && (
+                        <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                    <span className="w-1.5 h-5 bg-gradient-to-b from-emerald-400 to-cyan-500 rounded-full" />
+                                    Agent Sales Performance
+                                    <span className="text-xs font-normal text-muted-foreground ml-1">· Original vs Actual Revenue</span>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="text-xs text-muted-foreground border-b border-white/5">
+                                                <th className="text-left py-3 px-2 font-semibold">Agent</th>
+                                                <th className="text-center py-3 px-2 font-semibold">Leads Sold</th>
+                                                <th className="text-right py-3 px-2 font-semibold">Original ({currency})</th>
+                                                <th className="text-right py-3 px-2 font-semibold">Actual ({currency})</th>
+                                                <th className="text-right py-3 px-2 font-semibold">Profit/Loss</th>
+                                                <th className="text-right py-3 px-2 font-semibold">Margin</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.agentRevenueDetails.map((agent: any, i: number) => {
+                                                const margin = agent.originalRevenue > 0
+                                                    ? ((agent.profitLoss / agent.originalRevenue) * 100).toFixed(1)
+                                                    : '0.0';
+                                                const isProfit = agent.profitLoss >= 0;
+                                                const roleColors: Record<string, string> = {
+                                                    ADMIN: 'text-violet-400', SALES: 'text-blue-400', MARKETING: 'text-emerald-400',
+                                                };
+                                                return (
+                                                    <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                        <td className="py-3 px-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                                                                    {agent.agentName.charAt(0)}
+                                                                </div>
+                                                                <div>
+                                                                    <span className="font-semibold">{agent.agentName}</span>
+                                                                    <span className={`ml-1.5 text-[10px] font-bold uppercase ${roleColors[agent.agentRole] || 'text-muted-foreground'}`}>{agent.agentRole}</span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-3 px-2 text-center font-semibold">{agent.leadsSold}</td>
+                                                        <td className="py-3 px-2 text-right font-mono text-muted-foreground">{agent.originalRevenue.toLocaleString()}</td>
+                                                        <td className="py-3 px-2 text-right font-mono font-semibold">{agent.actualRevenue.toLocaleString()}</td>
+                                                        <td className={`py-3 px-2 text-right font-mono font-bold ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                            {isProfit ? '+' : ''}{agent.profitLoss.toLocaleString()}
+                                                        </td>
+                                                        <td className="py-3 px-2 text-right">
+                                                            <span className={`text-xs font-bold px-2 py-1 rounded-lg ${isProfit ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
+                                                                {isProfit ? '▲' : '▼'} {isProfit ? '+' : ''}{margin}%
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </>
             )}
 
             {/* Charts Row 1 */}

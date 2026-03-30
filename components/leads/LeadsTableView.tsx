@@ -202,6 +202,7 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                             >
                                 Value<SortIcon field="value" currentSort={currentSort} currentDir={currentDir} />
                             </TableHead>
+                            <TableHead className="hidden lg:table-cell font-semibold text-primary text-center">Pricing</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -315,6 +316,34 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                         <TableCell className="text-right font-mono text-foreground/80">
                                             {lead.value ? `${lead.currency} ${lead.value}` : "-"}
                                         </TableCell>
+                                        <TableCell className="hidden lg:table-cell">
+                                            {(() => {
+                                                const origP = lead.productPrice ?? 0;
+                                                const custP = lead.customPrice ?? 0;
+                                                if (origP <= 0 && custP <= 0) return <span className="text-muted-foreground/30 text-xs">—</span>;
+                                                const diff = custP - origP;
+                                                const pct = origP > 0 ? ((diff / origP) * 100).toFixed(0) : "0";
+                                                const cur = lead.currency || settings?.defaultCurrency || "AED";
+                                                return (
+                                                    <div className="flex flex-col items-center gap-0.5">
+                                                        <div className="flex items-center gap-1.5 text-[11px]">
+                                                            <span className="text-muted-foreground font-mono">{origP.toLocaleString()}</span>
+                                                            <span className="text-muted-foreground/40">→</span>
+                                                            <span className="font-mono font-semibold text-foreground">{custP > 0 ? custP.toLocaleString() : "—"}</span>
+                                                        </div>
+                                                        {custP > 0 && origP > 0 && (
+                                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
+                                                                diff > 0 ? "bg-emerald-500/15 text-emerald-500" :
+                                                                diff < 0 ? "bg-red-500/15 text-red-400" :
+                                                                "bg-gray-500/15 text-muted-foreground"
+                                                            }`}>
+                                                                {diff > 0 ? "▲+" : diff < 0 ? "▼" : "→"}{diff.toLocaleString()} ({diff > 0 ? "+" : ""}{pct}%)
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </TableCell>
                                         <TableCell onClick={(e) => e.stopPropagation()}>
                                             {!isMarketing && (
                                                 <DropdownMenu>
@@ -373,7 +402,7 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                             })
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={10} className="h-64 text-center">
+                                <TableCell colSpan={11} className="h-64 text-center">
                                     <div className="flex flex-col items-center gap-4 py-10">
                                         {/* Animated SVG Illustration */}
                                         <div className="relative">
