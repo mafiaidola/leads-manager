@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut, Shield, ClipboardCheck, SearchCheck, NotebookPen } from "lucide-react";
+import { LayoutDashboard, Users, BarChart3, Settings as SettingsIcon, LogOut, Shield, ClipboardCheck, SearchCheck, NotebookPen, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { handleSignOut } from "@/lib/actions/auth";
 
@@ -32,6 +32,13 @@ const allRoutes = [
         icon: NotebookPen,
         href: "/additional-leads",
         color: "text-cyan-500",
+        roles: ["ADMIN", "MARKETING", "SALES", "IQA"],
+    },
+    {
+        label: "Calendar",
+        icon: CalendarDays,
+        href: "/calendar",
+        color: "text-teal-500",
         roles: ["ADMIN", "MARKETING", "SALES", "IQA"],
     },
     {

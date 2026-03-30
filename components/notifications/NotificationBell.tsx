@@ -21,8 +21,10 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
     Bell, BellRing, Check, CheckCheck, ExternalLink,
     Trash2, UserPlus, FileEdit, ArrowRightLeft, Trash,
-    Plus, RefreshCcw, Layers, AlertTriangle,
+    Plus, RefreshCcw, Layers, AlertTriangle, NotebookPen,
+    CheckCircle2, XCircle, AtSign, Trophy,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -61,6 +63,12 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bgColor: string }>
     bulk_status_change: { icon: Layers,          color: "text-amber-400",   bgColor: "bg-amber-500/15" },
     bulk_assignment:    { icon: Layers,          color: "text-blue-400",    bgColor: "bg-blue-500/15" },
     bulk_deleted:       { icon: Layers,          color: "text-red-400",     bgColor: "bg-red-500/15" },
+    additional_lead_submitted: { icon: NotebookPen, color: "text-amber-400",  bgColor: "bg-amber-500/15" },
+    additional_lead_approved:  { icon: CheckCircle2, color: "text-emerald-400", bgColor: "bg-emerald-500/15" },
+    additional_lead_rejected:  { icon: XCircle,      color: "text-red-400",    bgColor: "bg-red-500/15" },
+    follow_up_overdue:         { icon: AlertTriangle, color: "text-orange-400", bgColor: "bg-orange-500/15" },
+    comment_mention:           { icon: AtSign,       color: "text-cyan-400",   bgColor: "bg-cyan-500/15" },
+    target_reached:            { icon: Trophy,       color: "text-amber-400",  bgColor: "bg-amber-500/15" },
 };
 
 const DEFAULT_CONFIG = { icon: AlertTriangle, color: "text-muted-foreground", bgColor: "bg-white/10" };

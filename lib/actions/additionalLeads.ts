@@ -278,8 +278,8 @@ export async function submitAdditionalLead(id: string) {
         getAdminUserIds().then((adminIds) => {
             createNotification({
                 userIds: adminIds,
-                type: "new_lead",
-                title: "Lead Submitted for Review",
+                type: "additional_lead_submitted",
+                title: "📋 Lead Submitted for Review",
                 message: `${session.user.name} submitted "${lead.name}" for approval.`,
                 leadId: lead._id.toString(),
             });
@@ -348,7 +348,7 @@ export async function reviewAdditionalLead(
             // Notify the owner
             createNotification({
                 userIds: [additionalLead.ownerId.toString()],
-                type: "lead_updated",
+                type: "additional_lead_approved",
                 title: "Lead Approved ✅",
                 message: `Your lead "${additionalLead.name}" was approved and added to the system.`,
                 leadId: realLead._id.toString(),
@@ -364,7 +364,7 @@ export async function reviewAdditionalLead(
             // Notify the owner
             createNotification({
                 userIds: [additionalLead.ownerId.toString()],
-                type: "lead_updated",
+                type: "additional_lead_rejected",
                 title: "Lead Rejected ❌",
                 message: `Your lead "${additionalLead.name}" was rejected.${notes ? ` Reason: ${notes}` : ""}`,
                 leadId: additionalLead._id.toString(),

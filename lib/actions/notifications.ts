@@ -29,7 +29,13 @@ export type NotificationType =
     | "lead_deleted"
     | "bulk_status_change"
     | "bulk_assignment"
-    | "bulk_deleted";
+    | "bulk_deleted"
+    | "additional_lead_submitted"
+    | "additional_lead_approved"
+    | "additional_lead_rejected"
+    | "follow_up_overdue"
+    | "comment_mention"
+    | "target_reached";
 
 // ─── Internal helper: create a notification (called from leads.ts) ───────────
 export async function createNotification({

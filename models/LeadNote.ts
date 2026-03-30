@@ -14,6 +14,7 @@ import { UserRole } from "./User";
 
 export const NOTE_TYPES = {
     COMMENT: "COMMENT",
+    INTERNAL_COMMENT: "INTERNAL_COMMENT",
     STATUS_CHANGE: "STATUS_CHANGE",
     PHONE_UPDATE: "PHONE_UPDATE",
     SYSTEM: "SYSTEM",
@@ -29,6 +30,7 @@ export interface ILeadNote {
     authorRole?: UserRole | "SYSTEM";
     type: NoteType;
     message: string;
+    mentions?: mongoose.Types.ObjectId[]; // @mentioned user IDs
     meta?: {
         fromStatus?: string;
         toStatus?: string;
@@ -50,6 +52,7 @@ const LeadNoteSchema = new Schema<ILeadNote>(
             required: true,
         },
         message: { type: String, required: true },
+        mentions: [{ type: Schema.Types.ObjectId, ref: "User" }],
         meta: {
             fromStatus: String,
             toStatus: String,

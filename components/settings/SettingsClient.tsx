@@ -34,6 +34,7 @@ const TeamTab       = dynamic(() => import("./TeamTab").then(m => ({ default: m.
 const BrandingTab   = dynamic(() => import("./BrandingTab").then(m => ({ default: m.BrandingTab })), { ssr: false });
 const SecurityTab   = dynamic(() => import("./SecurityTab").then(m => ({ default: m.SecurityTab })), { ssr: false });
 const OrganizationsTab = dynamic(() => import("./OrganizationsTab").then(m => ({ default: m.OrganizationsTab })), { ssr: false });
+const TargetsTab    = dynamic(() => import("./TargetsTab").then(m => ({ default: m.TargetsTab })), { ssr: false });
 
 const ALL_PERMISSIONS = [
     { key: "view_leads", label: "View Leads" },
@@ -144,6 +145,7 @@ export function SettingsClient({
         branding: { label: "Branding", keywords: ["logo", "color", "theme", "app name", "accent"] },
         roles: { label: "Roles", keywords: ["permissions", "admin", "marketing", "sales", "custom role"] },
         account: { label: "Account", keywords: ["password", "profile", "notifications", "preferences"] },
+        targets: { label: "Targets", keywords: ["target", "goal", "monthly", "revenue target", "leads target"] },
         system: { label: "System", keywords: ["backup", "export", "restore", "download", "database"] },
 
         ...(isSuperAdmin ? {
@@ -311,6 +313,7 @@ export function SettingsClient({
                 <TabsTrigger value="branding"      className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Branding</TabsTrigger>
                 <TabsTrigger value="roles"         className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Roles</TabsTrigger>
                 <TabsTrigger value="account"       className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Account</TabsTrigger>
+                <TabsTrigger value="targets"       className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-emerald-600 data-[state=active]:text-white transition-all">🎯 Targets</TabsTrigger>
                 <TabsTrigger value="system"        className="rounded-xl shrink-0 whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-white transition-all">System</TabsTrigger>
 
                 {isSuperAdmin && (
@@ -525,6 +528,14 @@ export function SettingsClient({
                         </CardContent>
                     </Card>
                 </div>
+            </TabsContent>
+
+            {/* ── Targets Tab ────────────────────────────────── */}
+            <TabsContent value="targets">
+                <TargetsTab
+                    users={users.map((u: any) => ({ _id: u._id, name: u.name, role: u.role }))}
+                    defaultCurrency={settings?.defaultCurrency || "AED"}
+                />
             </TabsContent>
 
             {/* ── System Tab ────────────────────────────────── */}

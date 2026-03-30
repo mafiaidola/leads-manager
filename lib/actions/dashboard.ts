@@ -341,3 +341,191 @@ export async function getDashboardStats(
     }
 }
 
+// ─── Revenue by Period (Today/Week/Month/Year/All) ──────────────────────────
+export async function getRevenueByPeriod(period: "today" | "week" | "month" | "year" | "all") {
+    const session = await auth();
+    if (!session || !session.user?.orgId) return null;
+
+    try {
+        await dbConnect();
+        const org = await Organization.findById(session.user.orgId)
+            .select("settings.statuses settings.defaultCurrency")
+            .lean() as any;
+        const saleStatusKeys: string[] = (org?.settings?.statuses || [])
+            .filter((s: any) => s.isSaleStatus)
+            .map((s: any) => s.key);
+        const defaultCurrency = org?.settings?.defaultCurrency || "AED";
+
+        const matchStage: any = {
+            deletedAt: null,
+            orgId: new mongoose.Types.ObjectId(session.user.orgId as string),
+        };
+
+        // Sale status filter
+        if (saleStatusKeys.length > 0) {
+            matchStage.status = { $in: saleStatusKeys };
+        } else {
+            matchStage.status = { $regex: /customer|won|order/i };
+        }
+
+        // Period date filter
+        const now = new Date();
+        if (period === "today") {
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            matchStage.createdAt = { $gte: startOfDay };
+        } else if (period === "week") {
+            const dayOfWeek = now.getDay(); // 0=Sun
+            const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+            matchStage.createdAt = { $gte: startOfWeek };
+        } else if (period === "month") {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            matchStage.createdAt = { $gte: startOfMonth };
+        } else if (period === "year") {
+            const startOfYear = new Date(now.getFullYear(), 0, 1);
+            matchStage.createdAt = { $gte: startOfYear };
+        }
+        // "all" = no date filter
+
+        const [totals, agentBreakdown] = await Promise.all([
+            Lead.aggregate([
+                { $match: matchStage },
+                {
+                    $group: {
+                        _id: null,
+                        count: { $sum: 1 },
+                        originalRevenue: { $sum: { $ifNull: ["$productPrice", 0] } },
+                        actualRevenue: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } },
+                    }
+                }
+            ]),
+            Lead.aggregate([
+                { $match: matchStage },
+                {
+                    $group: {
+                        _id: "$assignedTo",
+                        leadsSold: { $sum: 1 },
+                        originalRevenue: { $sum: { $ifNull: ["$productPrice", 0] } },
+                        actualRevenue: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } },
+                    }
+                },
+                { $sort: { actualRevenue: -1 } },
+                { $limit: 10 },
+                { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "agent" } },
+                { $unwind: { path: "$agent", preserveNullAndEmptyArrays: true } },
+                {
+                    $project: {
+                        leadsSold: 1,
+                        originalRevenue: 1,
+                        actualRevenue: 1,
+                        profitLoss: { $subtract: ["$actualRevenue", "$originalRevenue"] },
+                        agentName: { $ifNull: ["$agent.name", "Unassigned"] },
+                        agentRole: { $ifNull: ["$agent.role", "UNASSIGNED"] },
+                    }
+                }
+            ]),
+        ]);
+
+        const t = totals[0] || { count: 0, originalRevenue: 0, actualRevenue: 0 };
+        const profitLoss = t.actualRevenue - t.originalRevenue;
+        const margin = t.originalRevenue > 0 ? ((profitLoss / t.originalRevenue) * 100) : 0;
+
+        return {
+            period,
+            salesCount: t.count,
+            originalRevenue: t.originalRevenue,
+            actualRevenue: t.actualRevenue,
+            profitLoss,
+            margin: parseFloat(margin.toFixed(1)),
+            currency: defaultCurrency,
+            agentBreakdown: agentBreakdown.map((a: any) => ({
+                agentName: a.agentName,
+                agentRole: a.agentRole,
+                leadsSold: a.leadsSold,
+                originalRevenue: a.originalRevenue || 0,
+                actualRevenue: a.actualRevenue || 0,
+                profitLoss: a.profitLoss || 0,
+            })),
+        };
+    } catch (error) {
+        console.error("getRevenueByPeriod error:", error);
+        return null;
+    }
+}
+
+// ─── Personal Stats for Sales Dashboard ─────────────────────────────────────
+export async function getPersonalStats() {
+    const session = await auth();
+    if (!session || !session.user?.orgId) return null;
+
+    try {
+        await dbConnect();
+        const userId = new mongoose.Types.ObjectId(session.user.id);
+        const orgId = new mongoose.Types.ObjectId(session.user.orgId as string);
+        const isSales = session.user.role === USER_ROLES.SALES;
+
+        const org = await Organization.findById(session.user.orgId)
+            .select("settings.statuses settings.defaultCurrency")
+            .lean() as any;
+        const saleStatusKeys: string[] = (org?.settings?.statuses || [])
+            .filter((s: any) => s.isSaleStatus)
+            .map((s: any) => s.key);
+        const defaultCurrency = org?.settings?.defaultCurrency || "AED";
+
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const baseMatch: any = { deletedAt: null, orgId };
+        if (isSales) baseMatch.assignedTo = userId;
+
+        const saleMatch: any = { ...baseMatch };
+        if (saleStatusKeys.length > 0) saleMatch.status = { $in: saleStatusKeys };
+
+        const [
+            leadsToday,
+            leadsThisMonth,
+            revenueThisMonth,
+            recentLeads,
+        ] = await Promise.all([
+            Lead.countDocuments({ ...baseMatch, createdAt: { $gte: startOfDay } }),
+            Lead.countDocuments({ ...baseMatch, createdAt: { $gte: startOfMonth } }),
+            Lead.aggregate([
+                { $match: { ...saleMatch, createdAt: { $gte: startOfMonth } } },
+                {
+                    $group: {
+                        _id: null,
+                        original: { $sum: { $ifNull: ["$productPrice", 0] } },
+                        actual: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } },
+                        count: { $sum: 1 },
+                    }
+                }
+            ]),
+            Lead.find(baseMatch)
+                .sort({ updatedAt: -1 })
+                .limit(5)
+                .select("name status updatedAt customPrice productPrice")
+                .lean(),
+        ]);
+
+        const rev = revenueThisMonth[0] || { original: 0, actual: 0, count: 0 };
+
+        return {
+            leadsToday,
+            leadsThisMonth,
+            salesThisMonth: rev.count,
+            revenueThisMonth: {
+                original: rev.original,
+                actual: rev.actual,
+                profitLoss: rev.actual - rev.original,
+            },
+            recentLeads: JSON.parse(JSON.stringify(recentLeads)),
+            currency: defaultCurrency,
+            userId: session.user.id,
+            userName: session.user.name,
+            role: session.user.role,
+        };
+    } catch (error) {
+        console.error("getPersonalStats error:", error);
+        return null;
+    }
+}

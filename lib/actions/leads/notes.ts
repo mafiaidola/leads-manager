@@ -15,9 +15,10 @@ import dbConnect from "@/lib/db";
 import Lead from "@/models/Lead";
 import LeadNote, { NOTE_TYPES } from "@/models/LeadNote";
 import LeadAction from "@/models/LeadAction";
-import { USER_ROLES } from "@/models/User";
+import User, { USER_ROLES } from "@/models/User";
 import { revalidatePath } from "next/cache";
 import mongoose from "mongoose";
+import { createNotification } from "@/lib/actions/notifications";
 
 // ─── Notes ──────────────────────────────────────────────────────────────────
 
@@ -40,14 +41,48 @@ export async function addNote(leadId: string, message: string) {
             return { message: "Unauthorized", success: false };
         }
 
+        // Parse @mentions from message — match @Name or @"Name with spaces"
+        const mentionRegex = /@(\w+(?:\s\w+)*)/g;
+        const mentionNames: string[] = [];
+        let match;
+        while ((match = mentionRegex.exec(message)) !== null) {
+            mentionNames.push(match[1]);
+        }
+
+        // Resolve mention names to user IDs
+        let mentionIds: mongoose.Types.ObjectId[] = [];
+        if (mentionNames.length > 0) {
+            const mentionedUsers = await User.find({
+                orgId: session.user.orgId,
+                name: { $in: mentionNames.map(n => new RegExp(`^${n}$`, "i")) },
+                active: true,
+            }).select("_id").lean();
+            mentionIds = mentionedUsers.map((u: any) => u._id);
+        }
+
+        // Determine note type — if has @mentions, it's an internal comment
+        const noteType = mentionIds.length > 0 ? NOTE_TYPES.INTERNAL_COMMENT : NOTE_TYPES.COMMENT;
+
         await LeadNote.create({
             orgId: session.user.orgId,
             leadId: new mongoose.Types.ObjectId(leadId),
             authorId: new mongoose.Types.ObjectId(session.user.id),
             authorRole: session.user.role,
-            type: NOTE_TYPES.COMMENT,
+            type: noteType,
             message,
+            mentions: mentionIds.length > 0 ? mentionIds : undefined,
         });
+
+        // Send notifications to @mentioned users
+        if (mentionIds.length > 0) {
+            await createNotification({
+                userIds: mentionIds.map(id => id.toString()),
+                type: "comment_mention",
+                title: `${session.user.name} mentioned you`,
+                message: `"${message.substring(0, 100)}${message.length > 100 ? "..." : ""}" on lead ${lead.name}`,
+                leadId,
+            });
+        }
 
         revalidatePath(`/leads/${leadId}`);
         return { message: "Note added", success: true };

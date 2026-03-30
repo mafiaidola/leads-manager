@@ -12,7 +12,7 @@ import {
     PieChart, Pie, Cell, AreaChart, Area, CartesianGrid, ComposedChart, Line, ReferenceLine
 } from "recharts";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { getDashboardStats } from "@/lib/actions/dashboard";
+import { getDashboardStats, getRevenueByPeriod } from "@/lib/actions/dashboard";
 import { getSettings } from "@/lib/actions/settings";
 import { getUsers } from "@/lib/actions/users";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,8 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
     const { toast } = useToast();
     const reportRef = useRef<HTMLDivElement>(null);
     const [isExportingPDF, setIsExportingPDF] = useState(false);
+    const [revenuePeriod, setRevenuePeriod] = useState<"today" | "week" | "month" | "year" | "all">("month");
+    const [revPeriodData, setRevPeriodData] = useState<any>(null);
 
 
     // Fetch agents list once
@@ -79,6 +81,11 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
         if (dateRange === "custom" && (!customStart || !customEnd)) return;
         fetchData();
     }, [fetchData, dateRange, customStart, customEnd]);
+
+    // Revenue period filter
+    useEffect(() => {
+        getRevenueByPeriod(revenuePeriod).then(setRevPeriodData);
+    }, [revenuePeriod]);
 
 
     const statusData = useMemo(() => {
@@ -609,73 +616,93 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                 <>
                     {/* Revenue KPI Cards */}
                     <div className="pt-4">
-                        <h3 className="text-xl font-bold flex items-center gap-2 mb-4">
-                            <span className="w-1.5 h-5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full" />
-                            Revenue Intelligence
-                        </h3>
+                        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <span className="w-1.5 h-5 bg-gradient-to-b from-cyan-400 to-blue-500 rounded-full" />
+                                Revenue Intelligence
+                            </h3>
+                            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-0.5">
+                                {(["today", "week", "month", "year", "all"] as const).map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => setRevenuePeriod(p)}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize",
+                                            revenuePeriod === p
+                                                ? "bg-cyan-500 text-white shadow"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        {p === "all" ? "All Time" : p === "week" ? "This Week" : p === "month" ? "This Month" : p === "year" ? "This Year" : "Today"}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                     <div className="grid gap-4 md:grid-cols-4">
-                        <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 border-t-blue-500">
-                            <CardContent className="pt-5 pb-4">
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className="text-xs font-medium text-muted-foreground">Original Revenue</span>
-                                    <div className="p-1.5 bg-blue-500/10 rounded-lg"><BadgeDollarSign className="h-3.5 w-3.5 text-blue-500" /></div>
-                                </div>
-                                <div className="text-2xl font-bold">{(data.totalOriginalRevenue || 0).toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span></div>
-                                <p className="text-[10px] text-muted-foreground mt-1">Expected from product prices</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 border-t-cyan-500">
-                            <CardContent className="pt-5 pb-4">
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className="text-xs font-medium text-muted-foreground">Actual Revenue</span>
-                                    <div className="p-1.5 bg-cyan-500/10 rounded-lg"><DollarSign className="h-3.5 w-3.5 text-cyan-500" /></div>
-                                </div>
-                                <div className="text-2xl font-bold">{(data.totalRevenue || 0).toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span></div>
-                                <p className="text-[10px] text-cyan-400 mt-1">What was actually sold for</p>
-                            </CardContent>
-                        </Card>
                         {(() => {
-                            const pl = (data.totalRevenue || 0) - (data.totalOriginalRevenue || 0);
+                            const rd = revPeriodData;
+                            const origRev = rd?.originalRevenue ?? data.totalOriginalRevenue ?? 0;
+                            const actRev = rd?.actualRevenue ?? data.totalRevenue ?? 0;
+                            const pl = actRev - origRev;
                             const isProfit = pl > 0;
+                            const marginVal = origRev > 0 ? ((pl / origRev) * 100).toFixed(1) : '0.0';
+                            const isPositive = parseFloat(marginVal) >= 0;
+                            const pLabel = rd ? (rd.period === "today" ? "Today" : rd.period === "week" ? "This Week" : rd.period === "month" ? "This Month" : rd.period === "year" ? "This Year" : "All Time") : "All Time";
+
                             return (
-                                <Card className={`rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 ${isProfit ? 'border-t-emerald-500' : 'border-t-red-500'}`}>
-                                    <CardContent className="pt-5 pb-4">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="text-xs font-medium text-muted-foreground">Profit / Loss</span>
-                                            <div className={`p-1.5 rounded-lg ${isProfit ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
-                                                <PiggyBank className={`h-3.5 w-3.5 ${isProfit ? 'text-emerald-500' : 'text-red-500'}`} />
+                                <>
+                                    <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 border-t-blue-500">
+                                        <CardContent className="pt-5 pb-4">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-xs font-medium text-muted-foreground">Original Revenue</span>
+                                                <div className="p-1.5 bg-blue-500/10 rounded-lg"><BadgeDollarSign className="h-3.5 w-3.5 text-blue-500" /></div>
                                             </div>
-                                        </div>
-                                        <div className={`text-2xl font-bold ${isProfit ? 'text-emerald-500' : 'text-red-400'}`}>
-                                            {isProfit ? '+' : ''}{pl.toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span>
-                                        </div>
-                                        <p className={`text-[10px] mt-1 ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
-                                            {isProfit ? 'Above original pricing' : 'Below original pricing'}
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })()}
-                        {(() => {
-                            const origRev = data.totalOriginalRevenue || 0;
-                            const margin = origRev > 0 ? (((data.totalRevenue || 0) - origRev) / origRev * 100).toFixed(1) : '0.0';
-                            const isPositive = parseFloat(margin) >= 0;
-                            return (
-                                <Card className={`rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 ${isPositive ? 'border-t-violet-500' : 'border-t-orange-500'}`}>
-                                    <CardContent className="pt-5 pb-4">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="text-xs font-medium text-muted-foreground">Margin</span>
-                                            <div className={`p-1.5 rounded-lg ${isPositive ? 'bg-violet-500/10' : 'bg-orange-500/10'}`}>
-                                                <BarChart3 className={`h-3.5 w-3.5 ${isPositive ? 'text-violet-500' : 'text-orange-500'}`} />
+                                            <div className="text-2xl font-bold">{origRev.toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span></div>
+                                            <p className="text-[10px] text-muted-foreground mt-1">{pLabel} · Expected from product prices</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 border-t-cyan-500">
+                                        <CardContent className="pt-5 pb-4">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-xs font-medium text-muted-foreground">Actual Revenue</span>
+                                                <div className="p-1.5 bg-cyan-500/10 rounded-lg"><DollarSign className="h-3.5 w-3.5 text-cyan-500" /></div>
                                             </div>
-                                        </div>
-                                        <div className={`text-4xl font-bold ${isPositive ? 'text-violet-400' : 'text-orange-400'}`}>
-                                            {isPositive ? '+' : ''}{margin}%
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground mt-1">Overall pricing efficiency</p>
-                                    </CardContent>
-                                </Card>
+                                            <div className="text-2xl font-bold">{actRev.toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span></div>
+                                            <p className="text-[10px] text-cyan-400 mt-1">{pLabel} · {rd?.salesCount ?? 0} sales closed</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className={`rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 ${isProfit ? 'border-t-emerald-500' : 'border-t-red-500'}`}>
+                                        <CardContent className="pt-5 pb-4">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-xs font-medium text-muted-foreground">Profit / Loss</span>
+                                                <div className={`p-1.5 rounded-lg ${isProfit ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                                                    <PiggyBank className={`h-3.5 w-3.5 ${isProfit ? 'text-emerald-500' : 'text-red-500'}`} />
+                                                </div>
+                                            </div>
+                                            <div className={`text-2xl font-bold ${isProfit ? 'text-emerald-500' : 'text-red-400'}`}>
+                                                {isProfit ? '+' : ''}{pl.toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span>
+                                            </div>
+                                            <p className={`text-[10px] mt-1 ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                {pLabel} · {isProfit ? 'Above original pricing' : 'Below original pricing'}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className={`rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 ${isPositive ? 'border-t-violet-500' : 'border-t-orange-500'}`}>
+                                        <CardContent className="pt-5 pb-4">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-xs font-medium text-muted-foreground">Margin</span>
+                                                <div className={`p-1.5 rounded-lg ${isPositive ? 'bg-violet-500/10' : 'bg-orange-500/10'}`}>
+                                                    <BarChart3 className={`h-3.5 w-3.5 ${isPositive ? 'text-violet-500' : 'text-orange-500'}`} />
+                                                </div>
+                                            </div>
+                                            <div className={`text-4xl font-bold ${isPositive ? 'text-violet-400' : 'text-orange-400'}`}>
+                                                {isPositive ? '+' : ''}{marginVal}%
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground mt-1">{pLabel} · Pricing efficiency</p>
+                                        </CardContent>
+                                    </Card>
+                                </>
                             );
                         })()}
                     </div>
