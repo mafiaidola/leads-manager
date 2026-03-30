@@ -64,12 +64,28 @@ export async function GET(request: NextRequest) {
             await dbConnect();
 
             // Check if already seeded
+            const force = request.nextUrl.searchParams.get("force") === "true";
             const existingOrg = await Organization.findOne({ slug: "smtc-group" });
-            if (existingOrg) {
+            if (existingOrg && !force) {
                 return NextResponse.json({
-                    message: "⚠️ Database already seeded (smtc-group exists). Use ?action=full-seed&force=true to re-seed.",
+                    message: "⚠️ Database already seeded (smtc-group exists). Use &force=true to re-seed.",
                     existing: true,
                 });
+            }
+            // Force: clean existing data
+            if (existingOrg && force) {
+                await Lead.deleteMany({ orgId: existingOrg._id });
+                await LeadNote.deleteMany({ orgId: existingOrg._id });
+                await User.deleteMany({ orgId: existingOrg._id });
+                await Organization.deleteOne({ _id: existingOrg._id });
+            }
+            // Also remove the old "default" org
+            const oldDefaultOrg = await Organization.findOne({ slug: "default" });
+            if (oldDefaultOrg) {
+                await Lead.deleteMany({ orgId: oldDefaultOrg._id });
+                await LeadNote.deleteMany({ orgId: oldDefaultOrg._id });
+                await User.deleteMany({ orgId: oldDefaultOrg._id });
+                await Organization.deleteOne({ _id: oldDefaultOrg._id });
             }
 
             const STATUSES = [
@@ -126,12 +142,12 @@ export async function GET(request: NextRequest) {
                     goals: { monthlyLeadTarget: 100, monthlyConversionTarget: 20 },
                     defaultCurrency: "EGP",
                     autoAssignStrategy: "round_robin",
-                    theme: "violet",
-                    notifPrefs: {
+                    notificationPreferences: {
                         onNewLead: true, onAssigned: true, onLeadUpdated: true,
                         onStatusChange: true, onLeadTransferred: true, onLeadDeleted: true, onBulkAction: true,
                     },
                 },
+                theme: "violet",
                 branding: {
                     appName: "SMTC Group CRM",
                     accentColor: "#8b5cf6",
@@ -222,7 +238,7 @@ export async function GET(request: NextRequest) {
                 "Sent updated quotation with bundle discount.",
             ];
 
-            const createdLeads = [];
+            const createdLeads: any[] = [];
             for (let i = 0; i < LEADS.length; i++) {
                 const lead = LEADS[i];
                 const agent = allAgents[i % allAgents.length];
@@ -249,9 +265,8 @@ export async function GET(request: NextRequest) {
                     updatedBy: agent._id,
                     contactedToday: Math.random() > 0.7,
                     public: Math.random() > 0.8,
-                    city: lead.city, country: "Egypt",
+                    address: { city: lead.city, country: "Egypt" },
                     tags: (lead as any).tags || [],
-                    serial: i + 1,
                     followUpDate: ["follow_up", "interested", "negotiation"].includes(lead.status)
                         ? new Date(Date.now() + Math.random() * 14 * 24 * 60 * 60 * 1000) : undefined,
                     createdAt, updatedAt: new Date(createdAt.getTime() + Math.random() * 7 * 24 * 60 * 60 * 1000),
@@ -267,9 +282,10 @@ export async function GET(request: NextRequest) {
                     for (let n = 0; n < numNotes; n++) {
                         const agent = allAgents[Math.floor(Math.random() * allAgents.length)];
                         await LeadNote.create({
+                            orgId: org._id,
                             leadId: cl._id, authorId: agent._id,
-                            type: Math.random() > 0.7 ? "action" : "note",
-                            content: NOTES[Math.floor(Math.random() * NOTES.length)],
+                            type: "COMMENT",
+                            message: NOTES[Math.floor(Math.random() * NOTES.length)],
                         });
                         noteCount++;
                     }
