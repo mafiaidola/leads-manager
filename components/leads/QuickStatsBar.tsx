@@ -60,7 +60,7 @@ export const QuickStatsBar = React.memo(function QuickStatsBar({ stats, settings
                                 : "bg-card/40 border-white/10 hover:bg-white/5 backdrop-blur-xl"
                         )}
                     >
-                        <span className={cn("text-[10px] font-bold uppercase tracking-wider opacity-70 whitespace-nowrap", isActive && "opacity-100")}>{s.label}</span>
+                        <span className={cn("text-[10px] font-bold uppercase tracking-wider opacity-70 whitespace-nowrap", isActive && "opacity-100")}>{s.emoji && <span className="mr-0.5 normal-case">{s.emoji}</span>}{s.label}</span>
                         <span className="text-xl font-black mt-0.5">{count}</span>
 
                         {/* Subtle background glow */}

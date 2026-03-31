@@ -41,6 +41,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, Ban } from "lucide-react";
 import { PhoneInputWithCountry } from "@/components/ui/PhoneInputWithCountry";
+import { getSourceIconComponent } from "@/lib/iconMap";
 
 const formSchema = z.object({
     name: z.string().optional(),
@@ -183,7 +184,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                             </FormControl>
                                             <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
                                                 {settings?.statuses.map((s: any) => (
-                                                    <SelectItem key={s.key} value={s.key} className="focus:bg-primary/20">{s.label}</SelectItem>
+                                                    <SelectItem key={s.key} value={s.key} className="focus:bg-primary/20">{s.emoji ? `${s.emoji} ` : ""}{s.label}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -204,9 +205,17 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                                {settings?.sources.map((s: any) => (
-                                                    <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-                                                ))}
+                                                {settings?.sources.map((s: any) => {
+                                                    const SrcIcon = s.icon ? getSourceIconComponent(s.icon) : null;
+                                                    return (
+                                                        <SelectItem key={s.key} value={s.key}>
+                                                            <span className="flex items-center gap-1.5">
+                                                                {SrcIcon && <SrcIcon className="h-3.5 w-3.5" />}
+                                                                {s.label}
+                                                            </span>
+                                                        </SelectItem>
+                                                    );
+                                                })}
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
