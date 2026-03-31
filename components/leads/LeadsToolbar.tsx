@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { getSourceIconComponent } from "@/lib/iconMap";
 
 export interface LeadsToolbarProps {
     settings: any;
@@ -130,7 +131,7 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
                             {settings?.statuses.map((s: any) => (
                                 <DropdownMenuItem key={s.key} onClick={() => onBulkStatus(s.key)} className="cursor-pointer">
                                     <StatusDot color={s.color} />
-                                    {s.label}
+                                    {s.emoji ? `${s.emoji} ` : ""}{s.label}
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuContent>
@@ -182,7 +183,7 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
                                     "--chip-shadow": `${s.color || "#8b5cf6"}33`
                                 } as React.CSSProperties}
                             >
-                                {s.label}
+                                {s.emoji ? `${s.emoji} ` : ""}{s.label}
                             </Badge>
                         );
                     })}
@@ -200,9 +201,17 @@ export const LeadsToolbar = React.memo(function LeadsToolbar({
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
                             <SelectItem value="all">All Sources</SelectItem>
-                            {settings?.sources?.map((s: any) => (
-                                <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-                            ))}
+                            {settings?.sources?.map((s: any) => {
+                                const SrcIcon = s.icon ? getSourceIconComponent(s.icon) : null;
+                                return (
+                                    <SelectItem key={s.key} value={s.key}>
+                                        <span className="flex items-center gap-1.5">
+                                            {SrcIcon && <SrcIcon className="h-3 w-3" />}
+                                            {s.label}
+                                        </span>
+                                    </SelectItem>
+                                );
+                            })}
                         </SelectContent>
                     </Select>
                     {isAdmin && (
