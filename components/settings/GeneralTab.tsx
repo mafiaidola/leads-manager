@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, Save, GripVertical, Users, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { STATUS_EMOJI_OPTIONS, SOURCE_ICON_OPTIONS, getSourceIconComponent } from "@/lib/iconMap";
 
 const COLOR_NAME_MAP: Record<string, string> = {
     red: "#ef4444", blue: "#3b82f6", green: "#22c55e", emerald: "#10b981",
@@ -169,6 +171,45 @@ export function GeneralTab({
                                     </button>
                                 </div>
 
+                                {/* Emoji Picker */}
+                                <div className="w-14 space-y-1 flex-shrink-0">
+                                    <Label className="text-[10px] uppercase tracking-wider text-muted-foreground ml-1">Icon</Label>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <button
+                                                type="button"
+                                                className="w-full h-9 rounded-xl border border-white/10 bg-black/20 text-lg flex items-center justify-center hover:bg-white/10 transition-all"
+                                            >
+                                                {status.emoji || "😀"}
+                                            </button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-64 p-2 rounded-2xl border-white/10 bg-card/95 backdrop-blur-xl" align="end">
+                                            <div className="grid grid-cols-6 gap-1">
+                                                {STATUS_EMOJI_OPTIONS.map(emoji => (
+                                                    <button
+                                                        key={emoji}
+                                                        type="button"
+                                                        onClick={() => onStatusChange(index, "emoji", emoji)}
+                                                        className={cn(
+                                                            "h-9 w-9 rounded-lg text-lg flex items-center justify-center hover:bg-white/10 transition-all",
+                                                            status.emoji === emoji && "bg-primary/20 ring-1 ring-primary/40"
+                                                        )}
+                                                    >
+                                                        {emoji}
+                                                    </button>
+                                                ))}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onStatusChange(index, "emoji", "")}
+                                                    className="h-9 w-9 rounded-lg text-[10px] text-muted-foreground flex items-center justify-center hover:bg-white/10 transition-all"
+                                                >
+                                                    None
+                                                </button>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+
                                 {/* Remove */}
                                 <Button
                                     variant="ghost" size="icon"
@@ -253,6 +294,43 @@ export function GeneralTab({
                                         className="h-9 rounded-xl border-white/10 bg-black/20"
                                     />
                                 </div>
+
+                                {/* Icon Picker */}
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="h-9 w-9 rounded-xl border border-white/10 bg-black/20 flex items-center justify-center hover:bg-white/10 transition-all flex-shrink-0"
+                                        >
+                                            {(() => { const IC = getSourceIconComponent(source.icon); return <IC className="h-4 w-4 text-primary" />; })()}
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-64 p-2 rounded-2xl border-white/10 bg-card/95 backdrop-blur-xl" align="end">
+                                        <div className="grid grid-cols-6 gap-1">
+                                            {SOURCE_ICON_OPTIONS.map(iconKey => {
+                                                const IC = getSourceIconComponent(iconKey);
+                                                return (
+                                                    <button
+                                                        key={iconKey}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newSources = [...sources];
+                                                            newSources[index] = { ...source, icon: iconKey };
+                                                            onSourcesChange(newSources);
+                                                        }}
+                                                        className={cn(
+                                                            "h-9 w-9 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all",
+                                                            source.icon === iconKey && "bg-primary/20 ring-1 ring-primary/40"
+                                                        )}
+                                                        title={iconKey}
+                                                    >
+                                                        <IC className="h-4 w-4" />
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
                                 <Button
                                     variant="ghost" size="icon"
                                     onClick={() => {

@@ -41,6 +41,11 @@ import {
     Clock,
     MessageCircle,
     Zap,
+    DollarSign,
+    Package,
+    Globe,
+    CalendarDays,
+    Sparkles,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -303,6 +308,107 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                     </div>
                                 </div>
 
+                                {/* Deal Info Section */}
+                                {(data.lead.product || data.lead.source || data.lead.value != null || data.lead.productPrice != null || data.lead.customPrice != null) && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-xs font-bold uppercase tracking-widest text-emerald-400/80 flex items-center gap-2">
+                                            <DollarSign className="h-3.5 w-3.5" />
+                                            Deal Information
+                                        </h3>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {data.lead.product && (
+                                                <div className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                                                    <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center mr-3 text-violet-500">
+                                                        <Package className="h-4 w-4" />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Product</span>
+                                                        <span className="text-sm font-medium">{settings?.products?.find((p: any) => p.key === data.lead.product)?.label || data.lead.product}</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {data.lead.source && (
+                                                <div className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                                                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center mr-3 text-cyan-500">
+                                                        <Globe className="h-4 w-4" />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Source</span>
+                                                        <span className="text-sm font-medium">{settings?.sources?.find((s: any) => s.key === data.lead.source)?.label || data.lead.source}</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {data.lead.value != null && (
+                                                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                                                    <div className="flex items-center">
+                                                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center mr-3 text-emerald-500">
+                                                            <DollarSign className="h-4 w-4" />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] text-muted-foreground uppercase font-bold">Deal Value</span>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-sm font-bold text-emerald-400">{data.lead.currency} {Number(data.lead.value).toLocaleString()}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Pricing Breakdown */}
+                                        {(data.lead.productPrice != null || data.lead.customPrice != null) && (
+                                            <div className="space-y-2 p-4 rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.02] border border-white/5">
+                                                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pricing Breakdown</p>
+                                                {data.lead.productPrice != null && (
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs text-muted-foreground">Product Price</span>
+                                                        <span className="text-sm font-mono text-emerald-400">{data.lead.currency} {Number(data.lead.productPrice).toLocaleString()}</span>
+                                                    </div>
+                                                )}
+                                                {data.lead.customPrice != null && (
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs text-muted-foreground">Sales Price</span>
+                                                        <span className="text-sm font-mono font-bold">{data.lead.currency} {Number(data.lead.customPrice).toLocaleString()}</span>
+                                                    </div>
+                                                )}
+                                                {data.lead.productPrice != null && data.lead.customPrice != null && data.lead.productPrice > 0 && (() => {
+                                                    const diff = Number(data.lead.customPrice) - Number(data.lead.productPrice);
+                                                    const pct = ((diff / Number(data.lead.productPrice)) * 100).toFixed(1);
+                                                    return diff !== 0 ? (
+                                                        <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                                            <span className="text-xs text-muted-foreground">Difference</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`text-sm font-mono font-bold ${diff > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                                                    {diff > 0 ? "▲" : "▼"} {diff > 0 ? "+" : ""}{data.lead.currency} {Math.abs(diff).toLocaleString()}
+                                                                </span>
+                                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${diff > 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                                                                    {diff > 0 ? "+" : ""}{pct}%
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ) : null;
+                                                })()}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <Separator className="bg-white/5" />
+
+                                {/* Creation Info */}
+                                <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                        <CalendarDays className="h-4 w-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Created</span>
+                                        <span className="text-sm font-medium">
+                                            {format(new Date(data.lead.createdAt), "MMM d, yyyy 'at' hh:mm a")}
+                                        </span>
+                                        {data.lead.createdBy?.name && (
+                                            <span className="text-[10px] text-muted-foreground">by {data.lead.createdBy.name}</span>
+                                        )}
+                                    </div>
+                                </div>
+
                                 {/* Description */}
                                 {data.lead.description && (
                                     <div className="space-y-2">
@@ -531,51 +637,58 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                         {timeline.map((item, idx) => {
                                             const isAudit = item.kind === "audit";
                                             const isNote = item.kind === "note";
+                                            const isLifecycle = item.kind === "lifecycle";
                                             const isSystem = isNote && item.type === "SYSTEM";
                                             const isStatusChange = isNote && item.type === "STATUS_CHANGE";
-                                            const actionCfg = (!isNote && !isAudit) ? (ACTION_TYPE_CONFIG[item.type] || ACTION_TYPE_CONFIG.OTHER) : null;
+                                            const actionCfg = (!isNote && !isAudit && !isLifecycle) ? (ACTION_TYPE_CONFIG[item.type] || ACTION_TYPE_CONFIG.OTHER) : null;
                                             const ActionIcon = actionCfg?.icon;
 
                                             return (
-                                                <div key={item._id} className="relative pl-6 pb-4 border-l border-white/10 last:pb-0">
-                                                    <div className={`absolute left-[-9px] top-1 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${isAudit ? "bg-card border-indigo-400" :
+                                                <div key={item._id} className={`relative pl-6 pb-4 border-l border-white/10 last:pb-0 ${isLifecycle ? "last:pb-0" : ""}`}>
+                                                    <div className={`absolute left-[-9px] top-1 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center ${
+                                                        isLifecycle ? "bg-card border-emerald-400" :
+                                                        isAudit ? "bg-card border-indigo-400" :
                                                         isSystem ? "bg-card border-slate-400" :
                                                             isStatusChange ? "bg-card border-amber-400" :
                                                                 isNote ? "bg-card border-blue-400" :
                                                                     "bg-card border-white/20"
                                                         }`}>
-                                                        {isSystem ? <History className="h-2.5 w-2.5 text-slate-400" /> :
+                                                        {isLifecycle ? <Sparkles className="h-2.5 w-2.5 text-emerald-400" /> :
+                                                         isSystem ? <History className="h-2.5 w-2.5 text-slate-400" /> :
                                                             isStatusChange ? <Zap className="h-2.5 w-2.5 text-amber-400" /> :
                                                                 isNote ? <StickyNote className="h-2.5 w-2.5 text-blue-400" /> :
                                                                     ActionIcon ? <ActionIcon className={`h-2.5 w-2.5 ${actionCfg?.color}`} /> :
                                                                         <History className="h-2.5 w-2.5 text-muted-foreground" />}
                                                     </div>
 
-                                                    <div className="p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/8 transition-colors">
+                                                    <div className={`p-3 rounded-xl border border-white/5 hover:bg-white/8 transition-colors ${isLifecycle ? "bg-emerald-500/5" : "bg-white/5"}`}>
                                                         <div className="flex justify-between items-center mb-1">
                                                             <div className="flex items-center gap-1.5">
-                                                                <Badge variant="outline" className={`text-[9px] h-4 px-1.5 ${isSystem ? "text-slate-400 border-slate-400/30" :
+                                                                <Badge variant="outline" className={`text-[9px] h-4 px-1.5 ${
+                                                                    isLifecycle ? "text-emerald-400 border-emerald-400/30" :
+                                                                    isSystem ? "text-slate-400 border-slate-400/30" :
                                                                     isStatusChange ? "text-amber-400 border-amber-400/30" :
                                                                         isNote ? "text-blue-400 border-blue-400/30" :
                                                                             `${actionCfg?.color || "text-muted-foreground"} border-current/30`
                                                                     }`}>
-                                                                    {isSystem ? "System" :
+                                                                    {isLifecycle ? "🚀 Created" :
+                                                                     isSystem ? "System" :
                                                                         isStatusChange ? "Status Change" :
                                                                             isNote ? "Note" :
                                                                                 actionCfg?.label || item.type}
                                                                 </Badge>
-                                                                {!isNote && item.outcome && (
+                                                                {!isNote && !isLifecycle && item.outcome && (
                                                                     <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-white/10">
                                                                         {item.outcome}
                                                                     </Badge>
                                                                 )}
                                                             </div>
                                                             <span className="text-[10px] text-muted-foreground">
-                                                                {format(new Date(item.createdAt), "MMM d, h:mm a")}
+                                                                {format(new Date(item.createdAt), "MMM d, yyyy h:mm a")}
                                                             </span>
                                                         </div>
                                                         <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                                                            {isNote ? item.message : item.description}
+                                                            {isNote ? item.message : (isLifecycle ? item.message : item.description)}
                                                         </p>
                                                         <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-muted-foreground">
                                                             <div className="w-3.5 h-3.5 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-bold text-primary">

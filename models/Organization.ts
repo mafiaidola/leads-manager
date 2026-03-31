@@ -17,11 +17,13 @@ export interface IOrgStatus {
     label: string;
     color: string;
     isSaleStatus?: boolean;
+    emoji?: string;
 }
 
 export interface IOrgSource {
     key: string;
     label: string;
+    icon?: string;
 }
 
 export interface IOrgProduct {
@@ -109,12 +111,14 @@ const OrganizationSchema = new Schema<IOrganization>(
                     label: { type: String, required: true },
                     color: { type: String, default: "gray" },
                     isSaleStatus: { type: Boolean, default: false },
+                    emoji: { type: String, default: "" },
                 },
             ],
             sources: [
                 {
                     key: { type: String, required: true },
                     label: { type: String, required: true },
+                    icon: { type: String, default: "" },
                 },
             ],
             products: [

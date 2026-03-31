@@ -161,8 +161,11 @@ export async function getLeadTimeline(leadId: string) {
     try {
         await dbConnect();
 
-        // First verify the lead belongs to this org
-        const lead = await Lead.findOne({ _id: leadId, orgId }).select("_id").lean();
+        // First verify the lead belongs to this org (also get createdAt/createdBy for lifecycle event)
+        const lead = await Lead.findOne({ _id: leadId, orgId })
+            .select("_id createdAt createdBy product source")
+            .populate("createdBy", "name")
+            .lean() as any;
         if (!lead) return [];  // Lead doesn't exist in caller's org
 
         const [notes, actions, audits] = await Promise.all([
@@ -212,6 +215,18 @@ export async function getLeadTimeline(leadId: string) {
                 message: audit.details,
                 authorName: audit.userName || "System",
                 createdAt: audit.createdAt ? (audit.createdAt as Date).toISOString() : new Date().toISOString(),
+            });
+        }
+
+        // Add synthetic "Lead Created" lifecycle event
+        if (lead.createdAt) {
+            timeline.push({
+                _id: `created_${leadId}`,
+                kind: "lifecycle",
+                type: "LEAD_CREATED",
+                message: `Lead created${lead.createdBy?.name ? ` by ${lead.createdBy.name}` : ""}`,
+                authorName: lead.createdBy?.name || "System",
+                createdAt: lead.createdAt instanceof Date ? lead.createdAt.toISOString() : new Date(lead.createdAt).toISOString(),
             });
         }
 

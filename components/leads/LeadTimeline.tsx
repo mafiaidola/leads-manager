@@ -6,14 +6,14 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Clock, MessageSquare, CheckCircle2, Shield } from "lucide-react";
+import { Clock, MessageSquare, CheckCircle2, Shield, Sparkles } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface TimelineItem {
     _id: string;
-    kind: "note" | "action" | "audit";
+    kind: "note" | "action" | "audit" | "lifecycle";
     type: string;
     message?: string;
     description?: string;
@@ -58,11 +58,13 @@ export const LeadTimeline = React.memo(function LeadTimeline({
 
     // Provide defaults for audit kind icons/colors
     const resolveIcon = (kind: string, type: string) => {
+        if (kind === "lifecycle") return <Sparkles className="h-4 w-4 text-emerald-400" />;
         if (kind === "audit") return <Shield className="h-4 w-4 text-indigo-400" />;
         return getTimelineIcon(kind, type);
     };
 
     const resolveColor = (kind: string, type: string) => {
+        if (kind === "lifecycle") return "bg-emerald-500/10 text-emerald-400";
         if (kind === "audit") return "bg-indigo-500/10 text-indigo-400";
         return getTimelineColor(kind, type);
     };
@@ -130,6 +132,9 @@ export const LeadTimeline = React.memo(function LeadTimeline({
                                                     )}
                                                     {item.kind === "audit" && (
                                                         <Badge variant="outline" className="text-[9px] rounded-full border-indigo-400/30 text-indigo-400 px-1.5 h-4">System</Badge>
+                                                    )}
+                                                    {item.kind === "lifecycle" && (
+                                                        <Badge variant="outline" className="text-[9px] rounded-full border-emerald-400/30 text-emerald-400 px-1.5 h-4">🚀 Created</Badge>
                                                     )}
                                                 </div>
                                                 <p className="text-sm">{item.message || item.description}</p>

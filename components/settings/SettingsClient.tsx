@@ -186,7 +186,7 @@ export function SettingsClient({
 
     const handleAddStatus = useCallback(() => {
         const key = `status_${Date.now()}`;
-        setStatuses(prev => [...prev, { key, label: "New Status", color: "#8b5cf6", isSaleStatus: false }]);
+        setStatuses(prev => [...prev, { key, label: "New Status", color: "#8b5cf6", isSaleStatus: false, emoji: "" }]);
     }, []);
 
     const handleRemoveStatus = useCallback((index: number) => {

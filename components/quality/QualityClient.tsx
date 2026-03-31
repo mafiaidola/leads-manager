@@ -8,12 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
     AlertTriangle, Clock, Target, UserCheck, Users, Search,
     Download, ChevronRight, TrendingDown, TrendingUp, Timer,
-    DollarSign, BadgeDollarSign,
+    DollarSign, BadgeDollarSign, Package, CalendarDays, Filter,
+    BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAbandonedLeads, getInactiveUsers, getTargetProgress, getUserPerformance } from "@/lib/actions/quality";
 import { getDashboardStats } from "@/lib/actions/dashboard";
+import { getSalesQuality, type SalesQualityData, type SalesQualityFilters } from "@/lib/actions/salesQuality";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface QualityClientProps {
@@ -567,130 +570,412 @@ export default function QualityClient({ settings, users }: QualityClientProps) {
                 </Card>
             )}
 
-            {/* ─── Tab 5: Sales Performance ─────────────────────────────── */}
+            {/* ─── Tab 5: Sales Performance (Full Analytics Dashboard) ─── */}
             {activeTab === "salesPerf" && (
-                <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl">
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                    <DollarSign className="h-5 w-5 text-cyan-400" />
-                                    Sales Performance
-                                </CardTitle>
-                                <CardDescription>Agent pricing accuracy and revenue analysis</CardDescription>
+                <SalesAnalyticsDashboard
+                    settings={settings}
+                    users={users}
+                    isPending={isPending}
+                    startTransition={startTransition}
+                />
+            )}
+        </div>
+    );
+}
+
+// ─── Sales Analytics Dashboard Sub-Component ─────────────────────────────────
+interface SalesAnalyticsDashboardProps {
+    settings: any;
+    users: any[];
+    isPending: boolean;
+    startTransition: (fn: () => void) => void;
+}
+
+function SalesAnalyticsDashboard({ settings, users, isPending, startTransition }: SalesAnalyticsDashboardProps) {
+    const [period, setPeriod] = useState<SalesQualityFilters["period"]>("monthly");
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
+    const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+    const [productFilter, setProductFilter] = useState("all");
+    const [data, setData] = useState<SalesQualityData | null>(null);
+    const [showUserPicker, setShowUserPicker] = useState(false);
+
+    const load = useCallback(() => {
+        startTransition(async () => {
+            const result = await getSalesQuality({
+                period,
+                dateFrom: dateFrom || undefined,
+                dateTo: dateTo || undefined,
+                userIds: selectedUsers.length > 0 ? selectedUsers : undefined,
+                productKey: productFilter !== "all" ? productFilter : undefined,
+            });
+            setData(result);
+        });
+    }, [period, dateFrom, dateTo, selectedUsers, productFilter, startTransition]);
+
+    const handleExportCSV = useCallback(() => {
+        if (!data) return;
+        const bom = "\uFEFF";
+        const rows: string[][] = [];
+        rows.push(["User", "Role", "Leads", "Conversions", "Conv. Rate", "Product Price Total", "Sales Price Total", "Discount %", "Margin", "Avg Deal"]);
+        data.users.forEach(u => {
+            rows.push([
+                u.userName, u.userRole, String(u.totalLeads), String(u.conversions),
+                `${u.conversionRate}%`, String(u.totalProductPrice), String(u.totalCustomPrice),
+                `${u.discountPct}%`, String(u.margin), String(u.avgDealSize),
+            ]);
+        });
+        rows.push([]);
+        rows.push(["Product", "Units Sold", "Base Price", "Avg User Price", "Avg Discount %", "Total Revenue"]);
+        data.products.forEach(p => {
+            rows.push([p.productLabel, String(p.unitsSold), String(p.basePrice), String(p.avgUserPrice), `${p.avgDiscount}%`, String(p.totalRevenue)]);
+        });
+        const csv = bom + rows.map(r => r.join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `sales_quality_${period}_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [data, period]);
+
+    const toggleUser = (uid: string) => {
+        setSelectedUsers(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
+    };
+
+    const salesUsers = users.filter(u => ["ADMIN", "SALES"].includes(u.role));
+
+    return (
+        <div className="space-y-5">
+            {/* ── Filters ──────────────────────────────────────── */}
+            <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl">
+                <CardContent className="pt-6">
+                    <div className="flex flex-wrap gap-3 items-end">
+                        {/* Period */}
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Period</label>
+                            <div className="flex gap-1">
+                                {(["daily", "weekly", "monthly", "annually"] as const).map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => setPeriod(p)}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                                            period === p
+                                                ? "bg-primary/20 text-primary border border-primary/30"
+                                                : "bg-white/5 text-muted-foreground hover:bg-white/10 border border-white/10"
+                                        )}
+                                    >
+                                        {p === "daily" ? "Today" : p === "weekly" ? "Week" : p === "monthly" ? "Month" : "Year"}
+                                    </button>
+                                ))}
                             </div>
+                        </div>
+
+                        {/* Date From */}
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">From</label>
+                            <Input
+                                type="date"
+                                value={dateFrom}
+                                onChange={e => setDateFrom(e.target.value)}
+                                className="h-9 w-36 rounded-xl border-white/10 bg-black/20 text-xs"
+                            />
+                        </div>
+
+                        {/* Date To */}
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">To</label>
+                            <Input
+                                type="date"
+                                value={dateTo}
+                                onChange={e => setDateTo(e.target.value)}
+                                className="h-9 w-36 rounded-xl border-white/10 bg-black/20 text-xs"
+                            />
+                        </div>
+
+                        {/* Product Filter */}
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Product</label>
+                            <Select value={productFilter} onValueChange={setProductFilter}>
+                                <SelectTrigger className="h-9 w-40 rounded-xl border-white/10 bg-black/20 text-xs">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    <SelectItem value="all">All Products</SelectItem>
+                                    {(settings?.products || []).map((p: any) => (
+                                        <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* User Picker */}
+                        <div className="space-y-1 relative">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Users</label>
+                            <button
+                                onClick={() => setShowUserPicker(!showUserPicker)}
+                                className="h-9 px-3 rounded-xl border border-white/10 bg-black/20 text-xs flex items-center gap-1.5 hover:bg-white/10 transition-all min-w-[120px]"
+                            >
+                                <Filter className="h-3 w-3" />
+                                {selectedUsers.length === 0 ? "All Users" : `${selectedUsers.length} selected`}
+                            </button>
+                            {showUserPicker && (
+                                <div className="absolute top-full left-0 mt-1 z-50 w-56 max-h-56 overflow-auto rounded-2xl bg-card/95 backdrop-blur-xl border border-white/10 shadow-2xl p-2">
+                                    <button
+                                        onClick={() => { setSelectedUsers([]); setShowUserPicker(false); }}
+                                        className="w-full text-left text-xs px-3 py-1.5 rounded-lg hover:bg-white/10 text-muted-foreground mb-1"
+                                    >
+                                        ✕ Clear All
+                                    </button>
+                                    {salesUsers.map(u => (
+                                        <button
+                                            key={u._id}
+                                            onClick={() => toggleUser(u._id)}
+                                            className={cn(
+                                                "w-full text-left text-xs px-3 py-1.5 rounded-lg transition-all",
+                                                selectedUsers.includes(u._id)
+                                                    ? "bg-primary/20 text-primary"
+                                                    : "hover:bg-white/10 text-foreground"
+                                            )}
+                                        >
+                                            {selectedUsers.includes(u._id) ? "✓ " : ""}{u.name}
+                                            <Badge variant="outline" className="ml-2 text-[8px] h-3.5 px-1">{u.role}</Badge>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2 ml-auto">
                             <Button
-                                onClick={loadSalesPerf}
+                                onClick={load}
                                 disabled={isPending}
-                                className="rounded-xl bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/30 h-9"
+                                className="rounded-xl bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 h-9"
                                 size="sm"
                             >
                                 <Search className="h-3.5 w-3.5 mr-1.5" />
                                 {isPending ? "Loading…" : "Analyze"}
                             </Button>
+                            {data && (
+                                <Button
+                                    onClick={handleExportCSV}
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-xl border-white/10 h-9"
+                                >
+                                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                                    Export CSV
+                                </Button>
+                            )}
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        {!salesPerfData ? (
-                            <div className="text-center py-16 text-muted-foreground">
-                                <DollarSign className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                                <p className="text-sm">Click <strong>Analyze</strong> to view sales performance</p>
-                            </div>
-                        ) : (() => {
-                            const agents = salesPerfData.agentRevenueDetails || [];
-                            const currency = salesPerfData.defaultCurrency || "AED";
-                            const totalOriginal = salesPerfData.totalOriginalRevenue || 0;
-                            const totalActual = salesPerfData.totalRevenue || 0;
-                            const totalPL = totalActual - totalOriginal;
-                            const totalMargin = totalOriginal > 0 ? ((totalPL / totalOriginal) * 100).toFixed(1) : '0.0';
-                            if (agents.length === 0) return (
-                                <div className="text-center py-16 text-muted-foreground">
-                                    <DollarSign className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                                    <p className="text-sm">No sales data yet. Sales are recorded when leads reach a sale status.</p>
-                                </div>
-                            );
-                            return (
-                                <div className="space-y-6">
-                                    {/* Summary KPIs */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-                                            <BadgeDollarSign className="h-5 w-5 mx-auto mb-2 text-blue-400" />
-                                            <div className="text-xl font-extrabold">{totalOriginal.toLocaleString()}</div>
-                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Original Revenue ({currency})</div>
-                                        </div>
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-                                            <DollarSign className="h-5 w-5 mx-auto mb-2 text-cyan-400" />
-                                            <div className="text-xl font-extrabold">{totalActual.toLocaleString()}</div>
-                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Actual Revenue ({currency})</div>
-                                        </div>
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-                                            <TrendingUp className={`h-5 w-5 mx-auto mb-2 ${totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`} />
-                                            <div className={`text-xl font-extrabold ${totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                {totalPL >= 0 ? '+' : ''}{totalPL.toLocaleString()}
-                                            </div>
-                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Total Profit/Loss</div>
-                                        </div>
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
-                                            <Target className={`h-5 w-5 mx-auto mb-2 ${parseFloat(totalMargin) >= 0 ? 'text-violet-400' : 'text-orange-400'}`} />
-                                            <div className={`text-2xl font-extrabold ${parseFloat(totalMargin) >= 0 ? 'text-violet-400' : 'text-orange-400'}`}>
-                                                {parseFloat(totalMargin) >= 0 ? '+' : ''}{totalMargin}%
-                                            </div>
-                                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Overall Margin</div>
-                                        </div>
-                                    </div>
+                    </div>
+                </CardContent>
+            </Card>
 
-                                    {/* Agent Ranking */}
-                                    <div>
-                                        <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
-                                            <ChevronRight className="h-4 w-4 text-cyan-400" />
-                                            Agent Pricing Accuracy
-                                        </h4>
-                                        <div className="space-y-2">
-                                            {agents.map((agent: any, i: number) => {
-                                                const margin = agent.originalRevenue > 0
-                                                    ? ((agent.profitLoss / agent.originalRevenue) * 100).toFixed(1)
-                                                    : '0.0';
-                                                const isProfit = agent.profitLoss >= 0;
-                                                const medals = ['🥇', '🥈', '🥉'];
-                                                const medal = medals[i] || `#${i + 1}`;
+            {/* ── KPI Summary ──────────────────────────────────── */}
+            {data && (
+                <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                        {[
+                            { label: "Total Leads", value: data.summary.totalLeads.toLocaleString(), icon: Users, color: "text-blue-400" },
+                            { label: "Conversions", value: data.summary.totalConversions.toLocaleString(), icon: Target, color: "text-emerald-400" },
+                            { label: "Conv. Rate", value: `${data.summary.conversionRate}%`, icon: TrendingUp, color: "text-cyan-400" },
+                            { label: `Product Total`, value: `${data.summary.currency} ${data.summary.totalProductPrice.toLocaleString()}`, icon: Package, color: "text-violet-400" },
+                            { label: `Sales Total`, value: `${data.summary.currency} ${data.summary.totalCustomPrice.toLocaleString()}`, icon: DollarSign, color: "text-amber-400" },
+                            { label: "Margin", value: `${data.summary.currency} ${data.summary.totalMargin.toLocaleString()}`, icon: data.summary.totalMargin >= 0 ? TrendingUp : TrendingDown, color: data.summary.totalMargin >= 0 ? "text-emerald-400" : "text-red-400" },
+                            { label: "Avg Discount", value: `${data.summary.avgDiscountPct}%`, icon: BadgeDollarSign, color: data.summary.avgDiscountPct > 0 ? "text-red-400" : "text-emerald-400" },
+                            { label: "Period", value: period.charAt(0).toUpperCase() + period.slice(1), icon: CalendarDays, color: "text-primary" },
+                        ].map((kpi, i) => (
+                            <div key={i} className="p-3 rounded-2xl bg-white/5 border border-white/10 text-center">
+                                <kpi.icon className={cn("h-4 w-4 mx-auto mb-1.5", kpi.color)} />
+                                <div className="text-sm font-extrabold leading-tight">{kpi.value}</div>
+                                <div className="text-[9px] text-muted-foreground uppercase tracking-wider mt-1">{kpi.label}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* ── User Performance Table ──────────────────── */}
+                    {data.users.length > 0 && (
+                        <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                    <UserCheck className="h-4 w-4 text-blue-400" />
+                                    User Performance
+                                    <Badge variant="outline" className="ml-auto text-[10px] border-white/10">{data.users.length} users</Badge>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs">
+                                        <thead>
+                                            <tr className="border-b border-white/10">
+                                                <th className="text-left py-2 px-2 font-bold text-muted-foreground uppercase tracking-wider">#</th>
+                                                <th className="text-left py-2 px-2 font-bold text-muted-foreground uppercase tracking-wider">User</th>
+                                                <th className="text-center py-2 px-2 font-bold text-muted-foreground uppercase tracking-wider">Leads</th>
+                                                <th className="text-center py-2 px-2 font-bold text-muted-foreground uppercase tracking-wider">Sales</th>
+                                                <th className="text-center py-2 px-2 font-bold text-muted-foreground uppercase tracking-wider">Rate</th>
+                                                <th className="text-right py-2 px-2 font-bold text-muted-foreground uppercase tracking-wider">Product Total</th>
+                                                <th className="text-right py-2 px-2 font-bold text-muted-foreground uppercase tracking-wider">Sales Total</th>
+                                                <th className="text-center py-2 px-2 font-bold text-muted-foreground uppercase tracking-wider">Discount</th>
+                                                <th className="text-right py-2 px-2 font-bold text-muted-foreground uppercase tracking-wider">Margin</th>
+                                                <th className="text-right py-2 px-2 font-bold text-muted-foreground uppercase tracking-wider">Avg Deal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.users.map((u, i) => {
+                                                const medals = ["🥇", "🥈", "🥉"];
                                                 return (
-                                                    <div key={i} className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
-                                                        <span className="text-xl w-8 text-center">{medal}</span>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center justify-between mb-1">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="font-semibold text-sm">{agent.agentName}</span>
-                                                                    <Badge variant="outline" className="text-[9px] h-4 px-1.5">{agent.agentRole}</Badge>
-                                                                </div>
-                                                                <div className="flex items-center gap-3 text-xs">
-                                                                    <span className="text-muted-foreground">{agent.leadsSold} sales</span>
-                                                                    <span className="text-muted-foreground font-mono">{agent.originalRevenue.toLocaleString()} → {agent.actualRevenue.toLocaleString()}</span>
-                                                                    <span className={`font-bold ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                                        {isProfit ? '+' : ''}{agent.profitLoss.toLocaleString()}
-                                                                    </span>
-                                                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isProfit ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}`}>
-                                                                        {isProfit ? '▲' : '▼'}{isProfit ? '+' : ''}{margin}%
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className={cn(
-                                                                        "h-full rounded-full transition-all duration-500",
-                                                                        isProfit ? 'bg-emerald-400' : 'bg-red-400'
-                                                                    )}
-                                                                    style={{ width: `${Math.min(100, Math.max(4, Math.abs(parseFloat(margin))))}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                    <tr key={u.userId} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                        <td className="py-2.5 px-2 text-center">{medals[i] || `${i + 1}`}</td>
+                                                        <td className="py-2.5 px-2">
+                                                            <div className="font-semibold">{u.userName}</div>
+                                                            <Badge variant="outline" className="text-[8px] h-3.5 px-1 mt-0.5">{u.userRole}</Badge>
+                                                        </td>
+                                                        <td className="py-2.5 px-2 text-center font-mono">{u.totalLeads}</td>
+                                                        <td className="py-2.5 px-2 text-center font-mono font-bold text-emerald-400">{u.conversions}</td>
+                                                        <td className="py-2.5 px-2 text-center">
+                                                            <span className={cn("font-bold", u.conversionRate >= 30 ? "text-emerald-400" : u.conversionRate >= 15 ? "text-amber-400" : "text-red-400")}>
+                                                                {u.conversionRate}%
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-2.5 px-2 text-right font-mono text-muted-foreground">{u.totalProductPrice.toLocaleString()}</td>
+                                                        <td className="py-2.5 px-2 text-right font-mono font-semibold">{u.totalCustomPrice.toLocaleString()}</td>
+                                                        <td className="py-2.5 px-2 text-center">
+                                                            <span className={cn(
+                                                                "text-[10px] font-bold px-1.5 py-0.5 rounded-md",
+                                                                u.discountPct > 0 ? "bg-red-500/15 text-red-400" : "bg-emerald-500/15 text-emerald-400"
+                                                            )}>
+                                                                {u.discountPct > 0 ? "-" : "+"}{Math.abs(u.discountPct)}%
+                                                            </span>
+                                                        </td>
+                                                        <td className={cn("py-2.5 px-2 text-right font-mono font-bold", u.margin >= 0 ? "text-emerald-400" : "text-red-400")}>
+                                                            {u.margin >= 0 ? "+" : ""}{u.margin.toLocaleString()}
+                                                        </td>
+                                                        <td className="py-2.5 px-2 text-right font-mono">{u.avgDealSize.toLocaleString()}</td>
+                                                    </tr>
                                                 );
                                             })}
-                                        </div>
-                                    </div>
+                                        </tbody>
+                                    </table>
                                 </div>
-                            );
-                        })()}
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* ── Product Performance Table ───────────────── */}
+                    {data.products.length > 0 && (
+                        <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                    <Package className="h-4 w-4 text-violet-400" />
+                                    Product Performance
+                                    <Badge variant="outline" className="ml-auto text-[10px] border-white/10">{data.products.length} products</Badge>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs">
+                                        <thead>
+                                            <tr className="border-b border-white/10">
+                                                <th className="text-left py-2 px-3 font-bold text-muted-foreground uppercase tracking-wider">Product</th>
+                                                <th className="text-center py-2 px-3 font-bold text-muted-foreground uppercase tracking-wider">Units Sold</th>
+                                                <th className="text-right py-2 px-3 font-bold text-muted-foreground uppercase tracking-wider">Base Price</th>
+                                                <th className="text-right py-2 px-3 font-bold text-muted-foreground uppercase tracking-wider">Avg User Price</th>
+                                                <th className="text-center py-2 px-3 font-bold text-muted-foreground uppercase tracking-wider">Avg Discount</th>
+                                                <th className="text-right py-2 px-3 font-bold text-muted-foreground uppercase tracking-wider">Total Revenue</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.products.map(p => (
+                                                <tr key={p.productKey} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                    <td className="py-2.5 px-3 font-semibold">{p.productLabel}</td>
+                                                    <td className="py-2.5 px-3 text-center font-mono font-bold">{p.unitsSold}</td>
+                                                    <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">{p.basePrice.toLocaleString()}</td>
+                                                    <td className="py-2.5 px-3 text-right font-mono">{p.avgUserPrice.toLocaleString()}</td>
+                                                    <td className="py-2.5 px-3 text-center">
+                                                        <span className={cn(
+                                                            "text-[10px] font-bold px-1.5 py-0.5 rounded-md",
+                                                            p.avgDiscount > 0 ? "bg-red-500/15 text-red-400" : "bg-emerald-500/15 text-emerald-400"
+                                                        )}>
+                                                            {p.avgDiscount > 0 ? "-" : "+"}{Math.abs(p.avgDiscount)}%
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">{p.totalRevenue.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* ── Period Trends ────────────────────────────── */}
+                    {data.periods.length > 0 && (
+                        <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                    <BarChart3 className="h-4 w-4 text-cyan-400" />
+                                    Period Trends
+                                    <Badge variant="outline" className="ml-auto text-[10px] border-white/10">{data.periods.length} periods</Badge>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                                    {data.periods.map(p => (
+                                        <div key={p.dateKey} className="p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+                                            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">{p.label}</div>
+                                            <div className="space-y-1.5">
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="text-muted-foreground">Leads</span>
+                                                    <span className="font-bold">{p.leads}</span>
+                                                </div>
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="text-muted-foreground">Sales</span>
+                                                    <span className="font-bold text-emerald-400">{p.conversions}</span>
+                                                </div>
+                                                <div className="flex justify-between text-xs">
+                                                    <span className="text-muted-foreground">Revenue</span>
+                                                    <span className="font-mono font-semibold text-xs">{p.revenue.toLocaleString()}</span>
+                                                </div>
+                                                {/* Mini progress bar */}
+                                                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-1">
+                                                    <div
+                                                        className="h-full bg-primary rounded-full transition-all"
+                                                        style={{ width: `${data.periods.length > 0 ? Math.min(100, Math.max(4, (p.leads / Math.max(...data.periods.map(pp => pp.leads))) * 100)) : 4}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Empty state */}
+                    {data.users.length === 0 && data.products.length === 0 && (
+                        <div className="text-center py-16 text-muted-foreground">
+                            <DollarSign className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                            <p className="text-sm">No sales data found for the selected filters.</p>
+                            <p className="text-xs mt-1">Try adjusting your date range or user selection.</p>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {/* Initial empty state */}
+            {!data && (
+                <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl">
+                    <CardContent className="py-16">
+                        <div className="text-center text-muted-foreground">
+                            <BarChart3 className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                            <p className="text-sm font-medium">Sales Quality Analytics</p>
+                            <p className="text-xs mt-1">Choose your filters above, then click <strong>Analyze</strong> to view comprehensive sales data.</p>
+                        </div>
                     </CardContent>
                 </Card>
             )}
