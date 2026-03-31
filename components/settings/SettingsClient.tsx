@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +60,7 @@ export function SettingsClient({
 }) {
     const router        = useRouter();
     const searchParams  = useSearchParams();
+    const [, startTransition] = useTransition();
 
     // ── URL-persisted tab ────────────────────────────────────────
     const defaultTab = searchParams.get("tab") || "general";
@@ -179,7 +180,7 @@ export function SettingsClient({
             initialSnapshot.current = JSON.stringify({
                 statuses, sources, products, branding, notifPrefs, goals, currentTheme, customRoles,
             });
-            router.refresh();
+            startTransition(() => router.refresh());
         } else {
             toast({ title: result?.error || "Error saving settings", variant: "destructive" });
         }
@@ -228,7 +229,7 @@ export function SettingsClient({
         if (result?.success) {
             toast({ title: result?.message || "Branding updated" });
             // Force layout refresh so sidebar name/logo updates immediately
-            router.refresh();
+            startTransition(() => router.refresh());
         } else {
             toast({ title: result?.error || result?.message || "Error saving branding", variant: "destructive" });
         }
@@ -254,7 +255,7 @@ export function SettingsClient({
         if (result?.success) {
             toast({ title: `Theme changed to ${theme === "violet" ? "Violet Noir" : theme === "ocean" ? "Ocean Blue" : "Emerald Forest"}` });
             // Force layout refresh so the theme propagates org-wide
-            router.refresh();
+            startTransition(() => router.refresh());
         } else {
             toast({ title: result?.message || "Error", variant: "destructive" });
         }

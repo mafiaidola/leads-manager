@@ -17,7 +17,7 @@
  */
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -99,6 +99,7 @@ export function TeamTab({
 }: TeamTabProps) {
     const { toast } = useToast();
     const router = useRouter();
+    const [, startTransition] = useTransition();
     const [users, setUsers] = useState<UserRecord[]>(initialUsers);
 
     // ── Create form state
@@ -159,7 +160,7 @@ export function TeamTab({
             toast({ title: "✅ User created", description: res.message });
             setForm({ name: "", username: "", password: "", role: "SALES", targetOrgId: currentOrgId });
             // ✅ Use real server refresh instead of optimistic fake _id
-            router.refresh();
+            startTransition(() => router.refresh());
         } else {
             toast({ title: res?.message || "Error creating user", variant: "destructive" });
         }
@@ -390,7 +391,7 @@ export function TeamTab({
                                 </CardDescription>
                             </div>
                             <button
-                                onClick={() => router.refresh()}
+                                onClick={() => startTransition(() => router.refresh())}
                                 className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all"
                                 title="Refresh user list"
                                 aria-label="Refresh user list"
