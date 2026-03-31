@@ -22,6 +22,7 @@ import {
     Plus, Search, MoreHorizontal, Pencil, Trash2, SendHorizontal,
     CheckCircle2, XCircle, Clock, FileText, Users, NotebookPen,
     MessageSquare, ChevronDown, ChevronRight, CheckCheck, Ban,
+    Phone, Mail, Globe, Tag, DollarSign, CalendarDays, Eye, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +32,7 @@ import {
 } from "@/lib/actions/additionalLeads";
 import { format } from "date-fns";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types "typescript-PHP-Css_Tailwind_PHPC_CSS2_JS_───────────────────────────────────────────────────────────────────
 interface Props {
     initialLeads: any[];
     initialTotal: number;
@@ -99,6 +100,9 @@ export default function AdditionalLeadsClient({
     const [reviewLead, setReviewLead] = useState<any>(null);
     const [reviewAction, setReviewAction] = useState<"approve" | "reject">("approve");
     const [reviewNotes, setReviewNotes] = useState("");
+
+    // Detail view dialog
+    const [viewLead, setViewLead] = useState<any>(null);
 
     const tabs = isAdmin ? ADMIN_TABS : USER_TABS;
 
@@ -293,12 +297,17 @@ export default function AdditionalLeadsClient({
 
                 {/* Name + Contact */}
                 <TableCell>
-                    <div className="font-semibold text-sm">{lead.name}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                        {lead.phone && <span>{lead.countryCode ? `+${lead.countryCode} ` : ""}{lead.phone}</span>}
-                        {lead.phone && lead.email && <span>·</span>}
-                        {lead.email && <span>{lead.email}</span>}
-                    </div>
+                    <button
+                        onClick={() => setViewLead(lead)}
+                        className="text-left group/nm"
+                    >
+                        <div className="font-semibold text-sm group-hover/nm:text-primary transition-colors">{lead.name}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                            {lead.phone && <span>{lead.countryCode ? `+${lead.countryCode} ` : ""}{lead.phone}</span>}
+                            {lead.phone && lead.email && <span>·</span>}
+                            {lead.email && <span>{lead.email}</span>}
+                        </div>
+                    </button>
                 </TableCell>
 
                 {/* Lead Status (from settings, matching leads table style) */}
@@ -335,7 +344,7 @@ export default function AdditionalLeadsClient({
                     )}
                 </TableCell>
 
-                {/* Owner (Admin only) */}
+                {/* Owner (Admin only for the CRM "Mahmoud") */}
                 {isAdmin && (
                     <TableCell className="text-xs">
                         <div className="flex items-center gap-1.5">
@@ -347,13 +356,13 @@ export default function AdditionalLeadsClient({
                     </TableCell>
                 )}
 
-                {/* Date & Time */}
+                {/* Date & Time for the CRM "Mahmoud" */}
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                     <div>{format(new Date(lead.createdAt), "MMM d, yyyy")}</div>
                     <div className="text-[10px] text-muted-foreground/70">{format(new Date(lead.createdAt), "hh:mm a")}</div>
                 </TableCell>
 
-                {/* Actions */}
+                {/* Actions for the CRM "Mahmoud" */}
                 <TableCell className="text-right">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -409,7 +418,7 @@ export default function AdditionalLeadsClient({
 
     return (
         <div className="space-y-6">
-            {/* Stats Cards */}
+            {/* Stats Cards that need to be there  */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
                     { label: "Total", value: stats.total, color: "text-primary", bg: "bg-primary/10 border-primary/20" },
@@ -869,6 +878,212 @@ export default function AdditionalLeadsClient({
                             {isPending ? "Processing…" : reviewAction === "approve" ? "Approve & Create Lead" : "Reject Lead"}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ─── Lead Detail View Dialog ────────────────────────────── */}
+            <Dialog open={!!viewLead} onOpenChange={open => { if (!open) setViewLead(null); }}>
+                <DialogContent className="rounded-3xl border-white/10 bg-card/95 backdrop-blur-xl max-w-lg max-h-[85vh] overflow-y-auto">
+                    {viewLead && (() => {
+                        const statusCfg = getStatusConfig(viewLead.status);
+                        const subConfig = SUBMISSION_CONFIG[viewLead.submissionStatus] || SUBMISSION_CONFIG.draft;
+                        const SubIcon = subConfig.icon;
+                        const isOwner = (viewLead.ownerId?._id || viewLead.ownerId) === currentUserId;
+                        const canEdit = !isIQA && ((isOwner && (viewLead.submissionStatus === "draft" || viewLead.submissionStatus === "rejected")) || (isAdmin && viewLead.submissionStatus !== "approved"));
+                        const canSubmit = !isIQA && isOwner && (viewLead.submissionStatus === "draft" || viewLead.submissionStatus === "rejected");
+                        const canReview = isAdmin && viewLead.submissionStatus === "pending";
+
+                        return (
+                            <>
+                                <DialogHeader>
+                                    <div className="flex items-center gap-2">
+                                        {viewLead.serialNumber && (
+                                            <span className="text-xs font-mono text-primary/60 bg-primary/10 px-2 py-0.5 rounded-lg">#{viewLead.serialNumber}</span>
+                                        )}
+                                        <Badge variant="outline" className={cn("text-[10px] flex items-center gap-1 w-fit", subConfig.color)}>
+                                            <SubIcon className="h-3 w-3" />
+                                            {subConfig.label}
+                                        </Badge>
+                                    </div>
+                                    <DialogTitle className="text-xl font-bold mt-1">
+                                        {viewLead.name}
+                                    </DialogTitle>
+                                    <DialogDescription className="text-sm">
+                                        Added {format(new Date(viewLead.createdAt), "MMM d, yyyy 'at' hh:mm a")}
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <div className="space-y-4 mt-2">
+                                    {/* Contact Info */}
+                                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Contact Information</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {viewLead.phone && (
+                                                <div className="flex items-center gap-2">
+                                                    <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                    <div>
+                                                        <div className="text-[10px] text-muted-foreground">Phone</div>
+                                                        <a
+                                                            href={`https://wa.me/${viewLead.phone.replace(/[^0-9]/g, "")}`}
+                                                            target="_blank" rel="noopener noreferrer"
+                                                            className="text-sm font-medium text-green-400 hover:underline"
+                                                        >
+                                                            +{viewLead.countryCode || "971"} {viewLead.phone}
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {viewLead.email && (
+                                                <div className="flex items-center gap-2">
+                                                    <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                    <div>
+                                                        <div className="text-[10px] text-muted-foreground">Email</div>
+                                                        <a href={`mailto:${viewLead.email}`} className="text-sm font-medium text-primary hover:underline truncate">
+                                                            {viewLead.email}
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {!viewLead.phone && !viewLead.email && (
+                                            <p className="text-xs text-muted-foreground italic">No contact info provided</p>
+                                        )}
+                                    </div>
+
+                                    {/* Deal Info */}
+                                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Lead Details</h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                <div>
+                                                    <div className="text-[10px] text-muted-foreground">Status</div>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="text-[11px] h-5 px-1.5 status-chip-dynamic mt-0.5"
+                                                        style={{ '--chip-bg': `${statusCfg.color}15`, '--chip-fg': statusCfg.color, '--chip-border': `${statusCfg.color}50` } as React.CSSProperties}
+                                                    >
+                                                        {statusCfg.label || viewLead.status}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                <div>
+                                                    <div className="text-[10px] text-muted-foreground">Source</div>
+                                                    <div className="text-sm font-medium">{sourceLabel(viewLead.source) || "—"}</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                <div>
+                                                    <div className="text-[10px] text-muted-foreground">Product</div>
+                                                    <div className="text-sm font-medium">{productLabel(viewLead.product) || "—"}</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <DollarSign className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                <div>
+                                                    <div className="text-[10px] text-muted-foreground">Value</div>
+                                                    <div className="text-sm font-bold text-primary">
+                                                        {viewLead.value ? `${viewLead.currency || "AED"} ${viewLead.value.toLocaleString()}` : "—"}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Owner */}
+                                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-sm font-bold text-primary">
+                                                {(viewLead.ownerId?.name || "?")[0]?.toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-muted-foreground">Lead Owner</div>
+                                                <div className="text-sm font-bold">{viewLead.ownerId?.name || "Unknown"}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Description / Reason */}
+                                    {viewLead.description && (
+                                        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-2">
+                                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Description / Reason</h4>
+                                            <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{viewLead.description}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Review Notes (if reviewed) */}
+                                    {viewLead.reviewNotes && (
+                                        <div className={cn(
+                                            "rounded-2xl border p-4 space-y-2",
+                                            viewLead.submissionStatus === "approved"
+                                                ? "border-emerald-500/20 bg-emerald-500/5"
+                                                : "border-red-500/20 bg-red-500/5"
+                                        )}>
+                                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                                <MessageSquare className="h-3 w-3" />
+                                                Admin Review Notes
+                                            </h4>
+                                            <p className="text-sm">{viewLead.reviewNotes}</p>
+                                            {viewLead.reviewedBy && (
+                                                <div className="text-[10px] text-muted-foreground">
+                                                    Reviewed by {viewLead.reviewedBy?.name || "Admin"}
+                                                    {viewLead.reviewedAt && ` on ${format(new Date(viewLead.reviewedAt), "MMM d, yyyy")}`}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Action Buttons */}
+                                <DialogFooter className="flex gap-2 mt-4">
+                                    {canEdit && (
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => { setViewLead(null); openEdit(viewLead); }}
+                                            className="rounded-xl border-white/10"
+                                        >
+                                            <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
+                                        </Button>
+                                    )}
+                                    {canSubmit && (
+                                        <Button
+                                            onClick={() => { setViewLead(null); handleSubmit(viewLead._id); }}
+                                            className="rounded-xl bg-amber-500 hover:bg-amber-600 font-bold"
+                                        >
+                                            <SendHorizontal className="h-3.5 w-3.5 mr-1.5" /> Submit for Review
+                                        </Button>
+                                    )}
+                                    {canReview && (
+                                        <>
+                                            <Button
+                                                onClick={() => { setViewLead(null); setReviewLead(viewLead); setReviewAction("approve"); setReviewNotes(""); }}
+                                                className="rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold"
+                                            >
+                                                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Approve
+                                            </Button>
+                                            <Button
+                                                onClick={() => { setViewLead(null); setReviewLead(viewLead); setReviewAction("reject"); setReviewNotes(""); }}
+                                                variant="outline"
+                                                className="rounded-xl border-red-500/30 text-red-400"
+                                            >
+                                                <XCircle className="h-3.5 w-3.5 mr-1.5" /> Reject
+                                            </Button>
+                                        </>
+                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => setViewLead(null)}
+                                        className="rounded-xl ml-auto"
+                                    >
+                                        Close
+                                    </Button>
+                                </DialogFooter>
+                            </>
+                        );
+                    })()}
                 </DialogContent>
             </Dialog>
         </div>
