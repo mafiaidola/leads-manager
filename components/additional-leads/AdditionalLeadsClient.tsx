@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { getSourceIconComponent } from "@/lib/iconMap";
 import {
     createAdditionalLead, updateAdditionalLead, deleteAdditionalLead,
     submitAdditionalLead, reviewAdditionalLead,
@@ -147,6 +148,11 @@ export default function AdditionalLeadsClient({
     const sourceLabel = useCallback((key: string) => {
         const s = settings?.sources?.find((src: any) => src.key === key);
         return s?.label || key;
+    }, [settings]);
+
+    const getSourceIcon = useCallback((key: string) => {
+        const s = settings?.sources?.find((src: any) => src.key === key);
+        return s?.icon ? getSourceIconComponent(s.icon) : null;
     }, [settings]);
 
     const productLabel = useCallback((key: string) => {
@@ -317,13 +323,21 @@ export default function AdditionalLeadsClient({
                         className="text-[11px] h-5 px-1.5 status-chip-dynamic"
                         style={{ '--chip-bg': `${statusCfg.color}15`, '--chip-fg': statusCfg.color, '--chip-border': `${statusCfg.color}50` } as React.CSSProperties}
                     >
-                        {statusCfg.label || lead.status}
+                        {getStatusConfig(lead.status).emoji && <span className="mr-0.5">{getStatusConfig(lead.status).emoji}</span>}{statusCfg.label || lead.status}
                     </Badge>
                 </TableCell>
 
                 {/* Source */}
                 <TableCell className="text-xs text-muted-foreground">
-                    {sourceLabel(lead.source) || "—"}
+                    {(() => {
+                        const SrcIcon = getSourceIcon(lead.source);
+                        return (
+                            <span className="flex items-center gap-1">
+                                {SrcIcon && <SrcIcon className="h-3 w-3" />}
+                                {sourceLabel(lead.source) || "—"}
+                            </span>
+                        );
+                    })()}
                 </TableCell>
 
                 {/* Product */}
@@ -963,12 +977,15 @@ export default function AdditionalLeadsClient({
                                                         className="text-[11px] h-5 px-1.5 status-chip-dynamic mt-0.5"
                                                         style={{ '--chip-bg': `${statusCfg.color}15`, '--chip-fg': statusCfg.color, '--chip-border': `${statusCfg.color}50` } as React.CSSProperties}
                                                     >
-                                                        {statusCfg.label || viewLead.status}
+                                                        {getStatusConfig(viewLead.status).emoji && <span className="mr-0.5">{getStatusConfig(viewLead.status).emoji}</span>}{statusCfg.label || viewLead.status}
                                                     </Badge>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                {(() => {
+                                                    const SrcIcon = getSourceIcon(viewLead.source) || Globe;
+                                                    return <SrcIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+                                                })()}
                                                 <div>
                                                     <div className="text-[10px] text-muted-foreground">Source</div>
                                                     <div className="text-sm font-medium">{sourceLabel(viewLead.source) || "—"}</div>

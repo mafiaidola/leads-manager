@@ -40,6 +40,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { FieldChangeHistory } from "@/components/leads/FieldChangeHistory";
 import { FadeIn } from "@/components/dashboard/DashboardAnimations";
+import { getStatusEmoji, getSourceIconKey } from "@/lib/iconMap";
 
 // Action type options
 const ACTION_TYPES = [
@@ -163,6 +164,11 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
         return map;
     }, [settings?.products]);
     const getLabel = useCallback((key: string, map: Record<string, string>) => map[key] || key, []);
+    const statusEmojiMap = useMemo(() => {
+        const map: Record<string, string> = {};
+        (settings?.statuses || []).forEach((s: any) => { if (s.key && s.emoji) map[s.key] = s.emoji; });
+        return map;
+    }, [settings?.statuses]);
     const getStatusChipClass = useCallback((status: string) => STATUS_COLORS[status] || "bg-primary/15 text-primary border-primary/30", []);
     const getStatusChipStyle = useCallback((status: string): React.CSSProperties => {
         const hex = statusColorMap[status];
@@ -410,12 +416,12 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-white/10 bg-card/95 backdrop-blur-xl">
-                                    {statuses.map(s => <SelectItem key={s} value={s}>{statusLabelMap[s] || s}</SelectItem>)}
+                                    {statuses.map(s => <SelectItem key={s} value={s}>{statusEmojiMap[s] ? `${statusEmojiMap[s]} ` : ""}{statusLabelMap[s] || s}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         ) : (
                             <Badge className={cn("rounded-full font-semibold text-xs px-3 py-1 status-chip-dynamic", !statusColorMap[currentStatus] && (STATUS_COLORS[currentStatus] || "bg-primary/15 text-primary border-primary/30"))} style={getStatusChipStyle(currentStatus)}>
-                                {statusLabelMap[currentStatus] || currentStatus}
+                                {statusEmojiMap[currentStatus] ? `${statusEmojiMap[currentStatus]} ` : ""}{statusLabelMap[currentStatus] || currentStatus}
                             </Badge>
                         )}
                     </div>
@@ -447,7 +453,7 @@ export default function LeadDetailClient({ lead, notes, actions, statuses, sourc
                 <FadeIn delay={0.1} className="lg:col-span-1 space-y-6">
                     <LeadContactCard lead={lead} />
 
-                    <LeadDealCard lead={lead} formatDate={formatDate} sourceLabelMap={sourceLabelMap} productLabelMap={productLabelMap} />
+                    <LeadDealCard lead={lead} formatDate={formatDate} sourceLabelMap={sourceLabelMap} sourceIconMap={(() => { const map: Record<string, string> = {}; (settings?.sources || []).forEach((s: any) => { if (s.key && s.icon) map[s.key] = s.icon; }); return map; })()} productLabelMap={productLabelMap} />
 
                     {/* Tags */}
                     {lead.tags && lead.tags.length > 0 && (

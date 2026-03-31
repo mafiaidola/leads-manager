@@ -114,7 +114,10 @@ export const KanbanBoard = React.memo(function KanbanBoard({ leads, statuses, cu
                                         className="w-3 h-3 rounded-full status-dot"
                                         ref={el => { if (el) el.style.setProperty('--status-color', status.color); }}
                                     />
-                                    <h3 className="font-semibold text-sm">{status.label}</h3>
+                                    <h3 className="font-semibold text-sm">
+                                        {(status as any).emoji && <span className="mr-1">{(status as any).emoji}</span>}
+                                        {status.label}
+                                    </h3>
                                 </div>
                                 <Badge variant="secondary" className="rounded-full text-xs px-2 py-0.5 bg-white/10">
                                     {statusLeads.length}

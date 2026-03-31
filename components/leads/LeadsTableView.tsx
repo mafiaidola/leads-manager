@@ -26,6 +26,7 @@ import { MoreHorizontal, Pencil, Trash2, Star, ArrowRightLeft, ChevronUp, Chevro
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { getStatusEmoji, getSourceIconKey, getSourceIconComponent } from "@/lib/iconMap";
 
 export interface LeadsTableViewProps {
     leads: any[];
@@ -134,10 +135,19 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                 <div className="flex items-center gap-2 flex-wrap">
                                     {statusBadge && (
                                         <Badge variant="outline" className="text-[11px] h-5 px-1.5 status-chip-dynamic" style={{ '--chip-bg': `${statusBadge.color}15`, '--chip-fg': statusBadge.color, '--chip-border': `${statusBadge.color}50` } as React.CSSProperties}>
-                                            {statusBadge.label || lead.status}
+                                            {statusBadge.emoji && <span className="mr-0.5">{statusBadge.emoji}</span>}{statusBadge.label || lead.status}
                                         </Badge>
                                     )}
-                                    {lead.source && <span className="text-[11px] text-muted-foreground">{lead.source}</span>}
+                                    {lead.source && (() => {
+                                        const srcObj = settings?.sources?.find((s: any) => s.key === lead.source);
+                                        const SrcIcon = srcObj?.icon ? getSourceIconComponent(srcObj.icon) : null;
+                                        return (
+                                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                                {SrcIcon && <SrcIcon className="h-3 w-3" />}
+                                                {srcObj?.label || lead.source}
+                                            </span>
+                                        );
+                                    })()}
                                     {lead.value && <span className="text-[11px] font-semibold text-primary ml-auto">{lead.currency} {lead.value}</span>}
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -272,6 +282,7 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                                         "--badge-bg": settings?.statuses.find((s: any) => s.key === lead.status)?.color + '15',
                                                         "--badge-color": settings?.statuses.find((s: any) => s.key === lead.status)?.color
                                                     } as React.CSSProperties}>
+                                                    {(() => { const emoji = getStatusEmoji(settings?.statuses, lead.status); return emoji ? <span className="mr-0.5">{emoji}</span> : null; })()}
                                                     {settings?.statuses.find((s: any) => s.key === lead.status)?.label || lead.status}
                                                 </Badge>
                                                 {lead.product && (
@@ -282,7 +293,18 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                             </div>
                                         </TableCell>
 
-                                        <TableCell className="hidden md:table-cell text-muted-foreground">{lead.source}</TableCell>
+                                        <TableCell className="hidden md:table-cell text-muted-foreground">
+                                            {(() => {
+                                                const srcObj = settings?.sources?.find((s: any) => s.key === lead.source);
+                                                const SrcIcon = srcObj?.icon ? getSourceIconComponent(srcObj.icon) : null;
+                                                return (
+                                                    <span className="flex items-center gap-1.5">
+                                                        {SrcIcon && <SrcIcon className="h-3.5 w-3.5 text-primary/60" />}
+                                                        {srcObj?.label || lead.source || "—"}
+                                                    </span>
+                                                );
+                                            })()}
+                                        </TableCell>
                                         <TableCell>
                                             {lead.phone ? (
                                                 <a href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer"

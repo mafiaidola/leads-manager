@@ -50,6 +50,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { formatPhoneDisplay } from "@/lib/constants/countryCodes";
+import { getSourceIconComponent } from "@/lib/iconMap";
 
 interface LeadDetailsSheetProps {
     leadId: string | null;
@@ -167,6 +168,7 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                             '--badge-color': statusInfo?.color,
                                         } as React.CSSProperties}
                                     >
+                                        {statusInfo?.emoji && <span className="mr-1">{statusInfo.emoji}</span>}
                                         {statusInfo?.label || data.lead.status}
                                     </Badge>
                                 );
@@ -327,17 +329,21 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                                     </div>
                                                 </div>
                                             )}
-                                            {data.lead.source && (
-                                                <div className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5">
-                                                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center mr-3 text-cyan-500">
-                                                        <Globe className="h-4 w-4" />
+                                            {data.lead.source && (() => {
+                                                const srcObj = settings?.sources?.find((s: any) => s.key === data.lead.source);
+                                                const SrcIcon = srcObj?.icon ? getSourceIconComponent(srcObj.icon) : Globe;
+                                                return (
+                                                    <div className="flex items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                                                        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center mr-3 text-cyan-500">
+                                                            <SrcIcon className="h-4 w-4" />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] text-muted-foreground uppercase font-bold">Source</span>
+                                                            <span className="text-sm font-medium">{srcObj?.label || data.lead.source}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Source</span>
-                                                        <span className="text-sm font-medium">{settings?.sources?.find((s: any) => s.key === data.lead.source)?.label || data.lead.source}</span>
-                                                    </div>
-                                                </div>
-                                            )}
+                                                );
+                                            })()}
                                             {data.lead.value != null && (
                                                 <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                                                     <div className="flex items-center">

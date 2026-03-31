@@ -9,15 +9,17 @@ import React from "react";
 import { DollarSign } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getSourceIconComponent } from "@/lib/iconMap";
 
 interface LeadDealCardProps {
     lead: any;
     formatDate: (dateStr: string) => string;
     sourceLabelMap?: Record<string, string>;
+    sourceIconMap?: Record<string, string>;
     productLabelMap?: Record<string, string>;
 }
 
-export const LeadDealCard = React.memo(function LeadDealCard({ lead, formatDate, sourceLabelMap = {}, productLabelMap = {} }: LeadDealCardProps) {
+export const LeadDealCard = React.memo(function LeadDealCard({ lead, formatDate, sourceLabelMap = {}, sourceIconMap = {}, productLabelMap = {} }: LeadDealCardProps) {
     return (
         <Card className="rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
             <CardHeader className="pb-3">
@@ -36,7 +38,10 @@ export const LeadDealCard = React.memo(function LeadDealCard({ lead, formatDate,
                 {lead.source && (
                     <div className="flex justify-between items-center p-2.5 rounded-xl bg-white/5">
                         <span className="text-xs text-muted-foreground">Source</span>
-                        <Badge variant="outline" className="rounded-full text-xs border-white/10">{sourceLabelMap[lead.source] || lead.source}</Badge>
+                        <Badge variant="outline" className="rounded-full text-xs border-white/10 flex items-center gap-1">
+                            {(() => { const IC = sourceIconMap[lead.source] ? getSourceIconComponent(sourceIconMap[lead.source]) : null; return IC ? <IC className="h-3 w-3" /> : null; })()}
+                            {sourceLabelMap[lead.source] || lead.source}
+                        </Badge>
                     </div>
                 )}
                 {lead.product && (

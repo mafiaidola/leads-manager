@@ -53,3 +53,24 @@ export const STATUS_EMOJI_OPTIONS = [
     "🤝", "🚀", "💎", "🔔", "📋", "🛑", "⚠️", "💬", "🎉", "👤",
     "📦", "🔑", "❤️", "👁️", "📊", "🕐", "🔄", "➡️", "✨", "🏷️",
 ];
+
+/**
+ * Resolve the emoji for a status key from settings.
+ * Returns the emoji string or empty string if none set.
+ */
+export function getStatusEmoji(statuses: any[] | undefined, statusKey: string): string {
+    if (!statuses) return "";
+    const found = statuses.find((s: any) => s.key === statusKey);
+    return found?.emoji || "";
+}
+
+/**
+ * Resolve the icon key for a source from settings.
+ * Returns the icon key string (e.g. "instagram") or empty string.
+ */
+export function getSourceIconKey(sources: any[] | undefined, sourceKey: string): string {
+    if (!sources) return "";
+    const found = sources.find((s: any) => s.key === sourceKey);
+    return found?.icon || "";
+}
+

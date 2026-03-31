@@ -246,7 +246,7 @@ export default async function DashboardPage() {
                                             <CardTitle className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                                                 {(() => {
                                                     const settingStatus = settings?.statuses?.find((s: any) => s.key === stat.status || s.label?.toLowerCase() === stat.status?.toLowerCase());
-                                                    return settingStatus?.label || stat.status?.replace(/_/g, " ");
+                                                    return <>{settingStatus?.emoji && <span className="mr-1">{settingStatus.emoji}</span>}{settingStatus?.label || stat.status?.replace(/_/g, " ")}</>;
                                                 })()}
                                             </CardTitle>
                                         </CardHeader>
@@ -264,7 +264,7 @@ export default async function DashboardPage() {
                 {(session?.user?.role === "ADMIN" || session?.user?.role === "IQA" || isSuperAdmin) && (
                 <div className="lg:col-span-3 flex flex-col gap-6">
                     <FadeIn delay={640}>
-                        <RecentLeads leads={stats.recentLeads} />
+                        <RecentLeads leads={stats.recentLeads} settings={settings} />
                     </FadeIn>
                     <FadeIn delay={720}>
                         <RecentActivity activities={stats.recentActivity} />
