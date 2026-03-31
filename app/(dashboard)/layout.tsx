@@ -20,7 +20,7 @@ import Organization from "@/models/Organization";
 import { ToastHistoryPanel } from "@/components/ui/ToastHistoryPanel";
 import { PresenceIndicator } from "@/components/ui/PresenceIndicator";
 import { SessionTimeoutWarning } from "@/components/session/SessionTimeoutWarning";
-import { AttendanceTracker } from "@/components/attendance/AttendanceTracker";
+import { CheckInOutWidget } from "@/components/attendance/AttendanceTracker";
 
 export default async function DashboardLayout({
     children,
@@ -88,6 +88,9 @@ export default async function DashboardLayout({
                                 currentPage="/"
                             />
 
+                            {/* Attendance Check-in/out */}
+                            <CheckInOutWidget />
+
                             <div className="h-8 w-[1px] bg-border mx-1" />
 
                             <div className="flex items-center gap-3 pl-2">
@@ -138,7 +141,7 @@ export default async function DashboardLayout({
                 </div>
                 <ToastHistoryPanel />
                 <SessionTimeoutWarning />
-                <AttendanceTracker />
+
             </main>
         </div>
     );

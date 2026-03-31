@@ -422,6 +422,7 @@ export async function getLeads(searchParams: any) {
                 noteCount: noteMap.get(id) || 0,
                 actionCount: actionMap.get(id) || 0,
                 followUpDate: l.followUpDate ? (l.followUpDate as Date).toISOString() : null,
+                isFromAdditional: l.isFromAdditional || false,
                 ...(() => {
                     const scoreResult = calculateLeadScore({ ...l, notesCount: noteMap.get(id) || 0 });
                     return { leadScore: scoreResult.score, leadGrade: scoreResult.grade, leadScoreColor: scoreResult.color };

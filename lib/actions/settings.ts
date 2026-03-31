@@ -31,7 +31,7 @@ export async function getSettings() {
 
     try {
         await dbConnect();
-        const org = await Organization.findById(session.user.orgId);
+        const org = await Organization.findById(session.user.orgId).lean() as any;
         if (!org) return null;
 
         // Auto-backfill: if products array is empty, seed with defaults (legacy orgs)
@@ -42,8 +42,10 @@ export async function getSettings() {
                 { key: "service_a", label: "Service A" },
                 { key: "service_b", label: "Service B" },
             ];
-            org.settings.products = defaultProducts;
-            await org.save();
+            await Organization.updateOne(
+                { _id: session.user.orgId },
+                { $set: { "settings.products": defaultProducts } }
+            );
             products = defaultProducts;
         }
 

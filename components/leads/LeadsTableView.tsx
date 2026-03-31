@@ -80,7 +80,11 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                         const statusBadge = settings?.statuses?.find((s: any) => s.key === lead.status);
                         return (
                             <div key={lead._id}
-                                className={cn("rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl p-4 space-y-2 cursor-pointer hover:bg-primary/5 transition-colors", selectedIds.has(lead._id) && "bg-primary/10")}
+                                className={cn(
+                                    "rounded-2xl border border-white/10 bg-card/40 backdrop-blur-xl p-4 space-y-2 cursor-pointer hover:bg-primary/5 transition-colors",
+                                    selectedIds.has(lead._id) && "bg-primary/10",
+                                    lead.isFromAdditional && "border-cyan-500/20 bg-cyan-500/[0.04]"
+                                )}
                                 onClick={() => onLeadClick(lead._id)}>
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
@@ -88,7 +92,9 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                             {lead.serialNumber && <span className="text-[10px] font-mono text-primary/60">#{lead.serialNumber}</span>}
                                             <span className="font-semibold text-sm text-foreground truncate">{lead.name}</span>
                                             {lead.isFromAdditional && (
-                                                <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-[8px] px-1 py-0 h-3.5">📋</Badge>
+                                                <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-[8px] px-1 py-0 h-3.5">
+                                                    📋 {lead.createdBy?.name || "User"}
+                                                </Badge>
                                             )}
                                             {isOverdue && <span className="text-amber-400 text-xs">🔔</span>}
                                         </div>
@@ -217,7 +223,8 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                     <TableRow
                                         key={lead._id}
                                         className={cn("cursor-pointer hover:bg-primary/5 border-white/5 transition-colors",
-                                            selectedIds.has(lead._id) && "bg-primary/10")}
+                                            selectedIds.has(lead._id) && "bg-primary/10",
+                                            lead.isFromAdditional && "bg-cyan-500/[0.03] hover:bg-cyan-500/[0.07] border-l-2 border-l-cyan-500/40")}
                                         onClick={() => onLeadClick(lead._id)}
                                     >
                                         <TableCell onClick={(e) => e.stopPropagation()}>
@@ -238,7 +245,9 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                                 <div className="text-base text-foreground group-hover/name:text-primary transition-colors flex items-center gap-1.5">
                                                     {lead.name}
                                                     {lead.isFromAdditional && (
-                                                        <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-[9px] px-1.5 py-0 h-4">📋 Additional</Badge>
+                                                        <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-[9px] px-1.5 py-0 h-4">
+                                                            📋 {lead.createdBy?.name || "User Lead"}
+                                                        </Badge>
                                                     )}
                                                     {lead.followUpDate && new Date(lead.followUpDate) <= now && (
                                                         <span title={`Follow-up: ${new Date(lead.followUpDate).toLocaleDateString()}`} className="text-amber-400 text-sm">🔔</span>

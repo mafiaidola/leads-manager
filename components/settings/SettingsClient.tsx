@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { updateSettings, updateBranding, updateGoals, updateTheme, updateNotificationPrefs, updateAutoAssignStrategy, updateCurrency } from "@/lib/actions/settings";
+import { updateSettings, updateBranding, updateTheme, updateNotificationPrefs, updateAutoAssignStrategy, updateCurrency } from "@/lib/actions/settings";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Save, Check, Database, HardDrive, FileDown, Download, X, Bell, Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -92,12 +92,6 @@ export function SettingsClient({
         loginTheme: settings?.branding?.loginTheme || "aurora",
     });
 
-    // Goals state
-    const [goals, setGoals] = useState({
-        monthlyLeadTarget: settings?.goals?.monthlyLeadTarget || 50,
-        monthlyConversionTarget: settings?.goals?.monthlyConversionTarget || 10,
-    });
-
     // Theme state
     const [currentTheme, setCurrentTheme] = useState<"violet" | "ocean" | "emerald">(settings?.theme || "violet");
 
@@ -117,15 +111,15 @@ export function SettingsClient({
 
     // Unsaved changes tracking — snapshot initial values
     const initialSnapshot = useRef(JSON.stringify({
-        statuses, sources, products, branding, notifPrefs, goals, currentTheme, customRoles,
+        statuses, sources, products, branding, notifPrefs, currentTheme, customRoles,
     }));
 
     const hasUnsavedChanges = useMemo(() => {
         const current = JSON.stringify({
-            statuses, sources, products, branding, notifPrefs, goals, currentTheme, customRoles,
+            statuses, sources, products, branding, notifPrefs, currentTheme, customRoles,
         });
         return current !== initialSnapshot.current;
-    }, [statuses, sources, products, branding, notifPrefs, goals, currentTheme, customRoles]);
+    }, [statuses, sources, products, branding, notifPrefs, currentTheme, customRoles]);
 
     const discardChanges = useCallback(() => {
         const snap = JSON.parse(initialSnapshot.current);
@@ -134,13 +128,12 @@ export function SettingsClient({
         setProducts(snap.products);
         setBranding(snap.branding);
         setNotifPrefs(snap.notifPrefs);
-        setGoals(snap.goals);
         setCurrentTheme(snap.currentTheme);
         setCustomRoles(snap.customRoles);
     }, []);
 
     const SETTINGS_TAB_KEYWORDS: Record<string, { label: string; keywords: string[] }> = useMemo(() => ({
-        general: { label: "General", keywords: ["statuses", "sources", "goals", "currency", "auto-assign", "lead stages"] },
+        general: { label: "General", keywords: ["statuses", "sources", "currency", "auto-assign", "lead stages"] },
         products: { label: "Products", keywords: ["products", "custom fields", "catalog"] },
         users: { label: "Team", keywords: ["users", "team", "members", "create user", "roles"] },
         branding: { label: "Branding", keywords: ["logo", "color", "theme", "app name", "accent"] },
@@ -178,13 +171,13 @@ export function SettingsClient({
             toast({ title: "Settings saved" });
             // Update snapshot to prevent false unsaved-changes warnings
             initialSnapshot.current = JSON.stringify({
-                statuses, sources, products, branding, notifPrefs, goals, currentTheme, customRoles,
+                statuses, sources, products, branding, notifPrefs, currentTheme, customRoles,
             });
             startTransition(() => router.refresh());
         } else {
             toast({ title: result?.error || "Error saving settings", variant: "destructive" });
         }
-    }, [statuses, sources, products, customFields, customRoles, toast, branding, notifPrefs, goals, currentTheme, router]);
+    }, [statuses, sources, products, customFields, customRoles, toast, branding, notifPrefs, currentTheme, router]);
 
     // ✅ Drag-reorder callback for GeneralTab statuses
     const handleReorderStatuses = useCallback((reordered: any[]) => {
@@ -234,15 +227,6 @@ export function SettingsClient({
             toast({ title: result?.error || result?.message || "Error saving branding", variant: "destructive" });
         }
     }, [branding, toast, router]);
-
-    const handleSaveGoals = useCallback(async () => {
-        const result = await updateGoals(goals);
-        if (result?.success) {
-            toast({ title: "Goals updated" });
-        } else {
-            toast({ title: result?.message || "Error", variant: "destructive" });
-        }
-    }, [goals, toast]);
 
     const handleBackup = useCallback(() => {
         window.location.href = "/api/backup";
@@ -332,14 +316,11 @@ export function SettingsClient({
                 <GeneralTab
                     statuses={statuses}
                     sources={sources}
-                    goals={goals}
                     onStatusChange={handleStatusChange}
                     onAddStatus={handleAddStatus}
                     onRemoveStatus={handleRemoveStatus}
                     onSourcesChange={setSources}
-                    onGoalsChange={setGoals}
                     onSaveSettings={handleSaveSettings}
-                    onSaveGoals={handleSaveGoals}
                     onReorderStatuses={handleReorderStatuses}
                     autoAssignStrategy={settings?.autoAssignStrategy || "none"}
                     onAutoAssignStrategyChange={async (strategy) => {
@@ -536,6 +517,7 @@ export function SettingsClient({
                 <TargetsTab
                     users={users.map((u: any) => ({ _id: u._id, name: u.name, role: u.role }))}
                     defaultCurrency={settings?.defaultCurrency || "AED"}
+                    orgGoals={settings?.goals || { monthlyLeadTarget: 50, monthlyConversionTarget: 10 }}
                 />
             </TabsContent>
 
@@ -596,13 +578,12 @@ export function SettingsClient({
                                                 if (orgSettings.sources) setSources(orgSettings.sources);
                                                 if (orgSettings.products) setProducts(orgSettings.products);
                                                 if (orgSettings.customFields) setCustomFields(orgSettings.customFields);
-                                                if (orgSettings.goals) setGoals(orgSettings.goals);
                                             }
                                             const orgBranding = backupData.organization?.branding;
                                             if (orgBranding) {
                                                 setBranding(orgBranding);
                                             }
-                                            toast({ title: "✅ Settings loaded from backup", description: `Loaded statuses, sources, products, goals, and branding. Note: leads & users are NOT restored. Click "Save" in each section to apply.` });
+                                            toast({ title: "✅ Settings loaded from backup", description: `Loaded statuses, sources, products, and branding. Note: leads & users are NOT restored. Click "Save" in each section to apply.` });
                                         } catch (err) {
                                             toast({ title: "Failed to read backup", description: "Invalid JSON file", variant: "destructive" });
                                         }

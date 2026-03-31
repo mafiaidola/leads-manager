@@ -52,8 +52,11 @@ async function dbConnect() {
         const opts = {
             bufferCommands: false,
             maxPoolSize: 10,                    // Production pool size
-            serverSelectionTimeoutMS: 10000,    // 10s to find a server
+            serverSelectionTimeoutMS: 5000,     // 5s to find a server (fail faster)
             socketTimeoutMS: 45000,             // 45s socket timeout
+            heartbeatFrequencyMS: 10000,        // Detect stale connections
+            retryReads: true,
+            retryWrites: true,
         };
 
         cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {

@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Target, Save, GripVertical, Users, DollarSign } from "lucide-react";
+import { X, Save, GripVertical, Users, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const COLOR_NAME_MAP: Record<string, string> = {
@@ -29,29 +29,23 @@ function toHex(c: string | undefined): string {
 interface GeneralTabProps {
     statuses: any[];
     sources: any[];
-    goals: { monthlyLeadTarget: number; monthlyConversionTarget: number };
     onStatusChange: (index: number, field: string, value: string) => void;
     onAddStatus: () => void;
     onRemoveStatus: (index: number) => void;
     onSourcesChange: (sources: any[]) => void;
-    onGoalsChange: (goals: { monthlyLeadTarget: number; monthlyConversionTarget: number }) => void;
     onSaveSettings: () => void;
-    onSaveGoals: () => void;
-    // NEW: callback to reorder statuses
     onReorderStatuses?: (statuses: any[]) => void;
-    // Auto-assignment strategy
     autoAssignStrategy?: string;
     onAutoAssignStrategyChange?: (strategy: string) => void;
-    // Currency
     defaultCurrency?: string;
     onCurrencyChange?: (currency: string) => void;
 }
 
 export function GeneralTab({
-    statuses, sources, goals,
+    statuses, sources,
     onStatusChange, onAddStatus, onRemoveStatus,
-    onSourcesChange, onGoalsChange,
-    onSaveSettings, onSaveGoals,
+    onSourcesChange,
+    onSaveSettings,
     onReorderStatuses,
     autoAssignStrategy = "none",
     onAutoAssignStrategyChange,
@@ -288,45 +282,7 @@ export function GeneralTab({
                 </CardContent>
             </Card>
 
-            {/* ── Monthly Goals ──────────────────────────────────── */}
-            <Card className="md:col-span-2 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">
-                <CardHeader>
-                    <CardTitle className="text-lg font-bold flex items-center gap-2">
-                        <Target className="h-5 w-5 text-amber-500" />
-                        Monthly Goals
-                    </CardTitle>
-                    <CardDescription className="text-muted-foreground/80">
-                        Set targets for the Reports &quot;Goal vs Actual&quot; chart.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-6 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label className="text-xs ml-1">Monthly Lead Target</Label>
-                            <Input
-                                type="number"
-                                value={goals.monthlyLeadTarget}
-                                onChange={e => onGoalsChange({ ...goals, monthlyLeadTarget: Number(e.target.value) })}
-                                className="rounded-xl border-white/10 bg-black/20"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs ml-1">Monthly Conversion Target</Label>
-                            <Input
-                                type="number"
-                                value={goals.monthlyConversionTarget}
-                                onChange={e => onGoalsChange({ ...goals, monthlyConversionTarget: Number(e.target.value) })}
-                                className="rounded-xl border-white/10 bg-black/20"
-                            />
-                        </div>
-                    </div>
-                    <div className="pt-6">
-                        <Button onClick={onSaveGoals} className="rounded-xl bg-amber-500 hover:bg-amber-600 px-8 shadow-lg shadow-amber-500/20">
-                            <Save className="h-4 w-4 mr-2" /> Save Goals
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+
 
             {/* ── Default Currency ──────────────────────────────── */}
             <Card className="md:col-span-1 rounded-3xl border-white/10 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden">

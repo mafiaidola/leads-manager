@@ -2,9 +2,12 @@
  * @module lib/actions/attendance
  * @description Server actions for attendance tracking.
  *
- * - recordLogin: logs first login of the day (upsert pattern)
- * - recordLogout: updates lastLogout timestamp
- * - getAttendanceLogs: paginated daily logs for admin
+ * - checkIn: explicit user check-in (creates attendance record)
+ * - checkOut: explicit user check-out (sets lastLogout + totalMinutes)
+ * - getMyAttendanceToday: returns current user's attendance for today
+ * - recordLogin: legacy auto-login (kept for backward compat)
+ * - recordLogout: legacy auto-logout (kept for backward compat)
+ * - getAttendanceLogs: daily logs for admin
  * - getAttendanceSummary: monthly summary per user
  * - getWorkSchedule: get org work schedule settings
  * - updateWorkSchedule: admin updates work schedule
@@ -17,7 +20,146 @@ import AttendanceLog from "@/models/AttendanceLog";
 import Organization from "@/models/Organization";
 import User from "@/models/User";
 
-// ─── Record Login (called on signIn) ──────────────────────────────────────────
+// ─── Get My Attendance Today (for check-in/out widget) ────────────────────────
+
+export async function getMyAttendanceToday() {
+    const session = await auth();
+    if (!session?.user) return null;
+
+    try {
+        await dbConnect();
+        const userId = (session.user as any).id;
+        const today = new Date().toISOString().split("T")[0];
+
+        const log = await AttendanceLog.findOne({ userId, date: today }).lean();
+        if (!log) return null;
+
+        return {
+            _id: (log as any)._id.toString(),
+            checkedIn: true,
+            firstLogin: (log as any).firstLogin?.toISOString?.() || (log as any).firstLogin,
+            lastLogout: (log as any).lastLogout?.toISOString?.() || (log as any).lastLogout || null,
+            checkedOut: !!(log as any).lastLogout,
+            totalMinutes: (log as any).totalMinutes || null,
+            status: (log as any).status,
+        };
+    } catch (err) {
+        console.error("getMyAttendanceToday error:", err);
+        return null;
+    }
+}
+
+// ─── Explicit Check-In ───────────────────────────────────────────────────────
+
+export async function checkIn() {
+    const session = await auth();
+    if (!session?.user) return { success: false, message: "Unauthorized" };
+
+    try {
+        await dbConnect();
+        const userId = (session.user as any).id;
+        const orgId = (session.user as any).orgId;
+        const userName = session.user.name || "";
+        const today = new Date().toISOString().split("T")[0];
+
+        // Check if already checked in today
+        const existing = await AttendanceLog.findOne({ userId, date: today });
+        if (existing) {
+            return {
+                success: false,
+                message: "Already checked in today",
+                time: existing.firstLogin?.toISOString(),
+            };
+        }
+
+        // Determine status based on org schedule
+        let status: "PRESENT" | "LATE" = "PRESENT";
+        const org = await Organization.findById(orgId).select("settings.workSchedule").lean();
+        const schedule = (org as any)?.settings?.workSchedule;
+
+        if (schedule?.enabled && schedule?.startTime) {
+            const now = new Date();
+            const [startH, startM] = schedule.startTime.split(":").map(Number);
+            const graceMin = schedule.gracePeriodMinutes || 0;
+            const startMinutes = startH * 60 + startM + graceMin;
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            if (currentMinutes > startMinutes) {
+                status = "LATE";
+            }
+        }
+
+        const now = new Date();
+        await AttendanceLog.create({
+            userId,
+            orgId,
+            userName,
+            date: today,
+            firstLogin: now,
+            loginCount: 1,
+            status,
+        });
+
+        return {
+            success: true,
+            message: status === "LATE" ? "Checked in (Late)" : "Checked in successfully",
+            time: now.toISOString(),
+            status,
+        };
+    } catch (err) {
+        console.error("checkIn error:", err);
+        return { success: false, message: "Failed to check in" };
+    }
+}
+
+// ─── Explicit Check-Out ──────────────────────────────────────────────────────
+
+export async function checkOut() {
+    const session = await auth();
+    if (!session?.user) return { success: false, message: "Unauthorized" };
+
+    try {
+        await dbConnect();
+        const userId = (session.user as any).id;
+        const today = new Date().toISOString().split("T")[0];
+        const now = new Date();
+
+        const log = await AttendanceLog.findOne({ userId, date: today });
+        if (!log) return { success: false, message: "You haven't checked in today" };
+        if (log.lastLogout) return { success: false, message: "Already checked out today" };
+
+        log.lastLogout = now;
+        const diffMs = now.getTime() - new Date(log.firstLogin).getTime();
+        log.totalMinutes = Math.round(diffMs / 60000);
+
+        // Check early leave
+        const org = await Organization.findById(log.orgId).select("settings.workSchedule").lean();
+        const schedule = (org as any)?.settings?.workSchedule;
+        if (schedule?.enabled && schedule?.endTime) {
+            const [endH, endM] = schedule.endTime.split(":").map(Number);
+            const endMinutes = endH * 60 + endM;
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            if (currentMinutes < endMinutes && log.status !== "LATE") {
+                log.status = "EARLY_LEAVE";
+            }
+        }
+        await log.save();
+
+        const hours = Math.floor(log.totalMinutes / 60);
+        const mins = log.totalMinutes % 60;
+
+        return {
+            success: true,
+            message: `Checked out — ${hours}h ${mins}m worked`,
+            time: now.toISOString(),
+            totalMinutes: log.totalMinutes,
+        };
+    } catch (err) {
+        console.error("checkOut error:", err);
+        return { success: false, message: "Failed to check out" };
+    }
+}
+
+// ─── Record Login (legacy — called on signIn) ────────────────────────────────
 
 export async function recordLogin(userId: string, orgId: string, userName: string, ip?: string, ua?: string) {
     try {

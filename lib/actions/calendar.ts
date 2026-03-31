@@ -22,7 +22,7 @@ export async function getFollowUpEvents(month: number, year: number) {
     try {
         await dbConnect();
         const orgId = new mongoose.Types.ObjectId(session.user.orgId as string);
-        const isSales = session.user.role === USER_ROLES.SALES;
+        const isAdmin = session.user.role === USER_ROLES.ADMIN;
 
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0, 23, 59, 59);
@@ -33,7 +33,8 @@ export async function getFollowUpEvents(month: number, year: number) {
             followUpDate: { $gte: startDate, $lte: endDate },
         };
 
-        if (isSales) {
+        // Only ADMIN sees all leads. All other roles see only their own assigned leads.
+        if (!isAdmin) {
             query.assignedTo = new mongoose.Types.ObjectId(session.user.id);
         }
 
