@@ -2,7 +2,7 @@
  * @component ThemeProvider
  * @description React context provider for theme management.
  * Handles two dimensions:
- * 1. Color theme: violet (default), ocean, emerald
+ * 1. Color theme: violet (default), ocean, emerald, sunset, cherry, midnight, neon, royal, arctic
  * 2. Appearance mode: dark (default), light, system
  * 
  * Persists both preferences to localStorage and syncs with 
@@ -12,7 +12,7 @@
 
 import { useEffect, useState, createContext, useContext, ReactNode, useCallback } from "react";
 
-type Theme = "violet" | "ocean" | "emerald";
+type Theme = string;
 type Mode = "dark" | "light" | "system";
 
 interface ThemeContextValue {
@@ -62,7 +62,7 @@ export function ThemeProvider({
     // Apply color theme class
     useEffect(() => {
         const root = document.documentElement;
-        root.classList.remove("theme-violet", "theme-ocean", "theme-emerald");
+        root.classList.remove("theme-violet", "theme-ocean", "theme-emerald", "theme-sunset", "theme-cherry", "theme-midnight", "theme-neon", "theme-royal", "theme-arctic");
         if (theme !== "violet") {
             root.classList.add(`theme-${theme}`);
         }

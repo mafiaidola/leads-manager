@@ -276,7 +276,7 @@ export async function updateOrganization(
         contactPhone?: string;
         active?: boolean;
         branding?: { appName?: string; accentColor?: string; logoUrl?: string };
-        theme?: "violet" | "ocean" | "emerald";
+        theme?: string;
     }
 ) {
     const session = await auth();
@@ -295,7 +295,7 @@ export async function updateOrganization(
         if (data.contactEmail !== undefined) org.contactEmail = data.contactEmail;
         if (data.contactPhone !== undefined) org.contactPhone = data.contactPhone;
         if (data.active !== undefined) org.active = data.active;
-        if (data.theme) org.theme = data.theme;
+        if (data.theme) org.theme = data.theme as any;
         if (data.branding) {
             if (data.branding.appName !== undefined) org.branding.appName = data.branding.appName;
             if (data.branding.accentColor !== undefined) org.branding.accentColor = data.branding.accentColor;

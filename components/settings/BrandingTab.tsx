@@ -15,11 +15,23 @@ import { cn } from "@/lib/utils";
 
 interface BrandingTabProps {
     branding: { appName: string; accentColor: string; logoUrl: string; loginTheme: string };
-    currentTheme: "violet" | "ocean" | "emerald";
+    currentTheme: string;
     onBrandingChange: (branding: { appName: string; accentColor: string; logoUrl: string; loginTheme: string }) => void;
     onSaveBranding: () => void;
-    onChangeTheme: (theme: "violet" | "ocean" | "emerald") => void;
+    onChangeTheme: (theme: string) => void;
 }
+
+const APP_THEMES = [
+    { key: "violet", name: "Violet Noir", desc: "Premium & Modern", gradient: "from-violet-600 via-purple-600 to-fuchsia-600", borderColor: "border-violet-500", shadowColor: "shadow-violet-500/25", checkColor: "bg-violet-500" },
+    { key: "ocean", name: "Ocean Blue", desc: "Corporate & Clean", gradient: "from-blue-600 via-cyan-600 to-teal-500", borderColor: "border-blue-500", shadowColor: "shadow-blue-500/25", checkColor: "bg-blue-500" },
+    { key: "emerald", name: "Emerald Forest", desc: "Fresh & Natural", gradient: "from-emerald-600 via-green-600 to-teal-600", borderColor: "border-emerald-500", shadowColor: "shadow-emerald-500/25", checkColor: "bg-emerald-500" },
+    { key: "sunset", name: "Sunset Blaze", desc: "Warm & Energetic", gradient: "from-orange-500 via-amber-500 to-rose-500", borderColor: "border-orange-500", shadowColor: "shadow-orange-500/25", checkColor: "bg-orange-500" },
+    { key: "cherry", name: "Cherry Pop", desc: "Bold & Fun", gradient: "from-red-500 via-pink-500 to-rose-500", borderColor: "border-red-500", shadowColor: "shadow-red-500/25", checkColor: "bg-red-500" },
+    { key: "midnight", name: "Midnight Indigo", desc: "Deep & Sleek", gradient: "from-indigo-700 via-blue-800 to-slate-800", borderColor: "border-indigo-500", shadowColor: "shadow-indigo-500/25", checkColor: "bg-indigo-500" },
+    { key: "neon", name: "Neon Pulse", desc: "Electric & Vibrant", gradient: "from-lime-400 via-green-500 to-cyan-500", borderColor: "border-lime-500", shadowColor: "shadow-lime-500/25", checkColor: "bg-lime-500" },
+    { key: "royal", name: "Royal Gold", desc: "Luxury & Premium", gradient: "from-yellow-500 via-amber-600 to-orange-700", borderColor: "border-amber-500", shadowColor: "shadow-amber-500/25", checkColor: "bg-amber-500" },
+    { key: "arctic", name: "Arctic Frost", desc: "Cool & Minimal", gradient: "from-sky-400 via-blue-400 to-slate-500", borderColor: "border-sky-500", shadowColor: "shadow-sky-500/25", checkColor: "bg-sky-500" },
+];
 
 const LOGIN_THEMES = [
     { key: "aurora", name: "Aurora Mesh", desc: "Animated gradient blobs & floating orbs", gradient: "from-violet-600 via-purple-600 to-fuchsia-600", borderColor: "violet" },
@@ -28,6 +40,9 @@ const LOGIN_THEMES = [
     { key: "neon", name: "Neon Grid", desc: "Cyberpunk grid with scan lines", gradient: "from-green-500 via-emerald-600 to-teal-700", borderColor: "emerald" },
     { key: "gradient", name: "Gradient Shift", desc: "Smooth gradient rotation & blobs", gradient: "from-pink-500 via-rose-600 to-orange-600", borderColor: "pink" },
     { key: "minimal", name: "Minimal Blur", desc: "Clean, frosted glass spotlight", gradient: "from-slate-600 via-zinc-700 to-neutral-800", borderColor: "slate" },
+    { key: "galaxy", name: "Galaxy Nebula", desc: "Cosmic stars & swirling nebula clouds", gradient: "from-purple-900 via-indigo-800 to-blue-900", borderColor: "purple" },
+    { key: "rain", name: "Digital Rain", desc: "Matrix-style falling glowing drops", gradient: "from-green-900 via-emerald-800 to-teal-900", borderColor: "green" },
+    { key: "pulse", name: "Heartbeat Pulse", desc: "Expanding ring pulses with rhythm glow", gradient: "from-rose-600 via-pink-700 to-fuchsia-800", borderColor: "rose" },
 ];
 
 const ACCENT_PRESETS = [
@@ -349,101 +364,39 @@ export function BrandingTab({
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-                        {/* Violet Noir */}
-                        <button
-                            onClick={() => onChangeTheme("violet")}
-                            className={cn(
-                                "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02]",
-                                currentTheme === "violet" ? "border-violet-500 shadow-lg shadow-violet-500/25" : "border-white/10 hover:border-white/30"
-                            )}
-                        >
-                            <div className="rounded-xl overflow-hidden">
-                                <div className="h-24 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 relative">
-                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent)]" />
-                                    <div className="absolute bottom-2 left-3 flex gap-1">
-                                        <div className="h-2 w-8 bg-white/40 rounded-full" />
-                                        <div className="h-2 w-5 bg-white/25 rounded-full" />
-                                    </div>
-                                </div>
-                                <div className="p-3 bg-card/80">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-bold">Violet Noir</p>
-                                            <p className="text-[10px] text-muted-foreground">Premium &amp; Modern</p>
+                        {APP_THEMES.map((t) => (
+                            <button
+                                key={t.key}
+                                onClick={() => onChangeTheme(t.key)}
+                                className={cn(
+                                    "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02]",
+                                    currentTheme === t.key ? `${t.borderColor} shadow-lg ${t.shadowColor}` : "border-white/10 hover:border-white/30"
+                                )}
+                            >
+                                <div className="rounded-xl overflow-hidden">
+                                    <div className={`h-24 bg-gradient-to-br ${t.gradient} relative`}>
+                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent)]" />
+                                        <div className="absolute bottom-2 left-3 flex gap-1">
+                                            <div className="h-2 w-8 bg-white/40 rounded-full" />
+                                            <div className="h-2 w-5 bg-white/25 rounded-full" />
                                         </div>
-                                        {currentTheme === "violet" && (
-                                            <div className="h-6 w-6 rounded-full bg-violet-500 flex items-center justify-center">
-                                                <Check className="h-3.5 w-3.5 text-white" />
+                                    </div>
+                                    <div className="p-3 bg-card/80">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm font-bold">{t.name}</p>
+                                                <p className="text-[10px] text-muted-foreground">{t.desc}</p>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </button>
-
-                        {/* Ocean Blue */}
-                        <button
-                            onClick={() => onChangeTheme("ocean")}
-                            className={cn(
-                                "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02]",
-                                currentTheme === "ocean" ? "border-blue-500 shadow-lg shadow-blue-500/25" : "border-white/10 hover:border-white/30"
-                            )}
-                        >
-                            <div className="rounded-xl overflow-hidden">
-                                <div className="h-24 bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-500 relative">
-                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent)]" />
-                                    <div className="absolute bottom-2 left-3 flex gap-1">
-                                        <div className="h-2 w-8 bg-white/40 rounded-full" />
-                                        <div className="h-2 w-5 bg-white/25 rounded-full" />
-                                    </div>
-                                </div>
-                                <div className="p-3 bg-card/80">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-bold">Ocean Blue</p>
-                                            <p className="text-[10px] text-muted-foreground">Corporate &amp; Clean</p>
+                                            {currentTheme === t.key && (
+                                                <div className={`h-6 w-6 rounded-full ${t.checkColor} flex items-center justify-center`}>
+                                                    <Check className="h-3.5 w-3.5 text-white" />
+                                                </div>
+                                            )}
                                         </div>
-                                        {currentTheme === "ocean" && (
-                                            <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center">
-                                                <Check className="h-3.5 w-3.5 text-white" />
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
-                            </div>
-                        </button>
-
-                        {/* Emerald Forest */}
-                        <button
-                            onClick={() => onChangeTheme("emerald")}
-                            className={cn(
-                                "group relative rounded-2xl border-2 p-1 transition-all duration-300 hover:scale-[1.02]",
-                                currentTheme === "emerald" ? "border-emerald-500 shadow-lg shadow-emerald-500/25" : "border-white/10 hover:border-white/30"
-                            )}
-                        >
-                            <div className="rounded-xl overflow-hidden">
-                                <div className="h-24 bg-gradient-to-br from-emerald-600 via-green-600 to-teal-600 relative">
-                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent)]" />
-                                    <div className="absolute bottom-2 left-3 flex gap-1">
-                                        <div className="h-2 w-8 bg-white/40 rounded-full" />
-                                        <div className="h-2 w-5 bg-white/25 rounded-full" />
-                                    </div>
-                                </div>
-                                <div className="p-3 bg-card/80">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-bold">Emerald Forest</p>
-                                            <p className="text-[10px] text-muted-foreground">Fresh &amp; Natural</p>
-                                        </div>
-                                        {currentTheme === "emerald" && (
-                                            <div className="h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
-                                                <Check className="h-3.5 w-3.5 text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </button>
+                            </button>
+                        ))}
                     </div>
                 </CardContent>
             </Card>

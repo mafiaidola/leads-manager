@@ -193,7 +193,7 @@ export async function updateGoals(data: {
 /**
  * Update theme for the current organization.
  */
-export async function updateTheme(theme: "violet" | "ocean" | "emerald") {
+export async function updateTheme(theme: string) {
     const session = await auth();
     if (!session?.user?.orgId || session.user.role !== USER_ROLES.ADMIN) {
         return { error: "Unauthorized" };

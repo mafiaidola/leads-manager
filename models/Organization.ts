@@ -65,7 +65,7 @@ export interface IOrganization {
     contactEmail: string;
     contactPhone: string;
     branding: IOrgBranding;
-    theme: "violet" | "ocean" | "emerald";
+    theme: "violet" | "ocean" | "emerald" | "sunset" | "cherry" | "midnight" | "neon" | "royal" | "arctic";
     settings: {
         statuses: IOrgStatus[];
         sources: IOrgSource[];
@@ -103,7 +103,7 @@ const OrganizationSchema = new Schema<IOrganization>(
             logoUrl: { type: String, default: "" },
             loginTheme: { type: String, default: "aurora" },
         },
-        theme: { type: String, enum: ["violet", "ocean", "emerald"], default: "violet" },
+        theme: { type: String, enum: ["violet", "ocean", "emerald", "sunset", "cherry", "midnight", "neon", "royal", "arctic"], default: "violet" },
         settings: {
             statuses: [
                 {

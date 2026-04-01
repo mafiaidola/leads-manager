@@ -93,7 +93,7 @@ export function SettingsClient({
     });
 
     // Theme state
-    const [currentTheme, setCurrentTheme] = useState<"violet" | "ocean" | "emerald">(settings?.theme || "violet");
+    const [currentTheme, setCurrentTheme] = useState<string>(settings?.theme || "violet");
 
     // Export state
     const [exportOrgId, setExportOrgId]    = useState<string>("all");
@@ -232,12 +232,17 @@ export function SettingsClient({
         window.location.href = "/api/backup";
     }, []);
 
-    const handleChangeTheme = useCallback(async (theme: "violet" | "ocean" | "emerald") => {
+    const handleChangeTheme = useCallback(async (theme: string) => {
+        const THEME_NAMES: Record<string, string> = {
+            violet: "Violet Noir", ocean: "Ocean Blue", emerald: "Emerald Forest",
+            sunset: "Sunset Blaze", cherry: "Cherry Pop", midnight: "Midnight Indigo",
+            neon: "Neon Pulse", royal: "Royal Gold", arctic: "Arctic Frost",
+        };
         setCurrentTheme(theme);
         setTheme(theme);
         const result = await updateTheme(theme);
         if (result?.success) {
-            toast({ title: `Theme changed to ${theme === "violet" ? "Violet Noir" : theme === "ocean" ? "Ocean Blue" : "Emerald Forest"}` });
+            toast({ title: `Theme changed to ${THEME_NAMES[theme] || theme}` });
             // Force layout refresh so the theme propagates org-wide
             startTransition(() => router.refresh());
         } else {

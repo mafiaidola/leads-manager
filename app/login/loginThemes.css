@@ -214,3 +214,163 @@
     0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(1); }
     50%      { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
 }
+
+/* ── Theme 7: Galaxy Nebula ──────────────────────────────────────────────── */
+.login-page[data-login-theme="galaxy"] .login-aurora { display: none; }
+.login-page[data-login-theme="galaxy"] .login-orbs { display: none; }
+.login-page[data-login-theme="galaxy"] .login-grid { display: none; }
+.login-page[data-login-theme="galaxy"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+        radial-gradient(ellipse 60% 40% at 30% 30%, rgba(100, 50, 200, 0.15), transparent),
+        radial-gradient(ellipse 50% 50% at 70% 60%, rgba(30, 60, 180, 0.12), transparent),
+        radial-gradient(ellipse 70% 30% at 50% 80%, rgba(150, 30, 120, 0.1), transparent),
+        #020108;
+}
+
+/* Galaxy star particles */
+.login-galaxy-stars {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+}
+.login-star {
+    position: absolute;
+    border-radius: 50%;
+    background: white;
+    animation: starTwinkle var(--star-dur, 3s) ease-in-out infinite var(--star-delay, 0s);
+}
+@keyframes starTwinkle {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50%      { opacity: 1; transform: scale(1.5); }
+}
+
+/* Galaxy nebula clouds */
+.login-nebula {
+    position: fixed;
+    z-index: 0;
+    border-radius: 50%;
+    filter: blur(80px);
+    mix-blend-mode: screen;
+    animation: nebulaDrift var(--neb-dur, 20s) ease-in-out infinite var(--neb-delay, 0s);
+}
+@keyframes nebulaDrift {
+    0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.15; }
+    33%      { transform: translate(40px, -30px) scale(1.15) rotate(10deg); opacity: 0.25; }
+    66%      { transform: translate(-30px, 20px) scale(0.9) rotate(-5deg); opacity: 0.18; }
+}
+
+/* ── Theme 8: Digital Rain ───────────────────────────────────────────────── */
+.login-page[data-login-theme="rain"] .login-aurora { display: none; }
+.login-page[data-login-theme="rain"] .login-orbs { display: none; }
+.login-page[data-login-theme="rain"] .login-grid { display: none; }
+.login-page[data-login-theme="rain"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+        radial-gradient(ellipse 60% 60% at 50% 50%, rgba(0, 180, 80, 0.06), transparent),
+        #020804;
+}
+
+/* Rain drop columns */
+.login-rain-container {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+}
+.login-rain-drop {
+    position: absolute;
+    top: -20px;
+    width: 2px;
+    border-radius: 2px;
+    background: linear-gradient(180deg,
+        var(--login-accent, #10b981) 0%,
+        rgba(16, 185, 129, 0.3) 60%,
+        transparent 100%);
+    animation: rainFall var(--rain-dur, 2s) linear infinite var(--rain-delay, 0s);
+    opacity: var(--rain-opacity, 0.6);
+}
+@keyframes rainFall {
+    0%   { transform: translateY(-20px); opacity: 0; }
+    10%  { opacity: var(--rain-opacity, 0.6); }
+    90%  { opacity: var(--rain-opacity, 0.6); }
+    100% { transform: translateY(105vh); opacity: 0; }
+}
+
+/* Rain glow pool at bottom */
+.login-rain-glow {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    z-index: 0;
+    background: linear-gradient(180deg, transparent, rgba(16, 185, 129, 0.05));
+    animation: rainGlowPulse 3s ease-in-out infinite;
+}
+@keyframes rainGlowPulse {
+    0%, 100% { opacity: 0.5; }
+    50%      { opacity: 1; }
+}
+
+/* ── Theme 9: Heartbeat Pulse ────────────────────────────────────────────── */
+.login-page[data-login-theme="pulse"] .login-aurora { display: none; }
+.login-page[data-login-theme="pulse"] .login-orbs { display: none; }
+.login-page[data-login-theme="pulse"] .login-grid { display: none; }
+.login-page[data-login-theme="pulse"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+        radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.06), transparent 60%),
+        #060208;
+}
+
+/* Pulse rings container */
+.login-pulse-container {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.login-pulse-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid var(--login-accent, #f43f5e);
+    animation: pulseExpand var(--pulse-dur, 4s) ease-out infinite var(--pulse-delay, 0s);
+    opacity: 0;
+}
+@keyframes pulseExpand {
+    0%   { width: 20px; height: 20px; opacity: 0.5; border-width: 2px; }
+    100% { width: 120vw; height: 120vw; opacity: 0; border-width: 0.5px; }
+}
+
+/* Pulse center glow */
+.login-pulse-core {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--login-accent, #f43f5e);
+    box-shadow:
+        0 0 20px var(--login-accent, #f43f5e),
+        0 0 60px var(--login-accent, #f43f5e),
+        0 0 120px rgba(244, 63, 94, 0.3);
+    animation: pulseCoreBeat 2s ease-in-out infinite;
+    z-index: 0;
+}
+@keyframes pulseCoreBeat {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50%      { transform: scale(1.5); opacity: 1; }
+}

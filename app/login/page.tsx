@@ -442,6 +442,111 @@ function ThemeBackground({ theme, accent }: { theme: string; accent?: string }) 
         return <div className="login-minimal-spot" />;
     }
 
+    if (theme === "galaxy") {
+        const stars = Array.from({ length: 80 }, (_, i) => ({
+            x: `${Math.random() * 100}%`,
+            y: `${Math.random() * 100}%`,
+            size: 1 + Math.random() * 2,
+            dur: 2 + Math.random() * 4,
+            delay: Math.random() * 5,
+        }));
+        return (
+            <>
+                <div className="login-galaxy-stars">
+                    {stars.map((s, i) => (
+                        <div
+                            key={i}
+                            className="login-star"
+                            ref={el => {
+                                if (el) {
+                                    el.style.left = s.x;
+                                    el.style.top = s.y;
+                                    el.style.width = `${s.size}px`;
+                                    el.style.height = `${s.size}px`;
+                                    el.style.setProperty('--star-dur', `${s.dur}s`);
+                                    el.style.setProperty('--star-delay', `${s.delay}s`);
+                                }
+                            }}
+                        />
+                    ))}
+                </div>
+                {[
+                    { x: "20%", y: "25%", w: 350, color: "rgba(120, 40, 200, 0.3)", dur: 18, delay: 0 },
+                    { x: "65%", y: "55%", w: 280, color: "rgba(30, 80, 200, 0.25)", dur: 22, delay: 5 },
+                    { x: "40%", y: "75%", w: 320, color: "rgba(180, 40, 140, 0.2)", dur: 25, delay: 8 },
+                ].map((n, i) => (
+                    <div
+                        key={i}
+                        className="login-nebula"
+                        ref={el => {
+                            if (el) {
+                                el.style.left = n.x;
+                                el.style.top = n.y;
+                                el.style.width = `${n.w}px`;
+                                el.style.height = `${n.w}px`;
+                                el.style.background = `radial-gradient(circle, ${n.color}, transparent 70%)`;
+                                el.style.setProperty('--neb-dur', `${n.dur}s`);
+                                el.style.setProperty('--neb-delay', `${n.delay}s`);
+                            }
+                        }}
+                    />
+                ))}
+            </>
+        );
+    }
+
+    if (theme === "rain") {
+        const drops = Array.from({ length: 60 }, (_, i) => ({
+            x: `${Math.random() * 100}%`,
+            h: 30 + Math.random() * 80,
+            dur: 1.5 + Math.random() * 2.5,
+            delay: Math.random() * 4,
+            opacity: 0.2 + Math.random() * 0.6,
+        }));
+        return (
+            <>
+                <div className="login-rain-container">
+                    {drops.map((d, i) => (
+                        <div
+                            key={i}
+                            className="login-rain-drop"
+                            ref={el => {
+                                if (el) {
+                                    el.style.left = d.x;
+                                    el.style.height = `${d.h}px`;
+                                    el.style.setProperty('--rain-dur', `${d.dur}s`);
+                                    el.style.setProperty('--rain-delay', `${d.delay}s`);
+                                    el.style.setProperty('--rain-opacity', `${d.opacity}`);
+                                }
+                            }}
+                        />
+                    ))}
+                </div>
+                <div className="login-rain-glow" />
+            </>
+        );
+    }
+
+    if (theme === "pulse") {
+        return (
+            <div className="login-pulse-container">
+                {Array.from({ length: 6 }, (_, i) => (
+                    <div
+                        key={i}
+                        className="login-pulse-ring"
+                        ref={el => {
+                            if (el) {
+                                el.style.setProperty('--pulse-dur', `${3 + i * 0.8}s`);
+                                el.style.setProperty('--pulse-delay', `${i * 0.7}s`);
+                            }
+                        }}
+                    />
+                ))}
+                <div className="login-pulse-core" />
+            </div>
+        );
+    }
+
     // Aurora (default) — no extra elements needed
     return null;
 }

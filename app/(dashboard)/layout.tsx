@@ -35,7 +35,7 @@ export default async function DashboardLayout({
 
     // Fetch org branding for sidebar (cached 5 min — branding rarely changes)
     let orgBranding: { appName?: string; logoUrl?: string; accentColor?: string } = {};
-    let orgTheme: "violet" | "ocean" | "emerald" = "violet";
+    let orgTheme = "violet";
     try {
         const orgId = (session.user as any)?.orgId;
         if (orgId) {
@@ -57,7 +57,7 @@ export default async function DashboardLayout({
                 };
             }
             if (cached.theme) {
-                orgTheme = cached.theme as "violet" | "ocean" | "emerald";
+                orgTheme = cached.theme || "violet";
             }
         }
     } catch (e) {
@@ -67,7 +67,7 @@ export default async function DashboardLayout({
     const isSuperAdmin = !!(session.user as any)?.isSuperAdmin;
 
     return (
-        <div className="h-full relative bg-[#fafafa] dark:bg-[#09090b]">
+        <div className={`h-full relative bg-[#fafafa] dark:bg-[#09090b] ${orgTheme !== "violet" ? `theme-${orgTheme}` : ""}`}>
             <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-[80] p-4">
                 <Sidebar userRole={session.user?.role} orgBranding={orgBranding} isSuperAdmin={isSuperAdmin} />
             </div>
