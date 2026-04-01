@@ -53,7 +53,8 @@ async function dbConnect() {
             bufferCommands: false,
             maxPoolSize: 10,                    // Production pool size
             minPoolSize: 2,                     // Keep 2 warm connections ready
-            serverSelectionTimeoutMS: 5000,     // 5s to find a server (fail faster)
+            serverSelectionTimeoutMS: 10000,    // 10s to find a server (serverless cold start)
+            connectTimeoutMS: 10000,            // 10s connection timeout
             socketTimeoutMS: 45000,             // 45s socket timeout
             heartbeatFrequencyMS: 10000,        // Detect stale connections
             maxIdleTimeMS: 30000,               // Close idle connections after 30s
