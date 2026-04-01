@@ -3,6 +3,9 @@
  * @description Server component for the main dashboard page.
  * Fetches dashboard stats, cross-org stats (SuperAdmin), and org settings.
  * Renders KPI cards, charts, recent leads, activity feed, and quick actions.
+ *
+ * Performance: uses `unstable_cache` with short TTL to avoid
+ * re-running 14 aggregations on every page load.
  */
 export const dynamic = "force-dynamic";
 import { getDashboardStats } from "@/lib/actions/dashboard";
@@ -10,6 +13,7 @@ import { getCrossOrgStats } from "@/lib/actions/organizations";
 import { serialize } from "@/lib/serialize";
 import { getSettings } from "@/lib/actions/settings";
 import { auth } from "@/auth";
+import { unstable_cache } from "next/cache";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, UserPlus, CheckCircle2, TrendingUp, Sparkles, Activity } from "lucide-react";
@@ -25,10 +29,24 @@ import { SuperAdminDashboard } from "@/components/dashboard/SuperAdminDashboard"
 export default async function DashboardPage() {
     const session = await auth();
     const isSuperAdmin = !!(session?.user as any)?.isSuperAdmin;
+    const orgId = (session?.user as any)?.orgId || "unknown";
+    const role = session?.user?.role || "SALES";
+
+    // Cached fetchers — keyed by org+role, revalidate every 60s
+    const getCachedStats = unstable_cache(
+        () => getDashboardStats(),
+        [`dashboard-stats-${orgId}-${role}`],
+        { revalidate: 60 }
+    );
+    const getCachedSettings = unstable_cache(
+        () => getSettings(),
+        [`settings-${orgId}`],
+        { revalidate: 300 }
+    );
 
     const [rawStats, settings, crossOrgStats] = await Promise.all([
-        getDashboardStats(),
-        getSettings(),
+        getCachedStats(),
+        getCachedSettings(),
         isSuperAdmin ? getCrossOrgStats() : Promise.resolve(null),
     ]);
 

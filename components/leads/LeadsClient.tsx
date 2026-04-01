@@ -15,12 +15,10 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LeadDetailsSheet } from "@/components/leads/LeadDetailsSheet";
 import { ChevronLeft, ChevronRight, Building2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { deleteLead, toggleStarLead, bulkUpdateStatus, bulkAssign, bulkSoftDelete, transferLead, restoreLead, permanentDeleteLead } from "@/lib/actions/leads";
-import { EditLeadDialog } from "@/components/leads/EditLeadDialog";
 import dynamic from "next/dynamic";
 import { ImportDialog } from "@/components/leads/ImportDialog";
 
@@ -30,6 +28,14 @@ import { LeadsTableView } from "@/components/leads/LeadsTableView";
 
 const KanbanBoard = dynamic(() => import("@/components/leads/KanbanBoard").then(m => m.KanbanBoard), {
     loading: () => <div className="p-8 text-center text-muted-foreground animate-pulse">Loading Kanban board...</div>,
+});
+
+const LeadDetailsSheet = dynamic(() => import("@/components/leads/LeadDetailsSheet").then(m => m.LeadDetailsSheet), {
+    ssr: false,
+});
+
+const EditLeadDialog = dynamic(() => import("@/components/leads/EditLeadDialog").then(m => ({ default: m.EditLeadDialog })), {
+    ssr: false,
 });
 
 function useDebounce(callback: Function, delay: number) {

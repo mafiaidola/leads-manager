@@ -52,9 +52,11 @@ async function dbConnect() {
         const opts = {
             bufferCommands: false,
             maxPoolSize: 10,                    // Production pool size
+            minPoolSize: 2,                     // Keep 2 warm connections ready
             serverSelectionTimeoutMS: 5000,     // 5s to find a server (fail faster)
             socketTimeoutMS: 45000,             // 45s socket timeout
             heartbeatFrequencyMS: 10000,        // Detect stale connections
+            maxIdleTimeMS: 30000,               // Close idle connections after 30s
             retryReads: true,
             retryWrites: true,
         };

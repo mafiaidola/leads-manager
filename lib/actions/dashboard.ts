@@ -86,7 +86,6 @@ export async function getDashboardStats(
             totalRevenueAgg,
             agentRevenueDetails,
             revenueByMonth,
-            totalOriginalRevenueAgg,
         ] = await Promise.all([
             Lead.countDocuments(matchStage),
             Lead.aggregate([
@@ -183,15 +182,13 @@ export async function getDashboardStats(
                     }
                 }
             ]),
-            // Total Revenue from sale-status leads
+            // Total Revenue (actual + original) — merged into single pipeline via $facet
             Lead.aggregate([
                 { $match: customerMatch },
                 {
-                    $group: {
-                        _id: null,
-                        total: {
-                            $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] }
-                        }
+                    $facet: {
+                        actualTotal: [{ $group: { _id: null, total: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } } } }],
+                        originalTotal: [{ $group: { _id: null, total: { $sum: { $ifNull: ["$productPrice", 0] } } } }],
                     }
                 }
             ]),
@@ -250,16 +247,6 @@ export async function getDashboardStats(
                 },
                 { $sort: { _id: 1 } }
             ]),
-            // Total original revenue (for comparison)
-            Lead.aggregate([
-                { $match: customerMatch },
-                {
-                    $group: {
-                        _id: null,
-                        total: { $sum: { $ifNull: ["$productPrice", 0] } }
-                    }
-                }
-            ]),
         ]);
 
         return {
@@ -300,8 +287,8 @@ export async function getDashboardStats(
                 won: item.won,
                 revenue: item.revenue || 0,
             })),
-            totalRevenue: totalRevenueAgg[0]?.total || 0,
-            totalOriginalRevenue: totalOriginalRevenueAgg[0]?.total || 0,
+            totalRevenue: totalRevenueAgg[0]?.actualTotal?.[0]?.total || 0,
+            totalOriginalRevenue: totalRevenueAgg[0]?.originalTotal?.[0]?.total || 0,
             defaultCurrency,
             agentRevenueDetails: agentRevenueDetails.map((item: any) => ({
                 agentName: item.agentName,

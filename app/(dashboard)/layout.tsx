@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
 import dbConnect from "@/lib/db";
 import Organization from "@/models/Organization";
+import { unstable_cache } from "next/cache";
 import { ToastHistoryPanel } from "@/components/ui/ToastHistoryPanel";
 import { PresenceIndicator } from "@/components/ui/PresenceIndicator";
 import { SessionTimeoutWarning } from "@/components/session/SessionTimeoutWarning";
@@ -32,23 +33,31 @@ export default async function DashboardLayout({
         redirect("/login");
     }
 
-    // Fetch org branding for sidebar
+    // Fetch org branding for sidebar (cached 5 min — branding rarely changes)
     let orgBranding: { appName?: string; logoUrl?: string; accentColor?: string } = {};
     let orgTheme: "violet" | "ocean" | "emerald" = "violet";
     try {
         const orgId = (session.user as any)?.orgId;
         if (orgId) {
-            await dbConnect();
-            const org = await Organization.findById(orgId).select("branding theme").lean();
-            if (org?.branding) {
+            const getCachedBranding = unstable_cache(
+                async () => {
+                    await dbConnect();
+                    const org = await Organization.findById(orgId).select("branding theme").lean();
+                    return { branding: org?.branding || null, theme: org?.theme || null };
+                },
+                [`org-branding-${orgId}`],
+                { revalidate: 300 }
+            );
+            const cached = await getCachedBranding();
+            if (cached.branding) {
                 orgBranding = {
-                    appName: org.branding.appName,
-                    logoUrl: org.branding.logoUrl,
-                    accentColor: org.branding.accentColor,
+                    appName: cached.branding.appName,
+                    logoUrl: cached.branding.logoUrl,
+                    accentColor: cached.branding.accentColor,
                 };
             }
-            if (org?.theme) {
-                orgTheme = org.theme as "violet" | "ocean" | "emerald";
+            if (cached.theme) {
+                orgTheme = cached.theme as "violet" | "ocean" | "emerald";
             }
         }
     } catch (e) {
