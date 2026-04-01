@@ -32,25 +32,33 @@ export default async function DashboardPage() {
     const orgId = (session?.user as any)?.orgId || "unknown";
     const role = session?.user?.role || "SALES";
 
-    // Cached fetchers — keyed by org+role, revalidate every 60s
-    const getCachedStats = unstable_cache(
-        () => getDashboardStats(),
-        [`dashboard-stats-${orgId}-${role}`],
-        { revalidate: 60 }
-    );
-    const getCachedSettings = unstable_cache(
-        () => getSettings(),
-        [`settings-${orgId}`],
-        { revalidate: 300 }
-    );
+    let rawStats: any = null;
+    let settings: any = null;
+    let crossOrgStats: any = null;
 
-    const [rawStats, settings, crossOrgStats] = await Promise.all([
-        getCachedStats(),
-        getCachedSettings(),
-        isSuperAdmin ? getCrossOrgStats() : Promise.resolve(null),
-    ]);
+    try {
+        // Cached fetchers — keyed by org+role, revalidate every 60s
+        const getCachedStats = unstable_cache(
+            () => getDashboardStats(),
+            [`dashboard-stats-${orgId}-${role}`],
+            { revalidate: 60 }
+        );
+        const getCachedSettings = unstable_cache(
+            () => getSettings(),
+            [`settings-${orgId}`],
+            { revalidate: 300 }
+        );
 
-    if (!rawStats) return <div>Loading...</div>;
+        [rawStats, settings, crossOrgStats] = await Promise.all([
+            getCachedStats(),
+            getCachedSettings(),
+            isSuperAdmin ? getCrossOrgStats() : Promise.resolve(null),
+        ]);
+    } catch (err) {
+        console.error("Dashboard fetch error:", err);
+    }
+
+    if (!rawStats) return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">Loading dashboard...</div>;
 
     // Serialize Mongoose docs (ObjectId/Date → primitives) for Client Components
     const stats = serialize(rawStats);
