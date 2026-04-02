@@ -13,7 +13,6 @@ import { getCrossOrgStats } from "@/lib/actions/organizations";
 import { serialize } from "@/lib/serialize";
 import { getSettings } from "@/lib/actions/settings";
 import { auth } from "@/auth";
-import { unstable_cache } from "next/cache";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, UserPlus, CheckCircle2, TrendingUp, Sparkles, Activity } from "lucide-react";
@@ -37,21 +36,9 @@ export default async function DashboardPage() {
     let crossOrgStats: any = null;
 
     try {
-        // Cached fetchers — keyed by org+role, revalidate every 60s
-        const getCachedStats = unstable_cache(
-            () => getDashboardStats(),
-            [`dashboard-stats-${orgId}-${role}`],
-            { revalidate: 60 }
-        );
-        const getCachedSettings = unstable_cache(
-            () => getSettings(),
-            [`settings-${orgId}`],
-            { revalidate: 300 }
-        );
-
         [rawStats, settings, crossOrgStats] = await Promise.all([
-            getCachedStats(),
-            getCachedSettings(),
+            getDashboardStats(),
+            getSettings(),
             isSuperAdmin ? getCrossOrgStats() : Promise.resolve(null),
         ]);
     } catch (err) {
