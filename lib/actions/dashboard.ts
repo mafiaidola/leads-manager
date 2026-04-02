@@ -182,47 +182,14 @@ export async function getDashboardStats(
                     }
                 }
             ]),
-            // Total Revenue (actual + original) — merged into single pipeline via $facet
+            // Total Revenue (actual + original)
             Lead.aggregate([
                 { $match: customerMatch },
                 {
-                    $facet: {
-                        actualTotal: [{ $group: { _id: null, total: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } } } }],
-                        originalTotal: [{ $group: { _id: null, total: { $sum: { $ifNull: ["$productPrice", 0] } } } }],
-                        discounts: [{
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $gt: ["$productPrice", 0] },
-                                        { $gt: ["$customPrice", 0] },
-                                        { $lt: ["$customPrice", "$productPrice"] }
-                                    ]
-                                }
-                            }
-                        }, {
-                            $group: {
-                                _id: null,
-                                total: { $sum: { $subtract: ["$productPrice", "$customPrice"] } },
-                                count: { $sum: 1 },
-                            }
-                        }],
-                        extraValue: [{
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $gt: ["$productPrice", 0] },
-                                        { $gt: ["$customPrice", 0] },
-                                        { $gt: ["$customPrice", "$productPrice"] }
-                                    ]
-                                }
-                            }
-                        }, {
-                            $group: {
-                                _id: null,
-                                total: { $sum: { $subtract: ["$customPrice", "$productPrice"] } },
-                                count: { $sum: 1 },
-                            }
-                        }],
+                    $group: {
+                        _id: null,
+                        actualTotal: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } },
+                        originalTotal: { $sum: { $ifNull: ["$productPrice", 0] } },
                     }
                 }
             ]),
@@ -283,6 +250,29 @@ export async function getDashboardStats(
             ]),
         ]);
 
+        // Separate discount/extra value aggregation (non-critical — won't break dashboard if it fails)
+        let discountTotal = 0, discountCount = 0, extraValueTotal = 0, extraValueCount = 0;
+        try {
+            const [discountAgg, extraAgg] = await Promise.all([
+                Lead.aggregate([
+                    { $match: { ...customerMatch, productPrice: { $gt: 0 }, customPrice: { $gt: 0 } } },
+                    { $match: { $expr: { $lt: ["$customPrice", "$productPrice"] } } },
+                    { $group: { _id: null, total: { $sum: { $subtract: ["$productPrice", "$customPrice"] } }, count: { $sum: 1 } } },
+                ]),
+                Lead.aggregate([
+                    { $match: { ...customerMatch, productPrice: { $gt: 0 }, customPrice: { $gt: 0 } } },
+                    { $match: { $expr: { $gt: ["$customPrice", "$productPrice"] } } },
+                    { $group: { _id: null, total: { $sum: { $subtract: ["$customPrice", "$productPrice"] } }, count: { $sum: 1 } } },
+                ]),
+            ]);
+            discountTotal = discountAgg[0]?.total || 0;
+            discountCount = discountAgg[0]?.count || 0;
+            extraValueTotal = extraAgg[0]?.total || 0;
+            extraValueCount = extraAgg[0]?.count || 0;
+        } catch (discErr) {
+            console.warn("Discount/extra value aggregation failed (non-critical):", discErr);
+        }
+
         return {
             totalLeads,
             leadsByStatus: leadsByStatus.map((item) => ({
@@ -321,12 +311,12 @@ export async function getDashboardStats(
                 won: item.won,
                 revenue: item.revenue || 0,
             })),
-            totalRevenue: totalRevenueAgg[0]?.actualTotal?.[0]?.total || 0,
-            totalOriginalRevenue: totalRevenueAgg[0]?.originalTotal?.[0]?.total || 0,
-            totalDiscounts: totalRevenueAgg[0]?.discounts?.[0]?.total || 0,
-            totalDiscountCount: totalRevenueAgg[0]?.discounts?.[0]?.count || 0,
-            totalExtraValue: totalRevenueAgg[0]?.extraValue?.[0]?.total || 0,
-            totalExtraValueCount: totalRevenueAgg[0]?.extraValue?.[0]?.count || 0,
+            totalRevenue: totalRevenueAgg[0]?.actualTotal || 0,
+            totalOriginalRevenue: totalRevenueAgg[0]?.originalTotal || 0,
+            totalDiscounts: discountTotal,
+            totalDiscountCount: discountCount,
+            totalExtraValue: extraValueTotal,
+            totalExtraValueCount: extraValueCount,
             defaultCurrency,
             agentRevenueDetails: agentRevenueDetails.map((item: any) => ({
                 agentName: item.agentName,
@@ -361,7 +351,8 @@ export async function getDashboardStats(
             })(),
         };
     } catch (error) {
-        console.error("getDashboardStats error:", error);
+        console.error("getDashboardStats error:", error instanceof Error ? error.message : error);
+        console.error("getDashboardStats stack:", error instanceof Error ? error.stack : "no stack");
         return null;
     }
 }
@@ -415,49 +406,11 @@ export async function getRevenueByPeriod(period: "today" | "week" | "month" | "y
             Lead.aggregate([
                 { $match: matchStage },
                 {
-                    $facet: {
-                        totals: [{
-                            $group: {
-                                _id: null,
-                                count: { $sum: 1 },
-                                originalRevenue: { $sum: { $ifNull: ["$productPrice", 0] } },
-                                actualRevenue: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } },
-                            }
-                        }],
-                        discounts: [{
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $gt: ["$productPrice", 0] },
-                                        { $gt: ["$customPrice", 0] },
-                                        { $lt: ["$customPrice", "$productPrice"] }
-                                    ]
-                                }
-                            }
-                        }, {
-                            $group: {
-                                _id: null,
-                                total: { $sum: { $subtract: ["$productPrice", "$customPrice"] } },
-                                count: { $sum: 1 },
-                            }
-                        }],
-                        extraValue: [{
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $gt: ["$productPrice", 0] },
-                                        { $gt: ["$customPrice", 0] },
-                                        { $gt: ["$customPrice", "$productPrice"] }
-                                    ]
-                                }
-                            }
-                        }, {
-                            $group: {
-                                _id: null,
-                                total: { $sum: { $subtract: ["$customPrice", "$productPrice"] } },
-                                count: { $sum: 1 },
-                            }
-                        }],
+                    $group: {
+                        _id: null,
+                        count: { $sum: 1 },
+                        originalRevenue: { $sum: { $ifNull: ["$productPrice", 0] } },
+                        actualRevenue: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } },
                     }
                 }
             ]),
@@ -488,7 +441,30 @@ export async function getRevenueByPeriod(period: "today" | "week" | "month" | "y
             ]),
         ]);
 
-        const t = totals[0]?.totals?.[0] || { count: 0, originalRevenue: 0, actualRevenue: 0 };
+        // Separate discount/extra queries (non-critical)
+        let discTotal = 0, discCount = 0, extTotal = 0, extCount = 0;
+        try {
+            const [dAgg, eAgg] = await Promise.all([
+                Lead.aggregate([
+                    { $match: { ...matchStage, productPrice: { $gt: 0 }, customPrice: { $gt: 0 } } },
+                    { $match: { $expr: { $lt: ["$customPrice", "$productPrice"] } } },
+                    { $group: { _id: null, total: { $sum: { $subtract: ["$productPrice", "$customPrice"] } }, count: { $sum: 1 } } },
+                ]),
+                Lead.aggregate([
+                    { $match: { ...matchStage, productPrice: { $gt: 0 }, customPrice: { $gt: 0 } } },
+                    { $match: { $expr: { $gt: ["$customPrice", "$productPrice"] } } },
+                    { $group: { _id: null, total: { $sum: { $subtract: ["$customPrice", "$productPrice"] } }, count: { $sum: 1 } } },
+                ]),
+            ]);
+            discTotal = dAgg[0]?.total || 0;
+            discCount = dAgg[0]?.count || 0;
+            extTotal = eAgg[0]?.total || 0;
+            extCount = eAgg[0]?.count || 0;
+        } catch (e) {
+            console.warn("Revenue period discount aggregation failed:", e);
+        }
+
+        const t = totals[0] || { count: 0, originalRevenue: 0, actualRevenue: 0 };
         const profitLoss = t.actualRevenue - t.originalRevenue;
         const margin = t.originalRevenue > 0 ? ((profitLoss / t.originalRevenue) * 100) : 0;
 
@@ -499,10 +475,10 @@ export async function getRevenueByPeriod(period: "today" | "week" | "month" | "y
             actualRevenue: t.actualRevenue,
             profitLoss,
             margin: parseFloat(margin.toFixed(1)),
-            totalDiscounts: totals[0]?.discounts?.[0]?.total || 0,
-            totalDiscountCount: totals[0]?.discounts?.[0]?.count || 0,
-            totalExtraValue: totals[0]?.extraValue?.[0]?.total || 0,
-            totalExtraValueCount: totals[0]?.extraValue?.[0]?.count || 0,
+            totalDiscounts: discTotal,
+            totalDiscountCount: discCount,
+            totalExtraValue: extTotal,
+            totalExtraValueCount: extCount,
             currency: defaultCurrency,
             agentBreakdown: agentBreakdown.map((a: any) => ({
                 agentName: a.agentName,
