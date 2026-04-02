@@ -2,6 +2,7 @@
  * @route POST /api/attendance/logout
  * @description Records logout timestamp when user closes tab or logs out.
  * Uses `navigator.sendBeacon` from the client for reliable delivery.
+ * Enhanced: now stores checkOutMethod, overtime, and lastActivityAt.
  */
 import { auth } from "@/auth";
 import dbConnect from "@/lib/db";
@@ -22,12 +23,14 @@ export async function POST(req: NextRequest) {
         const now = new Date();
 
         const log = await AttendanceLog.findOne({ userId, date: today });
-        if (log) {
+        if (log && !log.lastLogout) {
             log.lastLogout = now;
+            log.lastActivityAt = now;
+            log.checkOutMethod = "BEACON";
             const diffMs = now.getTime() - new Date(log.firstLogin).getTime();
             log.totalMinutes = Math.round(diffMs / 60000);
 
-            // Check early leave
+            // Check early leave + overtime
             const org = await Organization.findById(log.orgId).select("settings.workSchedule").lean();
             const schedule = (org as any)?.settings?.workSchedule;
             if (schedule?.enabled && schedule?.endTime) {
@@ -36,6 +39,9 @@ export async function POST(req: NextRequest) {
                 const currentMinutes = now.getHours() * 60 + now.getMinutes();
                 if (currentMinutes < endMinutes && log.status !== "LATE") {
                     log.status = "EARLY_LEAVE";
+                }
+                if (currentMinutes > endMinutes) {
+                    log.overtimeMinutes = currentMinutes - endMinutes;
                 }
             }
             await log.save();

@@ -166,22 +166,23 @@ export function AttendanceClient({
 
     // ─── Export CSV ─────────────────────────────────────────────────────
     const handleExportDaily = useCallback(() => {
-        const headers = ["Name", "Date", "Check In", "Check Out", "Duration (min)", "Status", "Login Count", "IP Address"];
+        const headers = ["Name", "Date", "Check In", "Check Out", "Duration (min)", "Late Min", "Overtime Min", "Status", "Checkout Method"];
         const rows = dailyLogs.map((log: any) => [
             log.userName,
             log.date,
             formatTime(log.firstLogin),
             formatTime(log.lastLogout),
             log.totalMinutes || 0,
+            log.lateMinutes || 0,
+            log.overtimeMinutes || 0,
             log.status,
-            log.loginCount,
-            log.ipAddress || "",
+            log.checkOutMethod || (log.lastLogout ? "—" : "NOT_OUT"),
         ]);
         // Add absent employees
         const loggedUserIds = new Set(dailyLogs.map((l: any) => l.userId));
         orgUsers.forEach((u: any) => {
             if (!loggedUserIds.has(u._id)) {
-                rows.push([u.name, selectedDate, "", "", 0, "ABSENT", 0, ""]);
+                rows.push([u.name, selectedDate, "", "", 0, 0, 0, "ABSENT", "—"]);
             }
         });
         const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
@@ -196,7 +197,7 @@ export function AttendanceClient({
     }, [dailyLogs, orgUsers, selectedDate, toast]);
 
     const handleExportMonthly = useCallback(() => {
-        const headers = ["Name", "Total Days", "On Time", "Late Days", "Early Leave", "Attendance Rate", "Avg Hours/Day"];
+        const headers = ["Name", "Total Days", "On Time", "Late Days", "Late Min Total", "Overtime Min Total", "Attendance Rate", "Avg Hours/Day", "Auto Checkouts"];
         const workDaysInMonth = getWorkDaysInMonth(selectedMonth, selectedYear, schedule.workDays, schedule.holidays);
         const rows = monthlySummary.map((u: any) => {
             const onTime = u.totalDays - u.lateDays - u.earlyLeaveDays;
@@ -206,9 +207,11 @@ export function AttendanceClient({
                 u.totalDays,
                 onTime,
                 u.lateDays,
-                u.earlyLeaveDays,
+                u.totalLateMinutes || 0,
+                u.totalOvertimeMinutes || 0,
                 `${rate}%`,
                 formatDuration(u.avgMinutes),
+                u.autoCheckouts || 0,
             ];
         });
         const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
@@ -620,9 +623,10 @@ export function AttendanceClient({
                                             <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Days</th>
                                             <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">On Time</th>
                                             <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Late</th>
-                                            <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Early Leave</th>
+                                            <th className="text-center px-3 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Late Min</th>
+                                            <th className="text-center px-3 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Overtime</th>
                                             <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Rate</th>
-                                            <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Avg Hours/Day</th>
+                                            <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Avg Hours</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -640,7 +644,14 @@ export function AttendanceClient({
                                                                     {user.userName?.charAt(0)?.toUpperCase() || "?"}
                                                                 </span>
                                                             </div>
-                                                            <span className="font-medium text-sm">{user.userName}</span>
+                                                            <div>
+                                                                <span className="font-medium text-sm">{user.userName}</span>
+                                                                {user.autoCheckouts > 0 && (
+                                                                    <span className="block text-[10px] text-violet-400">
+                                                                        ⚡ {user.autoCheckouts} auto-checkout{user.autoCheckouts > 1 ? "s" : ""}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
@@ -659,12 +670,19 @@ export function AttendanceClient({
                                                             </Badge>
                                                         ) : <span className="text-muted-foreground">0</span>}
                                                     </td>
-                                                    <td className="px-4 py-4 text-center">
-                                                        {user.earlyLeaveDays > 0 ? (
-                                                            <Badge variant="outline" className="bg-orange-500/15 text-orange-500 border-orange-500/30 rounded-lg">
-                                                                {user.earlyLeaveDays}
-                                                            </Badge>
-                                                        ) : <span className="text-muted-foreground">0</span>}
+                                                    <td className="px-3 py-4 text-center">
+                                                        {user.totalLateMinutes > 0 ? (
+                                                            <span className="text-xs font-bold text-amber-400">{user.totalLateMinutes}m</span>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground/40">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-4 text-center">
+                                                        {user.totalOvertimeMinutes > 0 ? (
+                                                            <span className="text-xs font-bold text-violet-400">+{user.totalOvertimeMinutes}m</span>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground/40">—</span>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
                                                         <div className="flex flex-col items-center gap-1">
