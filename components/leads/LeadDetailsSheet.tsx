@@ -371,26 +371,35 @@ export function LeadDetailsSheet({ leadId, onClose, currentUserRole, settings }:
                                                 )}
                                                 {data.lead.customPrice != null && (
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-xs text-muted-foreground">Sales Price</span>
+                                                        <span className="text-xs text-muted-foreground">Selling Price</span>
                                                         <span className="text-sm font-mono font-bold">{data.lead.currency} {Number(data.lead.customPrice).toLocaleString()}</span>
                                                     </div>
                                                 )}
                                                 {data.lead.productPrice != null && data.lead.customPrice != null && data.lead.productPrice > 0 && (() => {
                                                     const diff = Number(data.lead.customPrice) - Number(data.lead.productPrice);
                                                     const pct = ((diff / Number(data.lead.productPrice)) * 100).toFixed(1);
-                                                    return diff !== 0 ? (
-                                                        <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                                                            <span className="text-xs text-muted-foreground">Difference</span>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`text-sm font-mono font-bold ${diff > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                                                                    {diff > 0 ? "▲" : "▼"} {diff > 0 ? "+" : ""}{data.lead.currency} {Math.abs(diff).toLocaleString()}
-                                                                </span>
-                                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${diff > 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
-                                                                    {diff > 0 ? "+" : ""}{pct}%
-                                                                </span>
+                                                    const totalSelling = Number(data.lead.productPrice) + Number(data.lead.customPrice);
+                                                    return (
+                                                        <>
+                                                            {diff !== 0 && (
+                                                                <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                                                    <span className="text-xs text-muted-foreground">Difference</span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`text-sm font-mono font-bold ${diff > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                                                                            {diff > 0 ? "▲" : "▼"} {diff > 0 ? "+" : ""}{data.lead.currency} {Math.abs(diff).toLocaleString()}
+                                                                        </span>
+                                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${diff > 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                                                                            {diff > 0 ? "+" : ""}{pct}%
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                                                <span className="text-xs font-semibold text-muted-foreground">Total Selling Price</span>
+                                                                <span className="text-sm font-mono font-bold text-primary">{data.lead.currency} {totalSelling.toLocaleString()}</span>
                                                             </div>
-                                                        </div>
-                                                    ) : null;
+                                                        </>
+                                                    );
                                                 })()}
                                             </div>
                                         )}

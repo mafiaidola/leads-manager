@@ -639,7 +639,7 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                             </div>
                         </div>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-4">
+                    <div className="grid gap-4 md:grid-cols-3">
                         {(() => {
                             const rd = revPeriodData;
                             const origRev = rd?.originalRevenue ?? data.totalOriginalRevenue ?? 0;
@@ -649,6 +649,10 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                             const marginVal = origRev > 0 ? ((pl / origRev) * 100).toFixed(1) : '0.0';
                             const isPositive = parseFloat(marginVal) >= 0;
                             const pLabel = rd ? (rd.period === "today" ? "Today" : rd.period === "week" ? "This Week" : rd.period === "month" ? "This Month" : rd.period === "year" ? "This Year" : "All Time") : "All Time";
+                            const discountAmt = rd?.totalDiscounts ?? data.totalDiscounts ?? 0;
+                            const discountCount = rd?.totalDiscountCount ?? data.totalDiscountCount ?? 0;
+                            const extraAmt = rd?.totalExtraValue ?? data.totalExtraValue ?? 0;
+                            const extraCount = rd?.totalExtraValueCount ?? data.totalExtraValueCount ?? 0;
 
                             return (
                                 <>
@@ -700,6 +704,26 @@ export default function ReportsClient({ isSuperAdmin, organizations }: { isSuper
                                                 {isPositive ? '+' : ''}{marginVal}%
                                             </div>
                                             <p className="text-[10px] text-muted-foreground mt-1">{pLabel} · Pricing efficiency</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 border-t-red-500">
+                                        <CardContent className="pt-5 pb-4">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-xs font-medium text-muted-foreground">Total Discounts Given</span>
+                                                <div className="p-1.5 bg-red-500/10 rounded-lg"><BadgeDollarSign className="h-3.5 w-3.5 text-red-500" /></div>
+                                            </div>
+                                            <div className="text-2xl font-bold text-red-400">-{discountAmt.toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span></div>
+                                            <p className="text-[10px] text-red-400/70 mt-1">{pLabel} · {discountCount} deal{discountCount !== 1 ? 's' : ''} sold below product price</p>
+                                        </CardContent>
+                                    </Card>
+                                    <Card className="rounded-2xl border-white/10 bg-card/40 backdrop-blur-xl shadow-lg border-t-4 border-t-emerald-500">
+                                        <CardContent className="pt-5 pb-4">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-xs font-medium text-muted-foreground">Total Extra Value Earned</span>
+                                                <div className="p-1.5 bg-emerald-500/10 rounded-lg"><PiggyBank className="h-3.5 w-3.5 text-emerald-500" /></div>
+                                            </div>
+                                            <div className="text-2xl font-bold text-emerald-400">+{extraAmt.toLocaleString()} <span className="text-sm text-muted-foreground">{currency}</span></div>
+                                            <p className="text-[10px] text-emerald-400/70 mt-1">{pLabel} · {extraCount} deal{extraCount !== 1 ? 's' : ''} sold above product price</p>
                                         </CardContent>
                                     </Card>
                                 </>

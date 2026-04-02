@@ -87,8 +87,8 @@ export function Sidebar({ className, userRole, orgBranding, isSuperAdmin }: { cl
             {/* Subtle Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none dark:from-white/5" />
 
-            <div className="px-4 py-6 flex-1 relative z-10 flex flex-col">
-                <Link href="/" className="flex items-center pl-2 mb-10 group">
+            <div className="px-4 py-3 flex-1 relative z-10 flex flex-col min-h-0">
+                <Link href="/" className="flex items-center pl-2 mb-6 group">
                     <div
                         className="h-10 w-10 rounded-xl mr-3 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform overflow-hidden accent-gradient-logo"
                         ref={el => { if (el && orgBranding?.accentColor) el.style.setProperty('--accent', orgBranding.accentColor); }}
@@ -105,7 +105,7 @@ export function Sidebar({ className, userRole, orgBranding, isSuperAdmin }: { cl
                     </div>
                 </Link>
 
-                <div className="space-y-2 flex-1">
+                <div className="space-y-1 flex-1 overflow-y-auto min-h-0">
                     {routes.map((route) => {
                         const isActive = route.href === "/" ? pathname === "/" : pathname.startsWith(route.href);
                         return (

@@ -376,7 +376,7 @@ export function AddLeadDialog({ settings, users }: { settings: any, users: any[]
                                                     name="customPrice"
                                                     render={({ field }) => (
                                                         <FormItem className="space-y-1">
-                                                            <label className="text-[10px] text-muted-foreground">Your Selling Price</label>
+                                                            <label className="text-[10px] text-muted-foreground">Selling Price</label>
                                                             <FormControl>
                                                                 <Input
                                                                     type="number" min="0" step="0.01"

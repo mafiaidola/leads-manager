@@ -62,26 +62,35 @@ export const LeadDealCard = React.memo(function LeadDealCard({ lead, formatDate,
                         )}
                         {lead.customPrice != null && (
                             <div className="flex justify-between items-center">
-                                <span className="text-xs text-muted-foreground">Your Price</span>
+                                <span className="text-xs text-muted-foreground">Selling Price</span>
                                 <span className="text-sm font-mono font-bold">{lead.currency} {Number(lead.customPrice).toLocaleString()}</span>
                             </div>
                         )}
                         {lead.productPrice != null && lead.customPrice != null && lead.productPrice > 0 && (() => {
                             const diff = Number(lead.customPrice) - Number(lead.productPrice);
                             const pct = ((diff / Number(lead.productPrice)) * 100).toFixed(1);
-                            return diff !== 0 ? (
-                                <div className="flex justify-between items-center pt-1.5 border-t border-black/5 dark:border-white/5">
-                                    <span className="text-xs text-muted-foreground">Difference</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className={`text-sm font-mono font-bold ${diff > 0 ? "text-emerald-500 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
-                                            {diff > 0 ? "▲" : "▼"} {diff > 0 ? "+" : ""}{lead.currency} {Math.abs(diff).toLocaleString()}
-                                        </span>
-                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${diff > 0 ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" : "bg-red-500/10 text-red-500 dark:text-red-400"}`}>
-                                            {diff > 0 ? "+" : ""}{pct}%
-                                        </span>
+                            const totalSelling = Number(lead.productPrice) + Number(lead.customPrice);
+                            return (
+                                <>
+                                    {diff !== 0 && (
+                                        <div className="flex justify-between items-center pt-1.5 border-t border-black/5 dark:border-white/5">
+                                            <span className="text-xs text-muted-foreground">Difference</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-sm font-mono font-bold ${diff > 0 ? "text-emerald-500 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
+                                                    {diff > 0 ? "▲" : "▼"} {diff > 0 ? "+" : ""}{lead.currency} {Math.abs(diff).toLocaleString()}
+                                                </span>
+                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${diff > 0 ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" : "bg-red-500/10 text-red-500 dark:text-red-400"}`}>
+                                                    {diff > 0 ? "+" : ""}{pct}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center pt-1.5 border-t border-black/5 dark:border-white/5">
+                                        <span className="text-xs font-semibold text-muted-foreground">Total Selling Price</span>
+                                        <span className="text-sm font-mono font-bold text-primary">{lead.currency} {totalSelling.toLocaleString()}</span>
                                     </div>
-                                </div>
-                            ) : null;
+                                </>
+                            );
                         })()}
                     </div>
                 )}

@@ -189,6 +189,40 @@ export async function getDashboardStats(
                     $facet: {
                         actualTotal: [{ $group: { _id: null, total: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } } } }],
                         originalTotal: [{ $group: { _id: null, total: { $sum: { $ifNull: ["$productPrice", 0] } } } }],
+                        discounts: [{
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $gt: ["$productPrice", 0] },
+                                        { $gt: ["$customPrice", 0] },
+                                        { $lt: ["$customPrice", "$productPrice"] }
+                                    ]
+                                }
+                            }
+                        }, {
+                            $group: {
+                                _id: null,
+                                total: { $sum: { $subtract: ["$productPrice", "$customPrice"] } },
+                                count: { $sum: 1 },
+                            }
+                        }],
+                        extraValue: [{
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $gt: ["$productPrice", 0] },
+                                        { $gt: ["$customPrice", 0] },
+                                        { $gt: ["$customPrice", "$productPrice"] }
+                                    ]
+                                }
+                            }
+                        }, {
+                            $group: {
+                                _id: null,
+                                total: { $sum: { $subtract: ["$customPrice", "$productPrice"] } },
+                                count: { $sum: 1 },
+                            }
+                        }],
                     }
                 }
             ]),
@@ -289,6 +323,10 @@ export async function getDashboardStats(
             })),
             totalRevenue: totalRevenueAgg[0]?.actualTotal?.[0]?.total || 0,
             totalOriginalRevenue: totalRevenueAgg[0]?.originalTotal?.[0]?.total || 0,
+            totalDiscounts: totalRevenueAgg[0]?.discounts?.[0]?.total || 0,
+            totalDiscountCount: totalRevenueAgg[0]?.discounts?.[0]?.count || 0,
+            totalExtraValue: totalRevenueAgg[0]?.extraValue?.[0]?.total || 0,
+            totalExtraValueCount: totalRevenueAgg[0]?.extraValue?.[0]?.count || 0,
             defaultCurrency,
             agentRevenueDetails: agentRevenueDetails.map((item: any) => ({
                 agentName: item.agentName,
@@ -377,11 +415,49 @@ export async function getRevenueByPeriod(period: "today" | "week" | "month" | "y
             Lead.aggregate([
                 { $match: matchStage },
                 {
-                    $group: {
-                        _id: null,
-                        count: { $sum: 1 },
-                        originalRevenue: { $sum: { $ifNull: ["$productPrice", 0] } },
-                        actualRevenue: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } },
+                    $facet: {
+                        totals: [{
+                            $group: {
+                                _id: null,
+                                count: { $sum: 1 },
+                                originalRevenue: { $sum: { $ifNull: ["$productPrice", 0] } },
+                                actualRevenue: { $sum: { $ifNull: ["$customPrice", { $ifNull: ["$productPrice", 0] }] } },
+                            }
+                        }],
+                        discounts: [{
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $gt: ["$productPrice", 0] },
+                                        { $gt: ["$customPrice", 0] },
+                                        { $lt: ["$customPrice", "$productPrice"] }
+                                    ]
+                                }
+                            }
+                        }, {
+                            $group: {
+                                _id: null,
+                                total: { $sum: { $subtract: ["$productPrice", "$customPrice"] } },
+                                count: { $sum: 1 },
+                            }
+                        }],
+                        extraValue: [{
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $gt: ["$productPrice", 0] },
+                                        { $gt: ["$customPrice", 0] },
+                                        { $gt: ["$customPrice", "$productPrice"] }
+                                    ]
+                                }
+                            }
+                        }, {
+                            $group: {
+                                _id: null,
+                                total: { $sum: { $subtract: ["$customPrice", "$productPrice"] } },
+                                count: { $sum: 1 },
+                            }
+                        }],
                     }
                 }
             ]),
@@ -412,7 +488,7 @@ export async function getRevenueByPeriod(period: "today" | "week" | "month" | "y
             ]),
         ]);
 
-        const t = totals[0] || { count: 0, originalRevenue: 0, actualRevenue: 0 };
+        const t = totals[0]?.totals?.[0] || { count: 0, originalRevenue: 0, actualRevenue: 0 };
         const profitLoss = t.actualRevenue - t.originalRevenue;
         const margin = t.originalRevenue > 0 ? ((profitLoss / t.originalRevenue) * 100) : 0;
 
@@ -423,6 +499,10 @@ export async function getRevenueByPeriod(period: "today" | "week" | "month" | "y
             actualRevenue: t.actualRevenue,
             profitLoss,
             margin: parseFloat(margin.toFixed(1)),
+            totalDiscounts: totals[0]?.discounts?.[0]?.total || 0,
+            totalDiscountCount: totals[0]?.discounts?.[0]?.count || 0,
+            totalExtraValue: totals[0]?.extraValue?.[0]?.total || 0,
+            totalExtraValueCount: totals[0]?.extraValue?.[0]?.count || 0,
             currency: defaultCurrency,
             agentBreakdown: agentBreakdown.map((a: any) => ({
                 agentName: a.agentName,

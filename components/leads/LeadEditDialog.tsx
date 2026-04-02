@@ -106,7 +106,7 @@ export const LeadEditDialog = React.memo(function LeadEditDialog({
                                         </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-[10px] text-muted-foreground">Your Price</Label>
+                                        <Label className="text-[10px] text-muted-foreground">Selling Price</Label>
                                         <Input
                                             type="number" min="0" step="0.01"
                                             value={editForm.customPrice}

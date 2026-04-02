@@ -98,7 +98,7 @@ export default async function DashboardLayout({
                             />
 
                             {/* Attendance Check-in/out */}
-                            <CheckInOutWidget />
+                            <CheckInOutWidget userName={session.user?.name || ""} />
 
                             <div className="h-8 w-[1px] bg-border mx-1" />
 

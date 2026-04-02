@@ -200,6 +200,7 @@ export const LeadsTableView = React.memo(function LeadsTableView({
 
                             <TableHead className="hidden md:table-cell font-semibold text-primary">Source</TableHead>
                             <TableHead className="font-semibold text-primary w-[50px]">WA</TableHead>
+                            <TableHead className="font-semibold text-primary w-[40px] text-center">AL</TableHead>
                             {canSeeAssignment && (
                                 <TableHead className="hidden md:table-cell font-semibold text-primary">Assigned</TableHead>
                             )}
@@ -317,6 +318,13 @@ export const LeadsTableView = React.memo(function LeadsTableView({
                                                 </a>
                                             ) : (
                                                 <span className="text-muted-foreground">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {lead.isFromAdditional ? (
+                                                <span title="From Additional Leads (Approved)" className="text-sm">✅</span>
+                                            ) : (
+                                                <span className="text-muted-foreground/30 text-xs">—</span>
                                             )}
                                         </TableCell>
                                         {canSeeAssignment && (
