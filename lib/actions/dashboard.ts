@@ -39,8 +39,16 @@ export async function getDashboardStats(
             .filter((s: any) => s.isSaleStatus)
             .map((s: any) => s.key);
         const defaultCurrency = org?.settings?.defaultCurrency || "AED";
+        // Parse orgId safely — aggregation does strict type comparison, 
+        // so we need to match however the leads stored it (ObjectId or string)
+        let parsedOrgId: any;
+        try {
+            parsedOrgId = new mongoose.Types.ObjectId(session.user.orgId as string);
+        } catch {
+            parsedOrgId = session.user.orgId;
+        }
 
-        const matchStage: any = { deletedAt: null, orgId: new mongoose.Types.ObjectId(session.user.orgId as string) };
+        const matchStage: any = { deletedAt: null, orgId: parsedOrgId };
         if (session.user.role === USER_ROLES.SALES) {
             matchStage.assignedTo = new mongoose.Types.ObjectId(session.user.id);
         }
@@ -372,9 +380,15 @@ export async function getRevenueByPeriod(period: "today" | "week" | "month" | "y
             .map((s: any) => s.key);
         const defaultCurrency = org?.settings?.defaultCurrency || "AED";
 
+        let parsedOrgId: any;
+        try {
+            parsedOrgId = new mongoose.Types.ObjectId(session.user.orgId as string);
+        } catch {
+            parsedOrgId = session.user.orgId;
+        }
         const matchStage: any = {
             deletedAt: null,
-            orgId: new mongoose.Types.ObjectId(session.user.orgId as string),
+            orgId: parsedOrgId,
         };
 
         // Sale status filter
