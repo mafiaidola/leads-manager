@@ -23,7 +23,7 @@ import {
     CalendarDays, Clock, Download, Settings2, Users,
     CheckCircle2, AlertTriangle, XCircle, LogIn, LogOut,
     TrendingUp, Timer, Plus, Trash2, CalendarOff, BarChart3,
-    UserX, PartyPopper,
+    UserX, PartyPopper, Zap,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -380,8 +380,8 @@ export function AttendanceClient({
                                             <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Check In</th>
                                             <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Check Out</th>
                                             <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Duration</th>
-                                            <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Logins</th>
-                                            <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">IP</th>
+                                            <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Late</th>
+                                            <th className="text-center px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Overtime</th>
                                             <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</th>
                                         </tr>
                                     </thead>
@@ -389,16 +389,33 @@ export function AttendanceClient({
                                         {dailyLogs.map((log: any) => {
                                             const config = STATUS_CONFIG[log.status] || STATUS_CONFIG.PRESENT;
                                             const StatusIcon = config.icon;
+                                            const isStillActive = !log.lastLogout && selectedDate === new Date().toISOString().split("T")[0];
                                             return (
-                                                <tr key={log._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                                <tr key={log._id} className={cn(
+                                                    "border-b border-white/5 hover:bg-white/5 transition-colors",
+                                                    isStillActive && "bg-emerald-500/[0.03]"
+                                                )}>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                                                                <span className="text-sm font-bold text-primary">
-                                                                    {log.userName?.charAt(0)?.toUpperCase() || "?"}
-                                                                </span>
+                                                            <div className="relative">
+                                                                <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                                                                    <span className="text-sm font-bold text-primary">
+                                                                        {log.userName?.charAt(0)?.toUpperCase() || "?"}
+                                                                    </span>
+                                                                </div>
+                                                                {isStillActive && (
+                                                                    <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                            <span className="font-medium text-sm">{log.userName}</span>
+                                                            <div>
+                                                                <span className="font-medium text-sm">{log.userName}</span>
+                                                                {isStillActive && (
+                                                                    <span className="block text-[10px] text-emerald-400 font-bold">● Active Now</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4">
@@ -408,10 +425,21 @@ export function AttendanceClient({
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-4">
-                                                        <div className="flex items-center gap-1.5 text-sm">
-                                                            <LogOut className="h-3.5 w-3.5 text-red-400" />
-                                                            <span className="font-mono">{formatTime(log.lastLogout)}</span>
-                                                        </div>
+                                                        {log.lastLogout ? (
+                                                            <div className="flex items-center gap-1.5 text-sm">
+                                                                <LogOut className="h-3.5 w-3.5 text-red-400" />
+                                                                <span className="font-mono">{formatTime(log.lastLogout)}</span>
+                                                                {log.autoCheckedOut && (
+                                                                    <Badge variant="outline" className="ml-1 text-[9px] h-4 px-1 bg-violet-500/10 text-violet-400 border-violet-500/20">
+                                                                        <Zap className="h-2.5 w-2.5 mr-0.5" />Auto
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                        ) : isStillActive ? (
+                                                            <span className="text-xs text-emerald-400 font-medium animate-pulse">Working...</span>
+                                                        ) : (
+                                                            <span className="text-xs text-amber-400 font-medium">⚠ Not checked out</span>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-4">
                                                         <div className="flex items-center gap-1.5 text-sm">
@@ -419,11 +447,19 @@ export function AttendanceClient({
                                                             <span className="font-mono">{formatDuration(log.totalMinutes)}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-4 text-sm text-center">{log.loginCount}</td>
-                                                    <td className="px-4 py-4">
-                                                        <span className="text-xs text-muted-foreground font-mono truncate max-w-[120px] block">
-                                                            {log.ipAddress || "—"}
-                                                        </span>
+                                                    <td className="px-4 py-4 text-center">
+                                                        {log.lateMinutes > 0 ? (
+                                                            <span className="text-xs font-bold text-amber-400">{log.lateMinutes}m</span>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground/40">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center">
+                                                        {log.overtimeMinutes > 0 ? (
+                                                            <span className="text-xs font-bold text-violet-400">+{log.overtimeMinutes}m</span>
+                                                        ) : (
+                                                            <span className="text-xs text-muted-foreground/40">—</span>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-4">
                                                         <Badge variant="outline" className={cn("gap-1 rounded-lg", config.color)}>
@@ -455,8 +491,8 @@ export function AttendanceClient({
                                                 <td className="px-4 py-4 text-muted-foreground/40 text-sm">—</td>
                                                 <td className="px-4 py-4 text-muted-foreground/40 text-sm">—</td>
                                                 <td className="px-4 py-4 text-muted-foreground/40 text-sm">—</td>
-                                                <td className="px-4 py-4 text-muted-foreground/40 text-sm text-center">0</td>
-                                                <td className="px-4 py-4 text-muted-foreground/40 text-sm">—</td>
+                                                <td className="px-4 py-4 text-muted-foreground/40 text-sm text-center">—</td>
+                                                <td className="px-4 py-4 text-muted-foreground/40 text-sm text-center">—</td>
                                                 <td className="px-4 py-4">
                                                     <Badge variant="outline" className="gap-1 rounded-lg bg-red-500/15 text-red-500 border-red-500/30">
                                                         <UserX className="h-3 w-3" />

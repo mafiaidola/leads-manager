@@ -24,8 +24,13 @@ export interface IAttendanceLog extends Document {
     date: string; // YYYY-MM-DD format
     firstLogin: Date;
     lastLogout?: Date;
+    lastActivityAt?: Date;
     loginCount: number;
     totalMinutes?: number;
+    lateMinutes?: number;
+    overtimeMinutes?: number;
+    autoCheckedOut?: boolean;
+    checkOutMethod?: "MANUAL" | "AUTO_ENDTIME" | "AUTO_INACTIVITY" | "BEACON";
     ipAddress?: string;
     userAgent?: string;
     status: "PRESENT" | "LATE" | "EARLY_LEAVE" | "ABSENT";
@@ -41,8 +46,16 @@ const AttendanceLogSchema = new Schema<IAttendanceLog>(
         date: { type: String, required: true }, // YYYY-MM-DD
         firstLogin: { type: Date, required: true },
         lastLogout: { type: Date },
+        lastActivityAt: { type: Date },
         loginCount: { type: Number, default: 1 },
         totalMinutes: { type: Number },
+        lateMinutes: { type: Number, default: 0 },
+        overtimeMinutes: { type: Number, default: 0 },
+        autoCheckedOut: { type: Boolean, default: false },
+        checkOutMethod: {
+            type: String,
+            enum: ["MANUAL", "AUTO_ENDTIME", "AUTO_INACTIVITY", "BEACON"],
+        },
         ipAddress: { type: String },
         userAgent: { type: String },
         status: {

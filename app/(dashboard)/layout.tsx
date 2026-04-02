@@ -22,6 +22,7 @@ import { ToastHistoryPanel } from "@/components/ui/ToastHistoryPanel";
 import { PresenceIndicator } from "@/components/ui/PresenceIndicator";
 import { SessionTimeoutWarning } from "@/components/session/SessionTimeoutWarning";
 import { CheckInOutWidget } from "@/components/attendance/AttendanceTracker";
+import { ActivityHeartbeat } from "@/components/attendance/ActivityHeartbeat";
 
 export default async function DashboardLayout({
     children,
@@ -150,6 +151,7 @@ export default async function DashboardLayout({
                 </div>
                 <ToastHistoryPanel />
                 <SessionTimeoutWarning />
+                <ActivityHeartbeat />
 
             </main>
         </div>
